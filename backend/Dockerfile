@@ -6,7 +6,7 @@ RUN install-php-extensions \
     zip \
     bcmath \
     pdo_mysql \
-    mysql
+    mysqli
 
 # Install Composer secara manual
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
