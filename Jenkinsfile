@@ -1,7 +1,5 @@
 pipeline {
-    agent { 
-        docker { image 'docker:latest' } 
-    }
+    agent any
     environment {
         IMAGE_TAG = "${env.BUILD_ID}"
         GIT_BRANCH = "main"
@@ -50,11 +48,6 @@ pipeline {
                     cat docker-compose.yml
                     """
                 }
-            }
-        }
-        stage('Prepare Docker Config') {
-            steps {
-                sh 'mkdir -p $HOME/.docker && chmod 777 $HOME/.docker'
             }
         }
         stage('Build Docker Images') {
