@@ -52,6 +52,11 @@ pipeline {
                 }
             }
         }
+        stage('Prepare Docker Config') {
+            steps {
+                sh 'mkdir -p $HOME/.docker && chmod 777 $HOME/.docker'
+            }
+        }
         stage('Build Docker Images') {
             steps {
                 script {
