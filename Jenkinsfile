@@ -61,6 +61,17 @@ pipeline {
                 }
             }
         }
+        stage('Cleanup Docker Images') {
+            steps {
+                script {
+                    sh """
+                    echo "Cleaning up built Docker images..."
+                    docker rmi -f earscopeweb-backend:${IMAGE_TAG} || true
+                    docker rmi -f earscopeweb-frontend:${IMAGE_TAG} || true
+                    """
+                }
+            }
+        }
     }
     post {
         success {
