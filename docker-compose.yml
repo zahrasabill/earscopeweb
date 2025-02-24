@@ -9,7 +9,7 @@ services:
     networks:
       - earscopeweb-network
       - mysql-network
-    restart: unless-stopeed
+    restart: unless-stopped
 
   earscopeweb-frontend:
     image: earscopeweb-frontend:latest
@@ -20,7 +20,7 @@ services:
       - "8011:8080"
     networks:
       - earscopeweb-network
-    restart: unless-stopeed
+    restart: unless-stopped
 
 networks:
   earscopeweb-network:
