@@ -61,17 +61,40 @@ pipeline {
                 }
             }
         }
-        stage('Cleanup Docker Images') {
+        stage('Deploy Docker Images to Container') {
             steps {
                 script {
                     sh """
-                    echo "Cleaning up built Docker images..."
-                    docker rmi -f earscopeweb-backend:${IMAGE_TAG} || true
-                    docker rmi -f earscopeweb-frontend:${IMAGE_TAG} || true
+                    echo "Building Docker images..."
+                    cd earscopeweb
+                    echo "Deploying containers..."
+                    docker compose up -d --force-recreate
+
+                    echo "Checking running containers..."
+                    docker ps -a
+
+                    echo "Checking backend working directory..."
+                    docker exec earscopeweb-backend pwd
+                    docker exec earscopeweb-backend ls -al /app
+
+                    echo "Checking frontend working directory..."
+                    docker exec earscopeweb-frontend pwd
+                    docker exec earscopeweb-frontend ls -al /app
                     """
                 }
             }
         }
+        // stage('Cleanup Docker Images') {
+        //     steps {
+        //         script {
+        //             sh """
+        //             echo "Cleaning up built Docker images..."
+        //             docker rmi -f earscopeweb-backend:${IMAGE_TAG} || true
+        //             docker rmi -f earscopeweb-frontend:${IMAGE_TAG} || true
+        //             """
+        //         }
+        //     }
+        // }
     }
     post {
         success {
