@@ -34,4 +34,4 @@ RUN chmod -R 777 storage bootstrap/cache
 EXPOSE 8010
 
 # Define run Container
-ENTRYPOINT ["php", "artisan", "octane:frankenphp"]
+ENTRYPOINT ["php", "artisan", "octane:frankenphp", "--host=0.0.0.0", "--port=8010"]
