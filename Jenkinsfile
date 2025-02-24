@@ -3,6 +3,8 @@ pipeline {
     environment {
         IMAGE_TAG = "${env.BUILD_ID}"
         GIT_BRANCH = "main"
+        DOCKER_IMAGE_NAME_BACKEND = "earscopeweb-backend"
+        DOCKER_IMAGE_NAME_FRONTEND = "earscopeweb-frontend"
     }
     stages {
         stage('Checkout Code') {
@@ -41,11 +43,41 @@ pipeline {
                     
                     cd earscopeweb
                     
-                    sed -i "s|image: earscopeweb-backend:.*|image: earscopeweb-backend:${IMAGE_TAG}|" docker-compose.yml
-                    sed -i "s|image: earscopeweb-frontend:.*|image: earscopeweb-frontend:${IMAGE_TAG}|" docker-compose.yml
+                    sed -i "s|image: earscopeweb-backend:latest|image: ${DOCKER_IMAGE_NAME_BACKEND}:${IMAGE_TAG}|" docker-compose.yml
+                    sed -i "s|image: earscopeweb-frontend:latest|image: ${DOCKER_IMAGE_NAME_FRONTEND}:${IMAGE_TAG}|" docker-compose.yml
                     
                     echo "Final docker-compose.yml content:"
                     cat docker-compose.yml
+                    """
+                }
+            }
+        }
+        stage('Stop Running Containers & Remove Old Images') {
+            steps {
+                script {
+                    sh """
+                    echo "Stopping running containers..."
+                    
+                    cd earscopeweb
+                    
+                    docker compose down || true
+                    
+                    echo "Checking and removing old backend and frontend images..."
+                    
+                    OLD_BACKEND_IMAGE=\$(docker images -q ${DOCKER_IMAGE_NAME_BACKEND})
+                    OLD_FRONTEND_IMAGE=\$(docker images -q ${DOCKER_IMAGE_NAME_FRONTEND})
+
+                    if [ ! -z "\$OLD_BACKEND_IMAGE" ]; then
+                        echo "Deleting old backend image..."
+                        docker rmi -f \$OLD_BACKEND_IMAGE
+                    fi
+
+                    if [ ! -z "\$OLD_FRONTEND_IMAGE" ]; then
+                        echo "Deleting old frontend image..."
+                        docker rmi -f \$OLD_FRONTEND_IMAGE
+                    fi
+
+                    echo "Finished cleaning up old images."
                     """
                 }
             }
