@@ -1,6 +1,6 @@
 pipeline {
     agent any
-    environment {
+  #  environment {
         IMAGE_TAG = "${env.BUILD_ID}"
         GIT_BRANCH = "main"
     }
