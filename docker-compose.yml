@@ -9,6 +9,7 @@ services:
     networks:
       - earscopeweb-network
       - mysql-network
+      - nginx-network
     restart: unless-stopped
 
   earscopeweb-frontend:
@@ -20,6 +21,7 @@ services:
       - "8011:8080"
     networks:
       - earscopeweb-network
+      - nginx-network
     restart: unless-stopped
 
 networks:
@@ -31,4 +33,3 @@ networks:
     name: mysql-network
     external: true
 
-    
