@@ -19,7 +19,7 @@ COPY . /app
 
 # Set Environment Production
 ENV APP_ENV=production
-ENV APP_DEBUG=false
+ENV APP_DEBUG=true
 
 # Install dependencies
 RUN composer install --ignore-platform-reqs --no-dev -a
