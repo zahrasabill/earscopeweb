@@ -26,7 +26,7 @@ pipeline {
         stage('Prepare .env File') {
             steps {
                 script {
-                    withCredentials([file(credentialsId: 'earscopeweb-env', variable: 'ENV_FILE')]) {
+                    withCredentials([file(credentialsId: 'earscopeweb-backend-env', variable: 'ENV_FILE')]) {
                         sh """
                         echo "Copying .env file..."
                         cp \${ENV_FILE} earscopeweb/backend/.env
