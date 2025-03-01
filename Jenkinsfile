@@ -122,7 +122,8 @@ pipeline {
                 script {
                         sh """
                         echo "Copying Nginx configuration..."
-                        sudo cp earscopeweb/earscope-web.conf /etc/nginx/conf/
+                        sudo cp earscopeweb/earscopeweb-frontend.conf /etc/nginx/conf/
+                        sudo cp earscopeweb/earscopeweb-backend.conf /etc/nginx/conf/
 
                         echo "Nginx configuration updated successfully!"
                         """
