@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use App\Models\User;
+use Spatie\Permission\Models\Role;
 
 class UserSeeder extends Seeder
 {
@@ -11,6 +13,29 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        //
+        // Ambil data admin dari .env
+        $adminUsername = env('ADMIN_USERNAME');
+        $adminPassword = env('ADMIN_PASSWORD');
+        $adminEmail = env('ADMIN_EMAIL');
+
+        // Cek apakah role 'admin' sudah ada
+        $adminRole = Role::firstOrCreate(['name' => 'admin']);
+
+        // Buat user admin jika belum ada
+        $adminUser = User::firstOrCreate(
+            ['email' => $adminEmail], // Cari berdasarkan email
+            [
+                'name' => $adminUsername,
+                'email' => $adminEmail,
+                'password' => bcrypt($adminPassword), // Hash password
+            ]
+        );
+
+        // Assign role 'admin' ke user
+        if (!$adminUser->hasRole('admin')) {
+            $adminUser->assignRole($adminRole);
+        }
+
+        $this->command->info('Admin user berhasil dibuat dan diberi role admin!');
     }
 }

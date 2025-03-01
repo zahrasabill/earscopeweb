@@ -4,14 +4,18 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Tymon\JWTAuth\Facades\JWTAuth;
-use Tymon\JWTAuth\Exceptions\JWTException;
 
 /**
- * @OA\Info(title="Earscope API", version="1.0")
+ * @OA\Tag(
+ *     name="Auth",
+ *     description="Authentication management endpoints",
+ *     x={"order": 2}
+ * )
  */
+
 class AuthController extends Controller
 {
+
     /**
      * @OA\Post(
      *     path="/api/login",
@@ -43,20 +47,6 @@ class AuthController extends Controller
         }
 
         return $this->respondWithToken($token);
-    }
-
-    /**
-     * @OA\Get(
-     *     path="/api/me",
-     *     summary="Get authenticated user",
-     *     tags={"Auth"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(response=200, description="Authenticated user data")
-     * )
-     */
-    public function me()
-    {
-        return response()->json(Auth::guard('api')->user());
     }
 
     /**
