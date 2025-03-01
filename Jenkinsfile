@@ -5,7 +5,7 @@ pipeline {
         GIT_BRANCH = "main"
         DOCKER_IMAGE_NAME_BACKEND = "earscopeweb-backend"
         DOCKER_IMAGE_NAME_FRONTEND = "earscopeweb-frontend"
-        NGINX_CONF_PATH = "/etc/nginx/conf"
+        NGINX_CONF_PATH = "/etc/nginx/conf/earscope-web.conf"
     }
     stages {
         stage('Checkout Code') {
