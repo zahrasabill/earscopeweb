@@ -19,7 +19,7 @@ class UserController extends Controller
 {
     /**
      * @OA\Post(
-     *     path="/api/register",
+     *     path="/v1/register",
      *     summary="Register a new user",
      *     tags={"User"},
      *     @OA\RequestBody(
@@ -59,7 +59,7 @@ class UserController extends Controller
 
     /**
      * @OA\Put(
-     *     path="/api/users/{id}",
+     *     path="/v1/users/{id}",
      *     summary="Update User",
      *     tags={"User"},
      *     security={{"bearerAuth":{}}},
@@ -86,7 +86,7 @@ class UserController extends Controller
 
     /**
      * @OA\Delete(
-     *     path="/api/users/{id}",
+     *     path="/v1/users/{id}",
      *     summary="Delete User",
      *     tags={"User"},
      *     security={{"bearerAuth":{}}},
@@ -105,7 +105,7 @@ class UserController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/me",
+     *     path="/v1/me",
      *     summary="Get authenticated user",
      *     tags={"User"},
      *     security={{"bearerAuth":{}}},
@@ -130,7 +130,7 @@ class UserController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/users",
+     *     path="/v1/users",
      *     summary="Get all users",
      *     tags={"User"},
      *     security={{"bearerAuth":{}}},
@@ -161,7 +161,7 @@ class UserController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/users/{id}",
+     *     path="/v1/users/{id}",
      *     summary="Get user by ID",
      *     tags={"User"},
      *     security={{"bearerAuth":{}}},
@@ -190,7 +190,7 @@ class UserController extends Controller
 
     /**
      * @OA\Delete(
-     *     path="/api/users/{id}/force-delete",
+     *     path="/v1/users/{id}/force-delete",
      *     summary="Permanently delete a user",
      *     tags={"User"},
      *     security={{"bearerAuth":{}}},
@@ -210,7 +210,7 @@ class UserController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/users/{id}/restore",
+     *     path="/v1/users/{id}/restore",
      *     summary="Restore a soft deleted user",
      *     tags={"User"},
      *     security={{"bearerAuth":{}}},
