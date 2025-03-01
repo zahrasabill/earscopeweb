@@ -5,6 +5,7 @@ pipeline {
         GIT_BRANCH = "main"
         DOCKER_IMAGE_NAME_BACKEND = "earscopeweb-backend"
         DOCKER_IMAGE_NAME_FRONTEND = "earscopeweb-frontend"
+        NGINX_CONF_PATH = "/etc/nginx/conf"
     }
     stages {
         stage('Checkout Code') {
@@ -116,17 +117,21 @@ pipeline {
                 }
             }
         }
-        // stage('Cleanup Docker Images') {
-        //     steps {
-        //         script {
-        //             sh """
-        //             echo "Cleaning up built Docker images..."
-        //             docker rmi -f earscopeweb-backend:${IMAGE_TAG} || true
-        //             docker rmi -f earscopeweb-frontend:${IMAGE_TAG} || true
-        //             """
-        //         }
-        //     }
-        // }
+        stage('Copy Nginx Config & Restart Nginx') {
+            steps {
+                script {
+                    sh """
+                    echo "Copying Nginx configuration..."
+                    sudo cp earscopeweb/earscope-web.conf ${NGINX_CONF_PATH}
+
+                    echo "Restarting Nginx service..."
+                    sudo systemctl restart nginx
+
+                    echo "Nginx configuration updated successfully!"
+                    """
+                }
+            }
+        }
     }
     post {
         success {
