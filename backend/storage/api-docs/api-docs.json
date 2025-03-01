@@ -25,7 +25,7 @@
                                     "email": {
                                         "type": "string",
                                         "format": "email",
-                                        "example": "wawan@example.com"
+                                        "example": "mail@example.com"
                                     },
                                     "password": {
                                         "type": "string",
