@@ -120,12 +120,17 @@ pipeline {
         stage('Copy Nginx Config & Restart Nginx') {
             steps {
                 script {
-                    sh """
-                    echo "Copying Nginx configuration..."
-                    cp earscopeweb/earscope-web.conf ${NGINX_CONF_PATH}
+                    withCredentials([string(credentialsId: 'jenkins-sudo-password', variable: 'SUDO_PASSWORD')]) {
+                        sh """
+                        echo "Copying Nginx configuration..."
+                        echo \${SUDO_PASSWORD} | sudo -S cp earscopeweb/earscope-web.conf /etc/nginx/conf/
 
-                    echo "Nginx configuration updated successfully!"
-                    """
+                        echo "Restarting Nginx service..."
+                        echo \${SUDO_PASSWORD} | sudo -S systemctl restart nginx
+
+                        echo "Nginx configuration updated successfully!"
+                        """
+                    }
                 }
             }
         }
