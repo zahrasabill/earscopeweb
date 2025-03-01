@@ -122,10 +122,7 @@ pipeline {
                 script {
                     sh """
                     echo "Copying Nginx configuration..."
-                    sudo cp earscopeweb/earscope-web.conf ${NGINX_CONF_PATH}
-
-                    echo "Restarting Nginx service..."
-                    sudo systemctl restart nginx
+                    cp earscopeweb/earscope-web.conf ${NGINX_CONF_PATH}
 
                     echo "Nginx configuration updated successfully!"
                     """
