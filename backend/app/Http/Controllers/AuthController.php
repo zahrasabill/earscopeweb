@@ -24,8 +24,8 @@ class AuthController extends Controller
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"email", "password"},
-     *             @OA\Property(property="email", type="string", format="email", example="mail@example.com"),
+     *             required={"kode_akses", "password"},
+     *             @OA\Property(property="kode_akses", type="string", format="string", example="ERS-736521"),
      *             @OA\Property(property="password", type="string", format="password", example="password123")
      *         )
      *     ),
@@ -36,11 +36,12 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
+            'kode_akses' => 'required|string',
             'password' => 'required|string|min:6',
         ]);
 
-        $credentials = $request->only('email', 'password');
+        // Cek kredensial berdasarkan kode_akses dan password
+        $credentials = $request->only('kode_akses', 'password');
 
         if (!$token = Auth::guard('api')->attempt($credentials)) {
             return response()->json(['error' => 'Unauthorized'], 401);

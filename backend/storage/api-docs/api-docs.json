@@ -5,27 +5,27 @@
         "version": "1.0"
     },
     "paths": {
-        "/api/login": {
+        "/v1/login": {
             "post": {
                 "tags": [
                     "Auth"
                 ],
                 "summary": "Login User",
-                "operationId": "a3b306d14572d1f4bd6c064b3233e7b8",
+                "operationId": "7abb047ced1329103f0767160e852fc9",
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "email",
+                                    "kode_akses",
                                     "password"
                                 ],
                                 "properties": {
-                                    "email": {
+                                    "kode_akses": {
                                         "type": "string",
-                                        "format": "email",
-                                        "example": "mail@example.com"
+                                        "format": "string",
+                                        "example": "ERS-736521"
                                     },
                                     "password": {
                                         "type": "string",
@@ -48,13 +48,13 @@
                 }
             }
         },
-        "/api/logout": {
+        "/v1/logout": {
             "post": {
                 "tags": [
                     "Auth"
                 ],
                 "summary": "Logout User",
-                "operationId": "fe8f3429cd6979b3b4517e186505f9f9",
+                "operationId": "fb4913f284432ecf8c1394ad6c99a14e",
                 "responses": {
                     "200": {
                         "description": "Logged out successfully"
@@ -67,13 +67,13 @@
                 ]
             }
         },
-        "/api/refresh": {
+        "/v1/refresh": {
             "post": {
                 "tags": [
                     "Auth"
                 ],
                 "summary": "Refresh JWT Token",
-                "operationId": "2c27d311a2876560fcb5a754b556cdc5",
+                "operationId": "5a69b0db2ba666122033a1ee3e9e582e",
                 "responses": {
                     "200": {
                         "description": "Token refreshed"
@@ -86,13 +86,13 @@
                 ]
             }
         },
-        "/api/register": {
+        "/v1/register": {
             "post": {
                 "tags": [
                     "User"
                 ],
                 "summary": "Register a new user",
-                "operationId": "2f25885f3b6f61ca11724ec302d2e439",
+                "operationId": "fe812d02daa29b0e744a3d3a5adfaebc",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -134,13 +134,13 @@
                 }
             }
         },
-        "/api/users/{id}": {
+        "/v1/users/{id}": {
             "get": {
                 "tags": [
                     "User"
                 ],
                 "summary": "Get user by ID",
-                "operationId": "36a33ff774d5cba33c039dec2c3e0287",
+                "operationId": "e2a9e9265f7be93b919519df96b87cb7",
                 "parameters": [
                     {
                         "name": "id",
@@ -193,7 +193,7 @@
                     "User"
                 ],
                 "summary": "Update User",
-                "operationId": "b9091397c8b25f12c6adb74be6ce3a5a",
+                "operationId": "81fadd62a4c882784f05f43316994719",
                 "parameters": [
                     {
                         "name": "id",
@@ -246,7 +246,7 @@
                     "User"
                 ],
                 "summary": "Delete User",
-                "operationId": "e169ebcc01eeee2f5e57e5bfc064bc7f",
+                "operationId": "8cd12cca3384ea9f9253cbf168d28789",
                 "parameters": [
                     {
                         "name": "id",
@@ -272,13 +272,13 @@
                 ]
             }
         },
-        "/api/me": {
+        "/v1/me": {
             "get": {
                 "tags": [
                     "User"
                 ],
                 "summary": "Get authenticated user",
-                "operationId": "aef6fdddec1e8495d4830821b4afdf54",
+                "operationId": "b32adad160e96976779040f9684ccb22",
                 "responses": {
                     "200": {
                         "description": "Authenticated user data",
@@ -312,13 +312,13 @@
                 ]
             }
         },
-        "/api/users": {
+        "/v1/users": {
             "get": {
                 "tags": [
                     "User"
                 ],
                 "summary": "Get all users",
-                "operationId": "32f813ea7a22e2b8b862ef93084426b9",
+                "operationId": "3f54252a5fcc629bcf8fff9c64dcdc01",
                 "responses": {
                     "200": {
                         "description": "List of all users",
@@ -360,13 +360,13 @@
                 ]
             }
         },
-        "/api/users/{id}/force-delete": {
+        "/v1/users/{id}/force-delete": {
             "delete": {
                 "tags": [
                     "User"
                 ],
                 "summary": "Permanently delete a user",
-                "operationId": "445df301ec937b2374644516924bb8fa",
+                "operationId": "83015cd4500e57fea8350f9a726e60d1",
                 "parameters": [
                     {
                         "name": "id",
@@ -392,13 +392,13 @@
                 ]
             }
         },
-        "/api/users/{id}/restore": {
+        "/v1/users/{id}/restore": {
             "post": {
                 "tags": [
                     "User"
                 ],
                 "summary": "Restore a soft deleted user",
-                "operationId": "a3087db765f18596ec09f9c3abb4fdc5",
+                "operationId": "74ef9272bd28fb028e3225ad06f44cbd",
                 "parameters": [
                     {
                         "name": "id",

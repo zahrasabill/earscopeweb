@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use Illuminate\Support\Str;
 
 /**
  * @OA\Tag(
@@ -43,18 +44,20 @@ class UserController extends Controller
             'password' => 'required|string|min:6'
         ]);
 
+        // Generate kode akses unik
+        $kode_akses = 'ERS-' . Str::upper(Str::random(5)); // Contoh: ERS-X7Y9Z
+
         User::create([
+            'kode_akses' => $kode_akses,
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password)
         ]);
 
-        $token = Auth::guard('api')->attempt([
-            'email' => $request->email,
-            'password' => $request->password
-        ]);
-
-        return response()->json(['message' => 'User registered successfully', 'token' => $token], 201);
+        return response()->json([
+            'message' => 'User registered successfully',
+            'kode_akses' => $kode_akses // Kirim kode akses sebagai respons
+        ], 201);
     }
 
     /**

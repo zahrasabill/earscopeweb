@@ -17,6 +17,7 @@ class UserSeeder extends Seeder
         $adminUsername = env('ADMIN_USERNAME');
         $adminPassword = env('ADMIN_PASSWORD');
         $adminEmail = env('ADMIN_EMAIL');
+        $adminKodeAkses = env('ADMIN_KODE_AKSES');
 
         // Cek apakah role 'admin' sudah ada
         $adminRole = Role::firstOrCreate(['name' => 'admin']);
@@ -25,6 +26,7 @@ class UserSeeder extends Seeder
         $adminUser = User::firstOrCreate(
             ['email' => $adminEmail], // Cari berdasarkan email
             [
+                'kode_akses' => $adminKodeAkses,
                 'name' => $adminUsername,
                 'email' => $adminEmail,
                 'password' => bcrypt($adminPassword), // Hash password
