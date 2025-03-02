@@ -33,5 +33,9 @@ RUN echo "yes" | php artisan octane:install --server=frankenphp
 # Set permission untuk Laravel storage & cache
 RUN chmod -R 777 storage bootstrap/cache
 
+# Atur batas ukuran file upload
+RUN echo "upload_max_filesize = 50M" >> /usr/local/etc/php/conf.d/custom.ini && \
+    echo "post_max_size = 50M" >> /usr/local/etc/php/conf.d/custom.ini
+
 # Define run Container
 ENTRYPOINT ["php", "artisan", "octane:frankenphp", "--host=0.0.0.0", "--port=8010"]
