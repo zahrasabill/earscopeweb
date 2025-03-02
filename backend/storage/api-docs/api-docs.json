@@ -625,16 +625,16 @@
                 ]
             }
         },
-        "/v1/videos/{id}": {
+        "/v1/videos/{videoId}": {
             "get": {
                 "tags": [
                     "Videos"
                 ],
                 "summary": "Get video details by ID",
-                "operationId": "cbb35cba08179284e6ba8fd1f3308bd5",
+                "operationId": "51e3e6d0c61fc723dc919d03c5584855",
                 "parameters": [
                     {
-                        "name": "id",
+                        "name": "videoId",
                         "in": "path",
                         "required": true,
                         "schema": {
@@ -677,6 +677,36 @@
                                 }
                             }
                         }
+                    },
+                    "404": {
+                        "description": "Video not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Videos"
+                ],
+                "summary": "Unassign a video",
+                "operationId": "3ab86baf997ffc3d718acfe4a42cce06",
+                "parameters": [
+                    {
+                        "name": "videoId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Video unassigned successfully"
                     },
                     "404": {
                         "description": "Video not found"

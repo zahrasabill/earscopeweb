@@ -115,6 +115,34 @@ class VideoController extends Controller
     }
 
     /**
+     * @OA\Patch(
+     *     path="/v1/videos/{videoId}",
+     *     summary="Unassign a video",
+     *     tags={"Videos"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="videoId", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Video unassigned successfully"),
+     *     @OA\Response(response=404, description="Video not found")
+     * )
+     */
+    public function updateStatusVideo($videoId)
+    {
+        // Temukan video berdasarkan ID
+        $video = Video::findOrFail($videoId);
+
+        // Update status dan hapus user_id
+        $video->update([
+            'status' => 'unassigned',
+            'user_id' => null,
+        ]);
+
+        return response()->json([
+            'message' => 'Video unassigned successfully',
+            'data' => $video,
+        ]);
+    }
+
+    /**
      * @OA\Get(
      *     path="/v1/videos",
      *     summary="Get all videos",
@@ -157,11 +185,11 @@ class VideoController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/v1/videos/{id}",
+     *     path="/v1/videos/{videoId}",
      *     summary="Get video details by ID",
      *     tags={"Videos"},
      *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="videoId", in="path", required=true, @OA\Schema(type="integer")),
      *     @OA\Response(
      *         response=200,
      *         description="Video details",
@@ -180,9 +208,9 @@ class VideoController extends Controller
      *     @OA\Response(response=404, description="Video not found")
      * )
      */
-    public function show($id)
+    public function show($videoId)
     {
-        $video = Video::with('user')->findOrFail($id);
+        $video = Video::with('user')->findOrFail($videoId);
 
         // Tambahkan URL lengkap untuk video
         $video->raw_video_url = Storage::url($video->raw_video_path);

@@ -25,8 +25,9 @@ Route::middleware('jwt.auth')->group(function () {
         Route::post('users/{id}/restore', [UserController::class, 'restore']);
 
         Route::post('videos/{videoId}/assign/{userId}', [VideoController::class, 'assignToUser']); // Assign video ke user
+        Route::patch('/videos/{videoId}', [VideoController::class, 'updateStatusVideo']);
         Route::get('videos', [VideoController::class, 'index']); // Lihat semua video
-        Route::get('videos/{id}', [VideoController::class, 'show']); // Lihat detail video
+        Route::get('videos/{videoId}', [VideoController::class, 'show']); // Lihat detail video
     });
     
     // Route untuk admin dan dokter
@@ -37,8 +38,9 @@ Route::middleware('jwt.auth')->group(function () {
         Route::get('users/{id}', [UserController::class, 'show']);
 
         Route::post('videos/{videoId}/assign/{userId}', [VideoController::class, 'assignToUser']); // Assign video ke user
+        Route::patch('/videos/{videoId}', [VideoController::class, 'updateStatusVideo']);
         Route::get('videos', [VideoController::class, 'index']); // Lihat semua video
-        Route::get('videos/{id}', [VideoController::class, 'show']); // Lihat detail video
+        Route::get('videos/{videoId}', [VideoController::class, 'show']); // Lihat detail video
     });
 
     // Route tanpa pembatasan role
