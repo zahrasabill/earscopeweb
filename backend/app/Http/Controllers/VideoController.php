@@ -1,0 +1,193 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\Video;
+use Illuminate\Support\Facades\Storage;
+
+class VideoController extends Controller
+{
+    /**
+     * @OA\Post(
+     *     path="/v1/videos",
+     *     summary="Upload a pair of videos (raw and processed)",
+     *     tags={"Videos"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="Upload raw and processed videos",
+     *         @OA\MediaType(
+     *             mediaType="multipart/form-data",
+     *             @OA\Schema(
+     *                 required={"raw_video", "processed_video"},
+     *                 @OA\Property(
+     *                     property="raw_video",
+     *                     type="string",
+     *                     format="binary",
+     *                     description="Raw video file"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="processed_video",
+     *                     type="string",
+     *                     format="binary",
+     *                     description="Processed video file with bounding box"
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Videos uploaded successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="message", type="string"),
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="id", type="integer"),
+     *                 @OA\Property(property="raw_video_path", type="string"),
+     *                 @OA\Property(property="processed_video_path", type="string"),
+     *                 @OA\Property(property="status", type="string")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=422, description="Validation error")
+     * )
+     */
+    public function store(Request $request)
+    {
+        // Validasi input
+        $request->validate([
+            'raw_video' => 'required|file|mimetypes:video/mp4,video/quicktime',
+            'processed_video' => 'required|file|mimetypes:video/mp4,video/quicktime',
+        ]);
+
+        // Generate unique folder name based on timestamp
+        $timestamp = now()->format('Ymd_His');
+
+        // Create folder path
+        $folderPath = "videos/{$timestamp}";
+
+        // Simpan video mentah
+        $rawVideoFilename = "raw_{$timestamp}.mp4";
+        $rawVideoPath = $request->file('raw_video')->storeAs($folderPath, $rawVideoFilename, 'public');
+
+        // Simpan video dengan bounding box
+        $processedVideoFilename = "bb_{$timestamp}.mp4";
+        $processedVideoPath = $request->file('processed_video')->storeAs($folderPath, $processedVideoFilename, 'public');
+
+        // Simpan data ke database
+        $video = Video::create([
+            'raw_video_path' => $rawVideoPath,
+            'processed_video_path' => $processedVideoPath,
+            'status' => 'unassigned', // Default status
+        ]);
+
+        return response()->json([
+            'message' => 'Videos uploaded successfully',
+            'data' => $video,
+        ], 201);
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/v1/videos/{videoId}/assign/{userId}",
+     *     summary="Assign a video to a user",
+     *     tags={"Videos"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="videoId", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="userId", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Video assigned successfully"),
+     *     @OA\Response(response=404, description="Video or User not found")
+     * )
+     */
+    public function assignToUser($videoId, $userId)
+    {
+        $video = Video::findOrFail($videoId);
+        $video->update([
+            'user_id' => $userId,
+            'status' => 'assigned',
+        ]);
+
+        return response()->json([
+            'message' => 'Video assigned to user successfully',
+            'data' => $video,
+        ]);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/v1/videos",
+     *     summary="Get all videos",
+     *     tags={"Videos"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of all videos",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(
+     *                 type="object",
+     *                 @OA\Property(property="id", type="integer"),
+     *                 @OA\Property(property="raw_video_url", type="string"),
+     *                 @OA\Property(property="processed_video_url", type="string"),
+     *                 @OA\Property(property="status", type="string"),
+     *                 @OA\Property(property="user", type="object",
+     *                     @OA\Property(property="id", type="integer"),
+     *                     @OA\Property(property="name", type="string")
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="Unauthorized")
+     * )
+     */
+    public function index()
+    {
+        $videos = Video::with('user')->get();
+
+        // Tambahkan URL lengkap untuk setiap video
+        $videos->transform(function ($video) {
+            $video->raw_video_url = Storage::url($video->raw_video_path);
+            $video->processed_video_url = Storage::url($video->processed_video_path);
+            return $video;
+        });
+
+        return response()->json($videos);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/v1/videos/{id}",
+     *     summary="Get video details by ID",
+     *     tags={"Videos"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Video details",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="id", type="integer"),
+     *             @OA\Property(property="raw_video_url", type="string"),
+     *             @OA\Property(property="processed_video_url", type="string"),
+     *             @OA\Property(property="status", type="string"),
+     *             @OA\Property(property="user", type="object",
+     *                 @OA\Property(property="id", type="integer"),
+     *                 @OA\Property(property="name", type="string")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=404, description="Video not found")
+     * )
+     */
+    public function show($id)
+    {
+        $video = Video::with('user')->findOrFail($id);
+
+        // Tambahkan URL lengkap untuk video
+        $video->raw_video_url = Storage::url($video->raw_video_path);
+        $video->processed_video_url = Storage::url($video->processed_video_path);
+
+        return response()->json($video);
+    }
+}

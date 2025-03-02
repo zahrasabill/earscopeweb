@@ -451,6 +451,243 @@
                     }
                 ]
             }
+        },
+        "/v1/videos": {
+            "get": {
+                "tags": [
+                    "Videos"
+                ],
+                "summary": "Get all videos",
+                "operationId": "999f9fd666d4d623d55837e36452abd5",
+                "responses": {
+                    "200": {
+                        "description": "List of all videos",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer"
+                                            },
+                                            "raw_video_url": {
+                                                "type": "string"
+                                            },
+                                            "processed_video_url": {
+                                                "type": "string"
+                                            },
+                                            "status": {
+                                                "type": "string"
+                                            },
+                                            "user": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Videos"
+                ],
+                "summary": "Upload a pair of videos (raw and processed)",
+                "operationId": "766f06dc2935b23771613a91839bb1a1",
+                "requestBody": {
+                    "description": "Upload raw and processed videos",
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "raw_video",
+                                    "processed_video"
+                                ],
+                                "properties": {
+                                    "raw_video": {
+                                        "description": "Raw video file",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "processed_video": {
+                                        "description": "Processed video file with bounding box",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Videos uploaded successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "raw_video_path": {
+                                                    "type": "string"
+                                                },
+                                                "processed_video_path": {
+                                                    "type": "string"
+                                                },
+                                                "status": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/v1/videos/{videoId}/assign/{userId}": {
+            "post": {
+                "tags": [
+                    "Videos"
+                ],
+                "summary": "Assign a video to a user",
+                "operationId": "ea5bac4dbe008179d0e71352b804c1ef",
+                "parameters": [
+                    {
+                        "name": "videoId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Video assigned successfully"
+                    },
+                    "404": {
+                        "description": "Video or User not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/v1/videos/{id}": {
+            "get": {
+                "tags": [
+                    "Videos"
+                ],
+                "summary": "Get video details by ID",
+                "operationId": "cbb35cba08179284e6ba8fd1f3308bd5",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Video details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        },
+                                        "raw_video_url": {
+                                            "type": "string"
+                                        },
+                                        "processed_video_url": {
+                                            "type": "string"
+                                        },
+                                        "status": {
+                                            "type": "string"
+                                        },
+                                        "user": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Video not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
         }
     },
     "tags": [
@@ -463,6 +700,10 @@
             "name": "User",
             "description": "User management endpoints",
             "x-order": 2
+        },
+        {
+            "name": "Videos",
+            "description": "Videos"
         }
     ],
     "components": {
