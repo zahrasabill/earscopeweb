@@ -29,6 +29,9 @@ class UserSeeder extends Seeder
                 'kode_akses' => $adminKodeAkses,
                 'name' => $adminUsername,
                 'email' => $adminEmail,
+                'tanggal_lahir' => '2000-01-01', // Tanggal lahir default
+                'usia' => 25, // Usia default
+                'no_ktp' => 7878787878787878,
                 'password' => bcrypt($adminPassword), // Hash password
             ]
         );

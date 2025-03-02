@@ -100,23 +100,17 @@
                             "schema": {
                                 "required": [
                                     "name",
-                                    "email",
-                                    "password"
+                                    "tanggal_lahir"
                                 ],
                                 "properties": {
                                     "name": {
                                         "type": "string",
                                         "example": "John Doe"
                                     },
-                                    "email": {
+                                    "tanggal_lahir": {
                                         "type": "string",
-                                        "format": "email",
-                                        "example": "mail@example.com"
-                                    },
-                                    "password": {
-                                        "type": "string",
-                                        "format": "password",
-                                        "example": "password123"
+                                        "format": "date",
+                                        "example": "2012-12-31"
                                     }
                                 },
                                 "type": "object"
@@ -167,6 +161,12 @@
                                         "email": {
                                             "type": "string"
                                         },
+                                        "roles": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        },
                                         "deleted_at": {
                                             "type": "string",
                                             "format": "date-time",
@@ -205,21 +205,43 @@
                     }
                 ],
                 "requestBody": {
-                    "required": true,
+                    "required": false,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "required": [
-                                    "name",
-                                    "email"
-                                ],
                                 "properties": {
                                     "name": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "example": "John Doe Updated"
                                     },
                                     "email": {
                                         "type": "string",
-                                        "format": "email"
+                                        "format": "email",
+                                        "example": "new.email@example.com"
+                                    },
+                                    "no_ktp": {
+                                        "type": "string",
+                                        "example": "1234567890123456"
+                                    },
+                                    "tanggal_lahir": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "1995-05-15"
+                                    },
+                                    "role": {
+                                        "type": "string",
+                                        "enum": [
+                                            "user",
+                                            "dokter",
+                                            "admin"
+                                        ],
+                                        "example": "dokter"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "maxLength": 8,
+                                        "minLength": 8,
+                                        "example": "newpassword"
                                     }
                                 },
                                 "type": "object"
@@ -336,6 +358,12 @@
                                             },
                                             "email": {
                                                 "type": "string"
+                                            },
+                                            "roles": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
                                             },
                                             "deleted_at": {
                                                 "type": "string",

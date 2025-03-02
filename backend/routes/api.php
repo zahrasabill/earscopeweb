@@ -20,8 +20,8 @@ Route::middleware('jwt.auth')->group(function () {
     Route::get('users', [UserController::class, 'getAllUsers']);
     Route::get('users/{id}', [UserController::class, 'show']);
 
-    Route::get('users/{id}/force-delete', [UserController::class, 'forceDelete']);
-    Route::get('users/{id}/restore', [UserController::class, 'restore']);
+    Route::delete('users/{id}/force-delete', [UserController::class, 'forceDelete']);
+    Route::post('users/{id}/restore', [UserController::class, 'restore']);
     
 });
 

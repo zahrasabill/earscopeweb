@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
+use Spatie\Permission\Models\Role;
 
 /**
  * @OA\Tag(
@@ -26,10 +29,9 @@ class UserController extends Controller
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"name", "email", "password"},
+     *             required={"name", "tanggal_lahir"},
      *             @OA\Property(property="name", type="string", example="John Doe"),
-     *             @OA\Property(property="email", type="string", format="email", example="mail@example.com"),
-     *             @OA\Property(property="password", type="string", format="password", example="password123")
+     *             @OA\Property(property="tanggal_lahir", type="string", format="date", example="2012-12-31"),
      *         )
      *     ),
      *     @OA\Response(response=201, description="User registered successfully"),
@@ -38,25 +40,46 @@ class UserController extends Controller
      */
     public function register(Request $request)
     {
+        // Validasi input
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6'
+            'tanggal_lahir' => [
+                'required',
+                'date',
+                'before_or_equal:' . now()->toDateString(), // Pastikan tanggal lahir tidak melebihi hari ini
+            ],
         ]);
 
-        // Generate kode akses unik
-        $kode_akses = 'ERS-' . Str::upper(Str::random(5)); // Contoh: ERS-X7Y9Z
+        // Hitung usia berdasarkan tanggal lahir
+        $tanggal_lahir = Carbon::parse($request->tanggal_lahir);
+        $usia = $tanggal_lahir->age; // Menghitung usia
 
-        User::create([
+        // Generate password otomatis (contoh: 8 karakter acak)
+        $password = Str::random(8);
+
+        // Generate kode_akses unik (contoh: ERS-X7Y9Z)
+        $kode_akses = 'ERS-' . Str::upper(Str::random(5));
+
+        // Simpan data pengguna ke database
+        $user = User::create([
             'kode_akses' => $kode_akses,
             'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password)
+            'tanggal_lahir' => $request->tanggal_lahir,
+            'usia' => $usia,
+            'no_ktp' => null, // Nomor KTP tidak wajib jika tidak digunakan
+            'email' => null, // Email tidak wajib jika tidak digunakan
+            'password' => Hash::make($password), // Hash password sebelum disimpan
         ]);
 
+        // Auto assign role 'user'
+        $userRole = Role::findByName('user', 'api'); // Ambil role 'user' dari database
+        $user->assignRole($userRole); // Tetapkan role 'user' ke pengguna
+
+        // Kirim respons dengan informasi login
         return response()->json([
             'message' => 'User registered successfully',
-            'kode_akses' => $kode_akses // Kirim kode akses sebagai respons
+            'kode_akses' => $kode_akses,
+            'password' => $password, // Kirim password plain sebagai respons
         ], 201);
     }
 
@@ -68,11 +91,14 @@ class UserController extends Controller
      *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
      *     @OA\RequestBody(
-     *         required=true,
+     *         required=false,
      *         @OA\JsonContent(
-     *             required={"name", "email"},
-     *             @OA\Property(property="name", type="string"),
-     *             @OA\Property(property="email", type="string", format="email")
+     *             @OA\Property(property="name", type="string", example="John Doe Updated"),
+     *             @OA\Property(property="email", type="string", format="email", example="new.email@example.com"),
+     *             @OA\Property(property="no_ktp", type="string", example="1234567890123456"),
+     *             @OA\Property(property="tanggal_lahir", type="string", format="date", example="1995-05-15"),
+     *             @OA\Property(property="role", type="string", enum={"user", "dokter", "admin"}, example="dokter"),
+     *             @OA\Property(property="password", type="string", minLength=8, maxLength=8, example="newpassword")
      *         )
      *     ),
      *     @OA\Response(response=200, description="User updated successfully"),
@@ -82,8 +108,55 @@ class UserController extends Controller
 
     public function update(Request $request, $id)
     {
+        // Validasi input
+        $request->validate([
+            'name' => 'nullable|string|max:255', // Opsional
+            'email' => 'nullable|email|unique:users,email,' . $id, // Email unik, kecuali untuk pengguna saat ini
+            'no_ktp' => 'nullable|numeric|digits:16', // No KTP numerik dan tepat 16 digit
+            'tanggal_lahir' => 'nullable|date|before_or_equal:' . now()->toDateString(), // Tanggal lahir opsional
+            'role' => 'nullable|string|in:user,dokter,admin', // Role opsional
+            'password' => 'nullable|string|min:8|max:8', // Password opsional, tetapi harus 8 karakter
+        ]);
+
+        // Temukan pengguna berdasarkan ID
         $user = User::findOrFail($id);
-        $user->update($request->only(['name', 'email']));
+
+        // Data untuk diperbarui
+        $data = [];
+
+        if ($request->has('name')) {
+            $data['name'] = $request->name;
+        }
+
+        if ($request->has('email')) {
+            $data['email'] = $request->email;
+        }
+
+        if ($request->has('no_ktp')) {
+            $data['no_ktp'] = $request->no_ktp;
+        }
+
+        if ($request->has('tanggal_lahir')) {
+            $tanggal_lahir = Carbon::parse($request->tanggal_lahir);
+            $data['tanggal_lahir'] = $request->tanggal_lahir;
+            $data['usia'] = $tanggal_lahir->age; // Hitung usia baru
+        }
+
+        if ($request->has('password')) {
+            $data['password'] = Hash::make($request->password); // Hash password baru
+        }
+
+        // Update data pengguna
+        $user->update($data);
+
+        // Update role jika ada
+        if ($request->has('role')) {
+            $roleName = $request->role;
+            $role = Role::findByName($roleName, 'api'); // Ambil role dari database
+            $user->syncRoles([$role]); // Tetapkan role baru
+        }
+
+        // Kirim respons berhasil
         return response()->json(['message' => 'User updated successfully']);
     }
 
@@ -147,6 +220,7 @@ class UserController extends Controller
      *                 @OA\Property(property="id", type="integer"),
      *                 @OA\Property(property="name", type="string"),
      *                 @OA\Property(property="email", type="string"),
+     *                 @OA\Property(property="roles", type="array", @OA\Items(type="string")),
      *                 @OA\Property(property="deleted_at", type="string", format="date-time", nullable=true)
      *             )
      *         )
@@ -154,10 +228,24 @@ class UserController extends Controller
      *     @OA\Response(response=401, description="Unauthorized")
      * )
      */
-
     public function getAllUsers()
     {
-        $users = User::withTrashed()->get(); // Ambil semua pengguna, termasuk yang dihapus secara soft delete
+        // Ambil semua pengguna beserta role mereka
+        $users = User::withTrashed()
+            ->with('roles') // Muat relasi roles
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'tanggal_lahir' => $user->tanggal_lahir,
+                    'usia' => $user->usia,
+                    'no_ktp' => $user->no_ktp,
+                    'roles' => $user->roles->pluck('name'), // Ambil nama role
+                    'deleted_at' => $user->deleted_at,
+                ];
+            });
 
         return response()->json($users);
     }
@@ -177,18 +265,33 @@ class UserController extends Controller
      *             @OA\Property(property="id", type="integer"),
      *             @OA\Property(property="name", type="string"),
      *             @OA\Property(property="email", type="string"),
+     *             @OA\Property(property="roles", type="array", @OA\Items(type="string")),
      *             @OA\Property(property="deleted_at", type="string", format="date-time", nullable=true)
      *         )
      *     ),
      *     @OA\Response(response=404, description="User not found")
      * )
      */
-
     public function show($id)
     {
-        $user = User::withTrashed()->findOrFail($id); // Temukan pengguna, termasuk yang dihapus secara soft delete
+        // Temukan pengguna berdasarkan ID, termasuk yang dihapus secara soft delete
+        $user = User::withTrashed()
+            ->with('roles') // Muat relasi roles
+            ->findOrFail($id);
 
-        return response()->json($user);
+        // Format respons
+        $response = [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'tanggal_lahir' => $user->tanggal_lahir,
+            'usia' => $user->usia,
+            'no_ktp' => $user->no_ktp,
+            'roles' => $user->roles->pluck('name'), // Ambil nama role
+            'deleted_at' => $user->deleted_at,
+        ];
+
+        return response()->json($response);
     }
 
     /**
@@ -205,10 +308,20 @@ class UserController extends Controller
 
     public function forceDelete($id)
     {
-        $user = User::withTrashed()->findOrFail($id);
-        $user->forceDelete(); // Permanent delete
+        try {
+            Log::info('Attempting to force delete user with ID: ' . $id);
 
-        return response()->json(['message' => 'User permanently deleted successfully']);
+            $user = User::withTrashed()->findOrFail($id);
+            Log::info('User found: ' . json_encode($user));
+
+            $user->forceDelete();
+            Log::info('User permanently deleted successfully');
+
+            return response()->json(['message' => 'User permanently deleted successfully']);
+        } catch (\Exception $e) {
+            Log::error('Error in forceDelete: ' . $e->getMessage());
+            return response()->json(['error' => 'An unexpected error occurred: ' . $e->getMessage()], 500);
+        }
     }
 
     /**
