@@ -125,6 +125,9 @@ pipeline {
                         sudo cp earscopeweb/earscopeweb-frontend.conf /etc/nginx/conf/
                         sudo cp earscopeweb/earscopeweb-backend.conf /etc/nginx/conf/
 
+                        echo "Restarting Nginx..."
+                        docker restart nginx
+
                         echo "Nginx configuration updated successfully!"
                         """
                 }
