@@ -61,29 +61,39 @@ class VideoController extends Controller
             'processed_video' => 'required|file|mimetypes:video/mp4,video/quicktime',
         ]);
 
-        // Generate unique folder name based on timestamp
         $timestamp = now()->format('Ymd_His');
-
-        // Create folder path
         $folderPath = "videos/{$timestamp}";
 
         // Simpan video mentah
         $rawVideoFilename = "raw_{$timestamp}.mp4";
         $rawVideoPath = $request->file('raw_video')->storeAs($folderPath, $rawVideoFilename, 'public');
+        $rawVideoFullPath = storage_path("app/public/{$rawVideoPath}");
 
         // Simpan video dengan bounding box
         $processedVideoFilename = "bb_{$timestamp}.mp4";
         $processedVideoPath = $request->file('processed_video')->storeAs($folderPath, $processedVideoFilename, 'public');
+        $processedVideoFullPath = storage_path("app/public/{$processedVideoPath}");
+
+        // Konversi ke H.264
+        $convertedRawVideoFilename = "raw_{$timestamp}_h264.mp4";
+        $convertedRawVideoPath = storage_path("app/public/{$folderPath}/{$convertedRawVideoFilename}");
+
+        $convertedProcessedVideoFilename = "bb_{$timestamp}_h264.mp4";
+        $convertedProcessedVideoPath = storage_path("app/public/{$folderPath}/{$convertedProcessedVideoFilename}");
+
+        // Jalankan FFmpeg untuk konversi
+        $this->convertToH264($rawVideoFullPath, $convertedRawVideoPath);
+        $this->convertToH264($processedVideoFullPath, $convertedProcessedVideoPath);
 
         // Simpan data ke database
         $video = Video::create([
-            'raw_video_path' => $rawVideoPath,
-            'processed_video_path' => $processedVideoPath,
-            'status' => 'unassigned', // Default status
+            'raw_video_path' => "videos/{$timestamp}/{$convertedRawVideoFilename}",
+            'processed_video_path' => "videos/{$timestamp}/{$convertedProcessedVideoFilename}",
+            'status' => 'unassigned',
         ]);
 
         return response()->json([
-            'message' => 'Videos uploaded successfully',
+            'message' => 'Videos uploaded and converted successfully',
             'data' => $video,
         ], 201);
     }
@@ -217,5 +227,18 @@ class VideoController extends Controller
         $video->processed_video_url = Storage::url($video->processed_video_path);
 
         return response()->json($video);
+    }
+
+    /**
+     * Convert video to H.264 using FFmpeg
+     */
+    private function convertToH264($inputPath, $outputPath)
+    {
+        $command = "ffmpeg -i {$inputPath} -c:v libx264 -preset fast -crf 23 -c:a aac -b:a 128k {$outputPath} 2>&1";
+        exec($command, $output, $returnCode);
+
+        if ($returnCode !== 0) {
+            \Log::error('FFmpeg conversion failed', ['output' => $output]);
+        }
     }
 }
