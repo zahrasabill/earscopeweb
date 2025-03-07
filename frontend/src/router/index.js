@@ -40,11 +40,6 @@ const router = createRouter({
       name: 'pasien',
       component: PasienView,
     },
-    {
-      path: '/pemeriksaan',
-      name: 'pemeriksaan',
-      component: PemeriksaanView,
-    },
   ],
 })
 

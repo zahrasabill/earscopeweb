@@ -36,6 +36,12 @@
               <i class="bi bi-clipboard2-pulse me-3"></i>
               <span>Hasil Pemeriksaan</span>
             </router-link>
+            <li class="nav-item mb-2">
+            <router-link to="/konsultasi" class="nav-link text-white d-flex align-items-center" :class="{ 'active': activePage === 'konsultasi' }">
+              <i class="bi bi-clipboard2-pulse me-3"></i>
+              <span>Konsultasi</span>
+            </router-link>
+            </li>
           </li>
         </ul>
   
@@ -105,6 +111,10 @@
       activePage: {
         type: String,
         default: 'pemeriksaan'
+      },
+      activePage: {
+        type: String,
+        default: 'konsultasi'
       }
     },
     data() {
@@ -128,7 +138,8 @@
           'dashboard': 'Dashboard',
           'dokter': 'Kelola Dokter',
           'pasien': 'Kelola Pasien',
-          'pemeriksaan': 'Hasil Pemeriksaan'
+          'pemeriksaan': 'Hasil Pemeriksaan',
+          'konsultasi': 'Konsultasi'
         };
         this.pageTitle = titles[page] || 'Dashboard';
       },
