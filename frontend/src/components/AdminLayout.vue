@@ -14,19 +14,19 @@
   
         <ul class="nav flex-column">
           <li class="nav-item mb-2">
-            <router-link to="/admin/dashboard" class="nav-link text-white d-flex align-items-center" :class="{ 'active': activePage === 'dashboard' }">
+            <router-link to="/dashboard" class="nav-link text-white d-flex align-items-center" :class="{ 'active': activePage === 'dashboard' }">
               <i class="bi bi-speedometer2 me-3"></i>
               <span>Dashboard</span>
             </router-link>
           </li>
           <li class="nav-item mb-2">
-            <router-link to="/admin/doctors" class="nav-link text-white d-flex align-items-center" :class="{ 'active': activePage === 'doctors' }">
+            <router-link to="/dokter" class="nav-link text-white d-flex align-items-center" :class="{ 'active': activePage === 'dokter' }">
               <i class="bi bi-person-badge me-3"></i>
               <span>Dokter</span>
             </router-link>
           </li>
           <li class="nav-item mb-2">
-            <router-link to="/admin/patients" class="nav-link text-white d-flex align-items-center" :class="{ 'active': activePage === 'patients' }">
+            <router-link to="/pasien" class="nav-link text-white d-flex align-items-center" :class="{ 'active': activePage === 'pasien' }">
               <i class="bi bi-people me-3"></i>
               <span>Pasien</span>
             </router-link>
@@ -93,6 +93,14 @@
       activePage: {
         type: String,
         default: 'dashboard'
+      },
+      activePage: {
+        type: String,
+        default: 'dokter'
+      },
+      activePage: {
+        type: String,
+        default: 'pasien'
       }
     },
     data() {
@@ -114,8 +122,8 @@
       updatePageTitle(page) {
         const titles = {
           'dashboard': 'Dashboard',
-          'doctors': 'Kelola Dokter',
-          'patients': 'Kelola Pasien',
+          'dokter': 'Kelola Dokter',
+          'pasien': 'Kelola Pasien',
           'examination-results': 'Hasil Pemeriksaan'
         };
         this.pageTitle = titles[page] || 'Dashboard';
@@ -123,7 +131,7 @@
       logout() {
         // Implement logout logic here
         console.log('Logging out...');
-        // this.$router.push('/login');
+        this.$router.push('/login');
       }
     }
   };

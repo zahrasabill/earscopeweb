@@ -1,17 +1,28 @@
 <template>
-    <div class="login-container">
-      <div class="login-left">
+    <div class="register-container">
+      <div class="register-left">
         <div class="logo-container">
           <img :src="logo" alt="Logo OIDO" class="logo" />
         </div>
       </div>
-      <div class="login-right">
-        <div class="login-card">
-          <h2 class="welcome-text">Selamat Datang!</h2>
+      <div class="register-right">
+        <div class="register-card">
+          <h2 class="welcome-text">Buat Akun Baru</h2>
           <p class="instruction">
-            Silahkan masukkan Email dan Password!
+            Silahkan lengkapi formulir pendaftaran dengan informasi Anda
           </p>
-          <form @submit.prevent="login">
+          <form @submit.prevent="register">
+            <div class="form-group">
+              <label for="name">Nama</label>
+              <input
+                type="text"
+                v-model="name"
+                class="form-control"
+                id="name"
+                placeholder="Masukkan Nama Anda"
+                required
+              />
+            </div>
             <div class="form-group">
               <label for="email">Email</label>
               <input
@@ -30,14 +41,27 @@
                 v-model="password"
                 class="form-control"
                 id="password"
-                placeholder="Masukkan Password Anda"
+                placeholder="Buat Password"
                 required
+                minlength="6"
               />
             </div>
-            <button type="submit" class="btn-login">MASUK</button>
-            <div class="register-link">
-              Belum punya akun? 
-              <a href="#" @click.prevent="goToRegister" class="register-text">Daftar di sini</a>
+            <div class="form-group">
+              <label for="confirm-password">Konfirmasi Password</label>
+              <input
+                type="password"
+                v-model="confirmPassword"
+                class="form-control"
+                id="confirm-password"
+                placeholder="Ulangi Password"
+                required
+                minlength="6"
+              />
+            </div>
+            <button type="submit" class="btn-register">DAFTAR</button>
+            <div class="login-link">
+              Sudah punya akun? 
+              <a href="#" @click.prevent="goToLogin" class="login-text">Masuk di sini</a>
             </div>
           </form>
         </div>
@@ -51,34 +75,55 @@
   export default {
     data() {
       return {
+        name: "",
         email: "",
         password: "",
+        confirmPassword: "",
         logo: logoImage,
       };
     },
     methods: {
-      login() {
+      register() {
+        // Validasi password
+        if (this.password !== this.confirmPassword) {
+          alert("Password tidak cocok. Silakan periksa kembali.");
+          return;
+        }
+
+        // Logika registrasi
+        console.log("Nama:", this.name);
         console.log("Email:", this.email);
         console.log("Password:", this.password);
-        alert("Login berhasil!");
+        
+        // Simulasi registrasi berhasil
+        alert("Registrasi berhasil!");
+        
+        // Reset form
+        this.name = "";
+        this.email = "";
+        this.password = "";
+        this.confirmPassword = "";
       },
-      goToRegister() {
-        // Tambahkan logika navigasi ke halaman register
-        console.log("Navigasi ke halaman register");
-        this.$router.push('/register');
+      goToLogin() {
+        // Tambahkan logika navigasi ke halaman login
+        console.log("Navigasi ke halaman login");
+        this.$router.push('/login');
       }
     },
   };
   </script>
   
   <style scoped>
-  .login-container {
+  .register-container {
     display: flex;
     height: 100vh;
     background-color: #ffffff;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
   }
   
-  .login-left {
+  .register-left {
     flex: 1;
     background: linear-gradient(to bottom right, #003366, #66ff99);
     display: flex;
@@ -86,6 +131,7 @@
     align-items: center;
     border-top-right-radius: 50px;
     border-bottom-right-radius: 50px;
+    margin: 0;
   }
   
   .logo-container {
@@ -96,7 +142,7 @@
     width: 150px;
   }
   
-  .login-right {
+  .register-right {
     flex: 1;
     display: flex;
     justify-content: center;
@@ -104,13 +150,13 @@
     background-color: white;
   }
   
-  .login-card {
+  .register-card {
     width: 350px;
     padding: 30px;
     box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
     border-radius: 10px;
     text-align: center;
-    border: 2px solid #c2c9d0; /* Tambahkan border pada container */
+    border: 2px solid #c2c9d0;
   }
   
   .welcome-text {
@@ -137,7 +183,7 @@
     border-radius: 5px;
   }
   
-  .btn-login {
+  .btn-register {
     width: 100%;
     padding: 10px;
     background-color: #007bff;
@@ -146,25 +192,25 @@
     border-radius: 5px;
     cursor: pointer;
     font-size: 16px;
-    margin-bottom: 15px; /* Tambahkan margin bawah */
+    margin-bottom: 15px;
   }
   
-  .btn-login:hover {
+  .btn-register:hover {
     background-color: #0056b3;
   }
 
-  .register-link {
+  .login-link {
     text-align: center;
     color: #666;
     font-size: 14px;
   }
 
-  .register-text {
+  .login-text {
     color: #007bff;
     text-decoration: none;
   }
 
-  .register-text:hover {
+  .login-text:hover {
     text-decoration: underline;
   }
   </style>
