@@ -1,7 +1,11 @@
 FROM dunglas/frankenphp:latest
 
-#
-RUN apt-get update && apt-get install -y ca-certificates curl
+# Install dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install PHP Extensions
 RUN install-php-extensions \
@@ -14,28 +18,32 @@ RUN install-php-extensions \
 # Install Composer secara manual
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Set Working directory
+# Set working directory
 WORKDIR /app
 
-# Copy all files
+# Copy application files
 COPY . /app
 
 # Set Environment Production
 ENV APP_ENV=production
-ENV APP_DEBUG=true
+ENV APP_DEBUG=false
 
 # Install dependencies
 RUN composer install --ignore-platform-reqs --no-dev -a
 
-# Install Octane dan set servernya ke FrankenPHP
-RUN echo "yes" | php artisan octane:install --server=frankenphp
+# Install Octane dengan FrankenPHP tanpa interaksi
+RUN echo "yes" | php artisan octane:install --server=frankenphp --no-interaction
 
-# Set permission untuk Laravel storage & cache
-RUN chmod -R 777 storage bootstrap/cache
+# Set permission Laravel storage & cache dengan user www-data
+RUN chown -R www-data:www-data storage bootstrap/cache && \
+    chmod -R 777 storage bootstrap/cache
 
-# Atur batas ukuran file upload
+# Konfigurasi PHP upload limit
 RUN echo "upload_max_filesize = 50M" >> /usr/local/etc/php/conf.d/custom.ini && \
     echo "post_max_size = 50M" >> /usr/local/etc/php/conf.d/custom.ini
 
-# Define run Container
-ENTRYPOINT ["php", "artisan", "octane:frankenphp", "--host=0.0.0.0", "--port=8010"]
+# Expose port 8010
+EXPOSE 8010
+
+# Jalankan Laravel Octane dengan FrankenPHP
+CMD ["php", "artisan", "octane:frankenphp", "--host=0.0.0.0", "--port=8010"]
