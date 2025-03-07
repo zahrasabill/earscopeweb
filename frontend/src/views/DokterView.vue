@@ -1,14 +1,10 @@
 <template>
+  <admin-layout active-page="dokter">
     <div class="container">
-      <div class="row mb-4">
-        <div class="col-md-6">
-          <h2>Manajemen Data Dokter</h2>
-        </div>
-        <div class="col-md-6 text-end">
+      <div class="d-flex justify-content-start mb-4">
           <button class="btn btn-primary" @click="showAddModal">
             <i class="bi bi-plus-circle me-1"></i> Tambah Dokter
           </button>
-        </div>
       </div>
   
       <!-- Search and Filter -->
@@ -176,162 +172,169 @@
         </div>
       </div>
     </div>
-  </template>
-  
-  <script>
-  export default {
-    data() {
-      return {
-        doctors: [
-          { id: 1, nama: 'Dr. Bambang Sutejo', email: 'bambang@example.com', password: 'password123', phone: '08123456789', gender: 'Laki-laki', role: 'dokter' },
-          { id: 2, nama: 'Dr. Ratna Dewi', email: 'ratna@example.com', password: 'password456', phone: '08567891234', gender: 'Perempuan', role: 'dokter spesialis' },
-          { id: 3, nama: 'Dr. Ahmad Hidayat', email: 'ahmad@example.com', password: 'password789', phone: '08912345678', gender: 'Laki-laki', role: 'dokter' },
-        ],
-        formData: {
-          id: null,
-          nama: '',
-          email: '',
-          password: '',
-          phone: '',
-          gender: '',
-          role: 'dokter'
-        },
-        selectedDoctor: {},
-        isEditing: false,
-        searchQuery: '',
-        filterGender: '',
-        currentPage: 1,
-        itemsPerPage: 5,
-        doctorModal: null,
-        deleteModal: null
+  </admin-layout>
+</template>
+
+<script>
+import AdminLayout from '@/components/AdminLayout.vue';
+import { Modal } from 'bootstrap';
+
+export default {
+  name: "DokterView",
+  components: { 
+    AdminLayout 
+  },
+  data() {
+    return {
+      doctors: [
+        { id: 1, nama: 'Dr. Bambang Sutejo', email: 'bambang@example.com', password: 'password123', phone: '08123456789', gender: 'Laki-laki', role: 'dokter' },
+        { id: 2, nama: 'Dr. Ratna Dewi', email: 'ratna@example.com', password: 'password456', phone: '08567891234', gender: 'Perempuan', role: 'dokter spesialis' },
+        { id: 3, nama: 'Dr. Ahmad Hidayat', email: 'ahmad@example.com', password: 'password789', phone: '08912345678', gender: 'Laki-laki', role: 'dokter' },
+      ],
+      formData: {
+        id: null,
+        nama: '',
+        email: '',
+        password: '',
+        phone: '',
+        gender: '',
+        role: 'dokter'
+      },
+      selectedDoctor: {},
+      isEditing: false,
+      searchQuery: '',
+      filterGender: '',
+      currentPage: 1,
+      itemsPerPage: 5,
+      doctorModal: null,
+      deleteModal: null
+    };
+  },
+  computed: {
+    filteredDoctors() {
+      let filtered = this.doctors;
+      
+      // Search filter
+      if (this.searchQuery) {
+        const query = this.searchQuery.toLowerCase();
+        filtered = filtered.filter(doctor => 
+          doctor.nama.toLowerCase().includes(query) || 
+          doctor.email.toLowerCase().includes(query) ||
+          doctor.phone.includes(query)
+        );
+      }
+      
+      // Gender filter
+      if (this.filterGender) {
+        filtered = filtered.filter(doctor => doctor.gender === this.filterGender);
+      }
+      
+      return filtered;
+    },
+    totalPages() {
+      return Math.ceil(this.filteredDoctors.length / this.itemsPerPage);
+    }
+  },
+  mounted() {
+    this.initModals();
+  },
+  methods: {
+    initModals() {
+      // Inisialisasi Bootstrap modal dengan benar
+      this.doctorModal = new Modal(this.$refs.doctorModal);
+      this.deleteModal = new Modal(this.$refs.deleteModal);
+    },
+    
+    showAddModal() {
+      this.isEditing = false;
+      this.resetForm();
+      this.doctorModal.show();
+    },
+    
+    showEditModal(doctor) {
+      this.isEditing = true;
+      this.formData = { ...doctor };
+      this.formData.password = ''; // Clear password for security
+      this.doctorModal.show();
+    },
+    
+    resetForm() {
+      this.formData = {
+        id: null,
+        nama: '',
+        email: '',
+        password: '',
+        phone: '',
+        gender: '',
+        role: 'dokter'
       };
     },
-    computed: {
-      filteredDoctors() {
-        let filtered = this.doctors;
-        
-        // Search filter
-        if (this.searchQuery) {
-          const query = this.searchQuery.toLowerCase();
-          filtered = filtered.filter(doctor => 
-            doctor.nama.toLowerCase().includes(query) || 
-            doctor.email.toLowerCase().includes(query) ||
-            doctor.phone.includes(query)
-          );
+    
+    addDoctor() {
+      // Generate a new ID (in a real app, this would be handled by the backend)
+      const newId = Math.max(...this.doctors.map(doc => doc.id), 0) + 1;
+      
+      const newDoctor = {
+        ...this.formData,
+        id: newId
+      };
+      
+      this.doctors.push(newDoctor);
+      this.doctorModal.hide();
+      this.resetForm();
+      
+      // Show success message (in a real app)
+      alert('Dokter berhasil ditambahkan!');
+    },
+    
+    updateDoctor() {
+      const index = this.doctors.findIndex(doc => doc.id === this.formData.id);
+      
+      if (index !== -1) {
+        // If password is empty, keep the old password
+        if (!this.formData.password) {
+          this.formData.password = this.doctors[index].password;
         }
         
-        // Gender filter
-        if (this.filterGender) {
-          filtered = filtered.filter(doctor => doctor.gender === this.filterGender);
-        }
-        
-        return filtered;
-      },
-      totalPages() {
-        return Math.ceil(this.filteredDoctors.length / this.itemsPerPage);
-      }
-    },
-    mounted() {
-      this.initModals();
-    },
-    methods: {
-      initModals() {
-        // Initialize Bootstrap modals (in a real app, you would use bootstrap.js)
-        // This is a placeholder for where you would initialize the modals
-        this.doctorModal = new bootstrap.Modal(this.$refs.doctorModal);
-        this.deleteModal = new bootstrap.Modal(this.$refs.deleteModal);
-      },
-      
-      showAddModal() {
-        this.isEditing = false;
-        this.resetForm();
-        this.doctorModal.show();
-      },
-      
-      showEditModal(doctor) {
-        this.isEditing = true;
-        this.formData = { ...doctor };
-        this.formData.password = ''; // Clear password for security
-        this.doctorModal.show();
-      },
-      
-      resetForm() {
-        this.formData = {
-          id: null,
-          nama: '',
-          email: '',
-          password: '',
-          phone: '',
-          gender: '',
-          role: 'dokter'
-        };
-      },
-      
-      addDoctor() {
-        // Generate a new ID (in a real app, this would be handled by the backend)
-        const newId = Math.max(...this.doctors.map(doc => doc.id), 0) + 1;
-        
-        const newDoctor = {
-          ...this.formData,
-          id: newId
-        };
-        
-        this.doctors.push(newDoctor);
+        // Update the doctor data
+        this.doctors[index] = { ...this.formData };
         this.doctorModal.hide();
-        this.resetForm();
         
         // Show success message (in a real app)
-        alert('Dokter berhasil ditambahkan!');
-      },
+        alert('Data dokter berhasil diperbarui!');
+      }
+    },
+    
+    confirmDelete(doctor) {
+      this.selectedDoctor = doctor;
+      this.deleteModal.show();
+    },
+    
+    deleteDoctor() {
+      const index = this.doctors.findIndex(doc => doc.id === this.selectedDoctor.id);
       
-      updateDoctor() {
-        const index = this.doctors.findIndex(doc => doc.id === this.formData.id);
+      if (index !== -1) {
+        this.doctors.splice(index, 1);
+        this.deleteModal.hide();
         
-        if (index !== -1) {
-          // If password is empty, keep the old password
-          if (!this.formData.password) {
-            this.formData.password = this.doctors[index].password;
-          }
-          
-          // Update the doctor data
-          this.doctors[index] = { ...this.formData };
-          this.doctorModal.hide();
-          
-          // Show success message (in a real app)
-          alert('Data dokter berhasil diperbarui!');
-        }
-      },
-      
-      confirmDelete(doctor) {
-        this.selectedDoctor = doctor;
-        this.deleteModal.show();
-      },
-      
-      deleteDoctor() {
-        const index = this.doctors.findIndex(doc => doc.id === this.selectedDoctor.id);
-        
-        if (index !== -1) {
-          this.doctors.splice(index, 1);
-          this.deleteModal.hide();
-          
-          // Show success message (in a real app)
-          alert('Dokter berhasil dihapus!');
-        }
+        // Show success message (in a real app)
+        alert('Dokter berhasil dihapus!');
       }
     }
-  };
-  </script>
-  
-  <style>
-  .password-mask {
-    letter-spacing: 1px;
   }
-  
-  .table th {
-    vertical-align: middle;
-  }
-  
-  .badge {
-    font-size: 0.85em;
-  }
-  </style>
+};
+</script>
+
+<style>
+.password-mask {
+  letter-spacing: 1px;
+}
+
+.table th {
+  vertical-align: middle;
+}
+
+.badge {
+  font-size: 0.85em;
+}
+</style>
