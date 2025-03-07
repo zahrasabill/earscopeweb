@@ -1,19 +1,20 @@
 <template>
-    <div class="login-container">
-      <div class="login-left">
-        <div class="logo-container">
-          <img :src="logo" alt="Logo OIDO" class="logo" />
-        </div>
+  <div class="login-container">
+    <div class="left-panel">
+      <div class="logo-container">
+        <img :src="logo" alt="OIDO" class="logo" />
       </div>
-      <div class="login-right">
-        <div class="login-card">
-          <h2 class="welcome-text">Selamat Datang!</h2>
-          <p class="instruction">
-            Silahkan masukkan Email dan Password!
-          </p>
-          <form @submit.prevent="login">
-            <div class="form-group">
-              <label for="email">Email</label>
+    </div>
+    <div class="right-panel">
+      <div class="login-form-container">
+        <h2 class="welcome-title">Selamat Datang!</h2>
+        <p class="instruction-text">
+          Silahkan masukkan Email dan Password Anda!
+        </p>
+        <form @submit.prevent="login">
+          <div class="form-group mb-3">
+            <label for="email" class="form-label">Email</label>
+            <div class="input-wrapper">
               <input
                 type="email"
                 v-model="email"
@@ -23,148 +24,221 @@
                 required
               />
             </div>
-            <div class="form-group">
-              <label for="password">Password</label>
+          </div>
+          <div class="form-group mb-4">
+            <label for="password" class="form-label">Password</label>
+            <div class="input-wrapper position-relative">
               <input
-                type="password"
+                :type="showPassword ? 'text' : 'password'"
                 v-model="password"
                 class="form-control"
                 id="password"
                 placeholder="Masukkan Password Anda"
                 required
               />
+              <button 
+                type="button" 
+                class="password-toggle"
+                @click="showPassword = !showPassword"
+              >
+                <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+              </button>
             </div>
-            <button type="submit" class="btn-login">MASUK</button>
-            <div class="register-link">
+          </div>
+          <button type="submit" class="btn btn-login w-100">MASUK</button>
+          <div class="register-link">
               Belum punya akun? 
               <a href="#" @click.prevent="goToRegister" class="register-text">Daftar di sini</a>
             </div>
-          </form>
-        </div>
+        </form>
       </div>
     </div>
-  </template>
-  
-  <script>
-  import logoImage from "@/assets/logooido.png";
-  
-  export default {
-    data() {
-      return {
-        email: "",
-        password: "",
-        logo: logoImage,
-      };
+  </div>
+</template>
+
+<script>
+import logoImage from "@/assets/logooido.png";
+
+export default {
+  data() {
+    return {
+      email: "",
+      password: "",
+      logo: logoImage,
+      showPassword: false
+    };
+  },
+  methods: {
+    login() {
+      console.log("Email:", this.email);
+      console.log("Password:", this.password);
+      alert("Login berhasil!");
     },
-    methods: {
-      login() {
-        console.log("Email:", this.email);
-        console.log("Password:", this.password);
-        alert("Login berhasil!");
-      },
-      goToRegister() {
-        // Tambahkan logika navigasi ke halaman register
-        console.log("Navigasi ke halaman register");
-        this.$router.push('/register');
-      }
-    },
-  };
-  </script>
-  
-  <style scoped>
+    goToRegister() {
+      console.log("Navigasi ke halaman register");
+      this.$router.push('/register');
+    }
+  },
+};
+</script>
+
+<style scoped>
+/* Import Bootstrap Icons */
+@import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css");
+
+.login-container {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+.left-panel {
+  flex: 0 0 45%;
+  background-color: #004178;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.left-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 80px;
+  background-color: #4DCDC8;
+  z-index: 1;
+}
+
+.left-panel::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 120px;
+  background-color: #B9EF89;
+  z-index: 0;
+}
+
+.logo-container {
+  position: relative;
+  z-index: 2;
+  margin-right: 100px;
+}
+
+.logo {
+  width: 180px;
+  height: auto;
+}
+
+.right-panel {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.login-form-container {
+  width: 400px;
+  max-width: 100%;
+  padding: 20px 30px;
+}
+
+.welcome-title {
+  color: #004178;
+  font-weight: 600;
+  font-size: 24px;
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+.instruction-text {
+  color: #555;
+  font-size: 14px;
+  margin-bottom: 30px;
+  text-align: left;
+}
+
+.form-label {
+  display: block;
+  color: #555;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 5px;
+  text-align: left;
+}
+
+.form-control {
+  width: 100%;
+  height: 45px;
+  padding: 8px 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: #f8f9fa;
+}
+
+.form-control::placeholder {
+  color: #aaa;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #aaa;
+  cursor: pointer;
+}
+
+.btn-login {
+  background-color: #0099ff;
+  border: none;
+  color: white;
+  height: 45px;
+  font-weight: 500;
+  border-radius: 6px;
+  margin-top: 10px;
+}
+
+.btn-login:hover {
+  background-color: #0088ee;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+  .left-panel {
+    flex: 0 0 40%;
+  }
+}
+
+@media (max-width: 768px) {
   .login-container {
-    display: flex;
-    height: 100vh;
-    background-color: #ffffff;
+    flex-direction: column;
   }
   
-  .login-left {
-    flex: 1;
-    background: linear-gradient(to bottom right, #003366, #66ff99);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border-top-right-radius: 50px;
-    border-bottom-right-radius: 50px;
+  .left-panel {
+    flex: 0 0 200px;
+  }
+  
+  .left-panel::before,
+  .left-panel::after {
+    width: 100%;
+    height: 30px;
+    top: auto;
+    bottom: 0;
   }
   
   .logo-container {
-    text-align: center;
+    margin-right: 0;
+    margin-bottom: 60px;
   }
-  
-  .logo {
-    width: 150px;
-  }
-  
-  .login-right {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: white;
-  }
-  
-  .login-card {
-    width: 350px;
-    padding: 30px;
-    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
-    text-align: center;
-    border: 2px solid #c2c9d0; /* Tambahkan border pada container */
-  }
-  
-  .welcome-text {
-    color: #003366;
-    font-weight: bold;
-    font-size: 22px;
-  }
-  
-  .instruction {
-    color: #666;
-    font-size: 14px;
-    margin-bottom: 20px;
-  }
-  
-  .form-group {
-    margin-bottom: 15px;
-    text-align: left;
-  }
-  
-  .form-control {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-  }
-  
-  .btn-login {
-    width: 100%;
-    padding: 10px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    margin-bottom: 15px; /* Tambahkan margin bawah */
-  }
-  
-  .btn-login:hover {
-    background-color: #0056b3;
-  }
-
-  .register-link {
-    text-align: center;
-    color: #666;
-    font-size: 14px;
-  }
-
-  .register-text {
-    color: #007bff;
-    text-decoration: none;
-  }
-
-  .register-text:hover {
-    text-decoration: underline;
-  }
-  </style>
+}
+</style>

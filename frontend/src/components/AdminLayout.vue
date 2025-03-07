@@ -149,7 +149,7 @@
     left: 0;
     top: 0;
     overflow-y: auto;
-    background-color: #2563eb !important; /* Warna biru */
+    background-color: #004178 !important;
     display: flex;
     flex-direction: column;
   }
