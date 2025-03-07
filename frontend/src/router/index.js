@@ -5,7 +5,6 @@ import DashboardView from '@/views/DashboardView.vue'
 import DokterView from '@/views/DokterView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import PasienView from '@/views/PasienView.vue'
-import PemeriksaanView from '@/views/PemeriksaanView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
