@@ -1,4 +1,4 @@
-FROM node:lts-alpine AS build
+FROM node:lts-alpine
 
 # install simple http server for serving static content
 RUN npm install -g http-server
@@ -17,7 +17,5 @@ COPY . .
 
 # build app for production with minification
 RUN npm run build
-
-COPY --from=build /app/dist /usr/share/nginx/html
 
 CMD [ "http-server", "dist" ]
