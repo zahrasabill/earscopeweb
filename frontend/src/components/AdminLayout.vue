@@ -3,7 +3,7 @@
       <!-- Sidebar -->
       <div class="sidebar bg-primary p-3 text-white">
         <div class="sidebar-header mb-4">
-          <h4 class="text-center">Admin Panel</h4>
+          <h4 class="text-center">Admin Page</h4>
           <div class="text-center mb-3">
           </div>
           <div class="text-center small text-white-50 mb-3">
@@ -32,7 +32,7 @@
             </router-link>
           </li>
           <li class="nav-item mb-2">
-            <router-link to="/admin/examination-results" class="nav-link text-white d-flex align-items-center" :class="{ 'active': activePage === 'examination-results' }">
+            <router-link to="/pemeriksaan" class="nav-link text-white d-flex align-items-center" :class="{ 'active': activePage === 'pemeriksaan' }">
               <i class="bi bi-clipboard2-pulse me-3"></i>
               <span>Hasil Pemeriksaan</span>
             </router-link>
@@ -101,6 +101,10 @@
       activePage: {
         type: String,
         default: 'pasien'
+      },
+      activePage: {
+        type: String,
+        default: 'pemeriksaan'
       }
     },
     data() {
@@ -124,7 +128,7 @@
           'dashboard': 'Dashboard',
           'dokter': 'Kelola Dokter',
           'pasien': 'Kelola Pasien',
-          'examination-results': 'Hasil Pemeriksaan'
+          'pemeriksaan': 'Hasil Pemeriksaan'
         };
         this.pageTitle = titles[page] || 'Dashboard';
       },

@@ -1,8 +1,8 @@
 <template>
-  <admin-layout active-page="dokter">
+  <admin-layout active-page="pasien">
       <div class="d-flex justify-content-start mb-4">
         <button class="btn btn-primary" @click="showAddModal">
-          <i class="bi bi-plus-circle me-1"></i> Tambah Dokter
+          <i class="bi bi-plus-circle me-1"></i> Tambah Pasien
         </button>
       </div>
   
@@ -14,7 +14,7 @@
             <input 
               type="text" 
               class="form-control" 
-              placeholder="Cari dokter..." 
+              placeholder="Cari pasien..." 
               v-model="searchQuery"
             >
           </div>
@@ -38,39 +38,32 @@
               <th>Email</th>
               <th>Phone</th>
               <th>Gender</th>
+              <th>Umur</th>
               <th>Role</th>
-              <th>Status</th>
               <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-if="paginatedDoctors.length === 0">
-              <td colspan="8" class="text-center">Tidak ada data dokter</td>
+            <tr v-if="paginatedPatients.length === 0">
+              <td colspan="8" class="text-center">Tidak ada data pasien</td>
             </tr>
-            <tr v-for="dokter in paginatedDoctors" :key="dokter.id">
-              <td>{{ dokter.id }}</td>
-              <td>{{ dokter.nama }}</td>
-              <td>{{ dokter.email }}</td>
-              <td>{{ dokter.phone }}</td>
-              <td>{{ dokter.gender }}</td>
+            <tr v-for="pasien in paginatedPatients" :key="pasien.id">
+              <td>{{ pasien.id }}</td>
+              <td>{{ pasien.nama }}</td>
+              <td>{{ pasien.email }}</td>
+              <td>{{ pasien.phone }}</td>
+              <td>{{ pasien.gender }}</td>
+              <td>{{ pasien.umur }} tahun</td>
               <td>
-                <span class="badge bg-success">{{ dokter.role }}</span>
-              </td>
-              <td>
-                <span :class="'badge ' + (dokter.status === 'Aktif' ? 'bg-success' : 'bg-warning')">
-                  {{ dokter.status }}
-                </span>
+                <span class="badge bg-primary">{{ pasien.role }}</span>
               </td>
               <td>
                 <div class="btn-group">
-                  <button class="btn btn-sm btn-info me-1" @click="showEditModal(dokter)" title="Edit">
+                  <button class="btn btn-sm btn-info me-1" @click="showEditModal(pasien)" title="Edit">
                     <i class="bi bi-pencil"></i>
                   </button>
-                  <button class="btn btn-sm btn-danger" @click="confirmDelete(dokter)" title="Hapus">
+                  <button class="btn btn-sm btn-danger" @click="confirmDelete(pasien)" title="Hapus">
                     <i class="bi bi-trash"></i>
-                  </button>
-                  <button class="btn btn-sm btn-secondary ms-1" @click="toggleStatus(dokter)" title="Ubah Status">
-                    <i class="bi" :class="dokter.status === 'Aktif' ? 'bi-toggle-on' : 'bi-toggle-off'"></i>
                   </button>
                 </div>
               </td>
@@ -82,7 +75,7 @@
       <!-- Pagination -->
       <div class="d-flex justify-content-between align-items-center">
         <div>
-          Menampilkan {{ paginatedDoctors.length }} dari {{ filteredDoctors.length }} dokter
+          Menampilkan {{ paginatedPatients.length }} dari {{ filteredPatients.length }} pasien
         </div>
         <nav v-if="totalPages > 1">
           <ul class="pagination">
@@ -100,15 +93,15 @@
       </div>
   
       <!-- Add/Edit Modal -->
-      <div class="modal fade" id="doctorModal" tabindex="-1" ref="doctorModal">
+      <div class="modal fade" id="patientModal" tabindex="-1" ref="patientModal">
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title">{{ isEditing ? 'Edit Dokter' : 'Tambah Dokter' }}</h5>
+              <h5 class="modal-title">{{ isEditing ? 'Edit Pasien' : 'Tambah Pasien' }}</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-              <form @submit.prevent="isEditing ? updateDoctor() : addDoctor()">
+              <form @submit.prevent="isEditing ? updatePatient() : addPatient()">
                 <div class="mb-3">
                   <label for="nama" class="form-label">Nama Lengkap</label>
                   <input type="text" class="form-control" id="nama" v-model="formData.nama" required>
@@ -145,25 +138,22 @@
                 </div>
                 
                 <div class="mb-3">
-                  <label for="role" class="form-label">Role</label>
-                  <select class="form-select" id="role" v-model="formData.role" required disabled>
-                    <option value="dokter">Dokter</option>
-                  </select>
-                  <small class="text-muted">Role default untuk semua user yang ditambahkan</small>
+                  <label for="umur" class="form-label">Umur</label>
+                  <input type="number" class="form-control" id="umur" v-model="formData.umur" min="0" max="120" required>
                 </div>
                 
                 <div class="mb-3">
-                  <label for="status" class="form-label">Status</label>
-                  <select class="form-select" id="status" v-model="formData.status" required>
-                    <option value="Aktif">Aktif</option>
-                    <option value="Non-Aktif">Non-Aktif</option>
+                  <label for="role" class="form-label">Role</label>
+                  <select class="form-select" id="role" v-model="formData.role" required disabled>
+                    <option value="pasien">Pasien</option>
                   </select>
+                  <small class="text-muted">Role default untuk semua user yang ditambahkan</small>
                 </div>
                 
                 <div class="modal-footer">
                   <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                   <button type="submit" class="btn btn-primary">
-                    {{ isEditing ? 'Simpan Perubahan' : 'Tambah Dokter' }}
+                    {{ isEditing ? 'Simpan Perubahan' : 'Tambah Pasien' }}
                   </button>
                 </div>
               </form>
@@ -181,12 +171,12 @@
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-              <p>Apakah Anda yakin ingin menghapus dokter <strong>{{ selectedDoctor.nama }}</strong>?</p>
+              <p>Apakah Anda yakin ingin menghapus pasien <strong>{{ selectedPatient.nama }}</strong>?</p>
               <p class="text-danger">Tindakan ini tidak dapat dibatalkan.</p>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-              <button type="button" class="btn btn-danger" @click="deleteDoctor">Hapus</button>
+              <button type="button" class="btn btn-danger" @click="deletePatient">Hapus</button>
             </div>
           </div>
         </div>
@@ -199,42 +189,42 @@ import AdminLayout from '@/components/AdminLayout.vue';
 import { Modal } from 'bootstrap';
 
 export default {
-  name: "DokterView",
+  name: "PasienView",
   components: { 
     AdminLayout 
   },
   data() {
     return {
-      doctors: [
+      patients: [
         { 
           id: 1, 
-          nama: 'Dr. Bambang Sutejo', 
-          email: 'bambang@example.com', 
+          nama: 'Budi Santoso', 
+          email: 'budi@example.com', 
           password: 'password123', 
           phone: '08123456789', 
           gender: 'Laki-laki', 
-          role: 'dokter',
-          status: 'Aktif'
+          umur: 35,
+          role: 'pasien'
         },
         { 
           id: 2, 
-          nama: 'Dr. Ratna Dewi', 
-          email: 'ratna@example.com', 
+          nama: 'Siti Aminah', 
+          email: 'siti@example.com', 
           password: 'password456', 
           phone: '08567891234', 
           gender: 'Perempuan', 
-          role: 'dokter',
-          status: 'Aktif'
+          umur: 28,
+          role: 'pasien'
         },
         { 
           id: 3, 
-          nama: 'Dr. Ahmad Hidayat', 
-          email: 'ahmad@example.com', 
+          nama: 'Joko Widodo', 
+          email: 'joko@example.com', 
           password: 'password789', 
           phone: '08912345678', 
           gender: 'Laki-laki', 
-          role: 'dokter',
-          status: 'Aktif'
+          umur: 42,
+          role: 'pasien'
         },
       ],
       formData: {
@@ -244,47 +234,47 @@ export default {
         password: '',
         phone: '',
         gender: '',
-        role: 'dokter',
-        status: 'Aktif'
+        umur: '',
+        role: 'pasien'
       },
-      selectedDoctor: {},
+      selectedPatient: {},
       isEditing: false,
       searchQuery: '',
       filterGender: '',
       currentPage: 1,
       itemsPerPage: 5,
-      doctorModal: null,
+      patientModal: null,
       deleteModal: null
     };
   },
   computed: {
-    filteredDoctors() {
-      let filtered = this.doctors;
+    filteredPatients() {
+      let filtered = this.patients;
       
       // Search filter
       if (this.searchQuery) {
         const query = this.searchQuery.toLowerCase();
-        filtered = filtered.filter(doctor => 
-          doctor.nama.toLowerCase().includes(query) || 
-          doctor.email.toLowerCase().includes(query) ||
-          doctor.phone.includes(query)
+        filtered = filtered.filter(patient => 
+          patient.nama.toLowerCase().includes(query) || 
+          patient.email.toLowerCase().includes(query) ||
+          patient.phone.includes(query)
         );
       }
       
       // Gender filter
       if (this.filterGender) {
-        filtered = filtered.filter(doctor => doctor.gender === this.filterGender);
+        filtered = filtered.filter(patient => patient.gender === this.filterGender);
       }
       
       return filtered;
     },
-    paginatedDoctors() {
+    paginatedPatients() {
       const start = (this.currentPage - 1) * this.itemsPerPage;
       const end = start + this.itemsPerPage;
-      return this.filteredDoctors.slice(start, end);
+      return this.filteredPatients.slice(start, end);
     },
     totalPages() {
-      return Math.ceil(this.filteredDoctors.length / this.itemsPerPage);
+      return Math.ceil(this.filteredPatients.length / this.itemsPerPage);
     }
   },
   mounted() {
@@ -293,21 +283,21 @@ export default {
   methods: {
     initModals() {
       // Inisialisasi Bootstrap modal dengan benar
-      this.doctorModal = new Modal(this.$refs.doctorModal);
+      this.patientModal = new Modal(this.$refs.patientModal);
       this.deleteModal = new Modal(this.$refs.deleteModal);
     },
     
     showAddModal() {
       this.isEditing = false;
       this.resetForm();
-      this.doctorModal.show();
+      this.patientModal.show();
     },
     
-    showEditModal(doctor) {
+    showEditModal(patient) {
       this.isEditing = true;
-      this.formData = { ...doctor };
+      this.formData = { ...patient };
       this.formData.password = ''; // Clear password for security
-      this.doctorModal.show();
+      this.patientModal.show();
     },
     
     resetForm() {
@@ -318,72 +308,60 @@ export default {
         password: '',
         phone: '',
         gender: '',
-        role: 'dokter',
-        status: 'Aktif'
+        umur: '',
+        role: 'pasien'
       };
     },
     
-    addDoctor() {
+    addPatient() {
       // Generate a new ID (in a real app, this would be handled by the backend)
-      const newId = Math.max(...this.doctors.map(doc => doc.id), 0) + 1;
+      const newId = Math.max(...this.patients.map(pat => pat.id), 0) + 1;
       
-      const newDoctor = {
+      const newPatient = {
         ...this.formData,
         id: newId
       };
       
-      this.doctors.push(newDoctor);
-      this.doctorModal.hide();
+      this.patients.push(newPatient);
+      this.patientModal.hide();
       this.resetForm();
       
       // Show success message (in a real app)
-      alert('Dokter berhasil ditambahkan!');
+      alert('Pasien berhasil ditambahkan!');
     },
     
-    updateDoctor() {
-      const index = this.doctors.findIndex(doc => doc.id === this.formData.id);
+    updatePatient() {
+      const index = this.patients.findIndex(pat => pat.id === this.formData.id);
       
       if (index !== -1) {
         // If password is empty, keep the old password
         if (!this.formData.password) {
-          this.formData.password = this.doctors[index].password;
+          this.formData.password = this.patients[index].password;
         }
         
-        // Update the doctor data
-        this.doctors[index] = { ...this.formData };
-        this.doctorModal.hide();
+        // Update the patient data
+        this.patients[index] = { ...this.formData };
+        this.patientModal.hide();
         
         // Show success message (in a real app)
-        alert('Data dokter berhasil diperbarui!');
+        alert('Data pasien berhasil diperbarui!');
       }
     },
     
-    confirmDelete(doctor) {
-      this.selectedDoctor = doctor;
+    confirmDelete(patient) {
+      this.selectedPatient = patient;
       this.deleteModal.show();
     },
     
-    deleteDoctor() {
-      const index = this.doctors.findIndex(doc => doc.id === this.selectedDoctor.id);
+    deletePatient() {
+      const index = this.patients.findIndex(pat => pat.id === this.selectedPatient.id);
       
       if (index !== -1) {
-        this.doctors.splice(index, 1);
+        this.patients.splice(index, 1);
         this.deleteModal.hide();
         
         // Show success message (in a real app)
-        alert('Dokter berhasil dihapus!');
-      }
-    },
-    
-    toggleStatus(doctor) {
-      const index = this.doctors.findIndex(doc => doc.id === doctor.id);
-      
-      if (index !== -1) {
-        // Toggle status between Aktif and Non-Aktif
-        this.doctors[index].status = this.doctors[index].status === 'Aktif' ? 'Non-Aktif' : 'Aktif';
-        
-        // Show success message (in a real app)
-        alert(`Status dokter berhasil diubah menjadi ${this.doctors[index].status}!`);
+        alert('Pasien berhasil dihapus!');
       }
     }
   }
