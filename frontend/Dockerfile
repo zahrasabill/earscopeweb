@@ -18,4 +18,6 @@ COPY . .
 # build app for production with minification
 RUN npm run build
 
+COPY --from=build /app/dist /usr/share/nginx/html
+
 CMD [ "http-server", "dist" ]
