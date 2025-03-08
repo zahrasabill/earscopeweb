@@ -8,6 +8,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -29,6 +30,12 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        // Bad Request (400)
+        $exceptions->renderable(function (BadRequestHttpException $e) {
+            return response()->json([
+                'responseMessage' => 'Bad Request: ' . $e->getMessage(),
+            ], 400);
+        });
         // Unauthorized (JWT)
         $exceptions->renderable(function (UnauthorizedHttpException $e) {
             return response()->json([
