@@ -42,13 +42,10 @@ class UserController extends Controller
     {
         // Validasi input
         $request->validate([
-            'name' => 'required|string|max:255',
-            'tanggal_lahir' => [
-                'required',
-                'date',
-                'before_or_equal:' . now()->toDateString(), // Pastikan tanggal lahir tidak melebihi hari ini
-                'unique:users,tanggal_lahir,NULL,id,name,' . $request->name,
-            ],
+            'name' => 'required|string|max:255|unique:users,name',
+            'tanggal_lahir' => 'required'|'date'|'before_or_equal:' . now()->toDateString(), // Pastikan tanggal lahir tidak melebihi hari ini
+        ],[
+            'name.unique' => 'Nama sudah terdaftar, silakan gunakan nama lain.',   
         ]);
 
         // Hitung usia berdasarkan tanggal lahir
