@@ -37,66 +37,82 @@ class UserController extends Controller
      *     @OA\Response(response=201, description="User registered successfully"),
      *     @OA\Response(
      *       response=400,
-    *        description="Validation error",
-    *        @OA\JsonContent(
-    *            type="object",
-    *            @OA\Property(property="message", type="string", example="The given data was invalid."),
-    *            @OA\Property(
-    *                property="errors",
-    *                type="object",
-    *                @OA\Property(
-    *                    property="name",
-    *                    type="array",
-    *                    @OA\Items(type="string", example="Nama sudah terdaftar, silakan gunakan nama lain.")
-    *                )
-    *            )
-    *        )
-    *    )
+     *        description="Validation error",
+     *        @OA\JsonContent(
+     *            type="object",
+     *            @OA\Property(property="message", type="string", example="The given data was invalid."),
+     *            @OA\Property(
+     *                property="errors",
+     *                type="object",
+     *                @OA\Property(
+     *                    property="name",
+     *                    type="array",
+     *                    @OA\Items(type="string", example="Nama sudah terdaftar, silakan gunakan nama lain.")
+     *                )
+     *            )
+     *        )
+     *    )
      * )
      */
     public function register(Request $request)
     {
-        // Validasi input
-        $request->validate([
-            'name' => 'required|string|max:255|unique:users,name',
-            'tanggal_lahir' => 'required|date|before_or_equal:' . now()->toDateString(), // Pastikan tanggal lahir tidak melebihi hari ini
-        ],[
-            'name.unique' => 'Nama sudah terdaftar, silakan gunakan nama lain.',   
-        ]);
+        try {
+            // Validasi input
+            $request->validate([
+                'name' => 'required|string|max:255|unique:users,name',
+                'tanggal_lahir' => 'required|date|before:today',
+            ], [
+                'name.unique' => 'Nama sudah terdaftar, silakan gunakan nama lain.',
+                'tanggal_lahir.before' => 'Tanggal lahir tidak boleh melebihi hari ini.',
+                'tanggal_lahir.date' => 'Format tanggal lahir tidak valid. Gunakan format YYYY-MM-DD.'
+            ]);
 
-        // Hitung usia berdasarkan tanggal lahir
-        $tanggal_lahir = Carbon::parse($request->tanggal_lahir);
-        $usia = $tanggal_lahir->age; // Menghitung usia
+            // Hitung usia berdasarkan tanggal lahir
+            $tanggal_lahir = Carbon::parse($request->tanggal_lahir);
+            $usia = $tanggal_lahir->age; // Menghitung usia
 
-        // Generate password otomatis (contoh: 8 karakter acak)
-        $password = Str::random(8);
+            // Generate password otomatis (contoh: 8 karakter acak)
+            $password = Str::random(8);
 
-        // Generate kode_akses unik (contoh: ERS-X7Y9Z)
-        $kode_akses = 'ERS-' . Str::upper(Str::random(5));
+            // Generate kode_akses unik (contoh: ERS-X7Y9Z)
+            $kode_akses = 'ERS-' . Str::upper(Str::random(5));
 
-        // Simpan data pengguna ke database
-        $user = User::create([
-            'kode_akses' => $kode_akses,
-            'name' => $request->name,
-            'tanggal_lahir' => $request->tanggal_lahir,
-            'usia' => $usia,
-            'no_ktp' => null, // Nomor KTP tidak wajib jika tidak digunakan
-            'email' => null, // Email tidak wajib jika tidak digunakan
-            'password' => Hash::make($password), // Hash password sebelum disimpan
-        ]);
-
-        // Auto assign role 'user'
-        $userRole = Role::findByName('user', 'api'); // Ambil role 'user' dari database
-        $user->assignRole($userRole); // Tetapkan role 'user' ke pengguna
-
-        // Kirim respons dengan informasi login
-        return response()->json([
-            'message' => 'User registered successfully',
-            'data' => [
+            // Simpan data pengguna ke database
+            $user = User::create([
                 'kode_akses' => $kode_akses,
-                'password' => $password, // Kirim password plain sebagai respons
-            ]
-        ], 201);
+                'name' => $request->name,
+                'tanggal_lahir' => $request->tanggal_lahir,
+                'usia' => $usia,
+                'no_ktp' => null, // Nomor KTP tidak wajib jika tidak digunakan
+                'email' => null, // Email tidak wajib jika tidak digunakan
+                'password' => Hash::make($password), // Hash password sebelum disimpan
+            ]);
+
+            // Auto assign role 'user'
+            $userRole = Role::findByName('user', 'api'); // Ambil role 'user' dari database
+            $user->assignRole($userRole); // Tetapkan role 'user' ke pengguna
+
+            // Kirim respons dengan informasi login
+            return response()->json([
+                'message' => 'User registered successfully',
+                'data' => [
+                    'kode_akses' => $kode_akses,
+                    'password' => $password, // Kirim password plain sebagai respons
+                ]
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Format respons error validasi
+            return response()->json([
+                'message' => 'Validation error',
+                'errors' => $e->errors(),
+            ], 400);
+        } catch (\Exception $e) {
+            // Format respons error umum
+            return response()->json([
+                'message' => 'An unexpected error occurred',
+                'error' => $e->getMessage(),
+            ], 400);
+        }
     }
 
     /**
@@ -126,12 +142,21 @@ class UserController extends Controller
     {
         // Validasi input
         $request->validate([
-            'name' => 'nullable|string|max:255', // Opsional
+            'name' => 'nullable|string|max:255|unique:users,name,' . $id, // Opsional
             'email' => 'nullable|email|unique:users,email,' . $id, // Email unik, kecuali untuk pengguna saat ini
             'no_ktp' => 'nullable|numeric|digits:16', // No KTP numerik dan tepat 16 digit
-            'tanggal_lahir' => 'nullable|date|before_or_equal:' . now()->toDateString(), // Tanggal lahir opsional
+            'tanggal_lahir' => 'nullable|date|before:today', // Tanggal lahir opsional
             'role' => 'nullable|string|in:user,dokter,admin', // Role opsional
             'password' => 'nullable|string|min:8|max:8', // Password opsional, tetapi harus 8 karakter
+        ],[
+            'email.unique' => 'Email sudah terdaftar, silakan gunakan email lain.',
+            'no_ktp.numeric' => 'Nomor KTP harus berupa angka.',
+            'no_ktp.digits' => 'Nomor KTP harus tepat 16 digit.',
+            'tanggal_lahir.before' => 'Tanggal lahir tidak boleh melebihi hari ini.',
+            'tanggal_lahir.date' => 'Format tanggal lahir tidak valid. Gunakan format YYYY-MM-DD.',
+            'role.in' => 'Role harus salah satu dari: user, dokter, admin.',
+            'password.min' => 'Password harus tepat 8 karakter.',
+            'password.max' => 'Password harus tepat 8 karakter.',
         ]);
 
         // Temukan pengguna berdasarkan ID
