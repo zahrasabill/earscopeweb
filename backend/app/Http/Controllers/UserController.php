@@ -47,6 +47,7 @@ class UserController extends Controller
                 'required',
                 'date',
                 'before_or_equal:' . now()->toDateString(), // Pastikan tanggal lahir tidak melebihi hari ini
+                'unique:users,tanggal_lahir,NULL,id,name,' . $request->name,
             ],
         ]);
 
