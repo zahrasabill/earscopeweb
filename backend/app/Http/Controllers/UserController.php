@@ -35,7 +35,23 @@ class UserController extends Controller
      *         )
      *     ),
      *     @OA\Response(response=201, description="User registered successfully"),
-     *     @OA\Response(response=400, description="Bad request")
+     *     @OA\Response(
+     *       response=400,
+    *        description="Validation error",
+    *        @OA\JsonContent(
+    *            type="object",
+    *            @OA\Property(property="message", type="string", example="The given data was invalid."),
+    *            @OA\Property(
+    *                property="errors",
+    *                type="object",
+    *                @OA\Property(
+    *                    property="name",
+    *                    type="array",
+    *                    @OA\Items(type="string", example="Nama sudah terdaftar, silakan gunakan nama lain.")
+    *                )
+    *            )
+    *        )
+    *    )
      * )
      */
     public function register(Request $request)
