@@ -7,8 +7,8 @@ use Spatie\Permission\Exceptions\UnauthorizedException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
-use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Illuminate\Validation\ValidationException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -30,12 +30,6 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        // Bad Request (400)
-        $exceptions->renderable(function (BadRequestHttpException $e) {
-            return response()->json([
-                'responseMessage' => 'Bad Request: ' . $e->getMessage(),
-            ], 400);
-        });
         // Unauthorized (JWT)
         $exceptions->renderable(function (UnauthorizedHttpException $e) {
             return response()->json([
@@ -43,12 +37,12 @@ return Application::configure(basePath: dirname(__DIR__))
             ], 401);
         });
 
-        // Validation Error
+        // Bad Request
         $exceptions->renderable(function (ValidationException $e, $request) {
             return response()->json([
-                'responseMessage' => 'Validation failed',
+                'responseMessage' => 'Bad Request',
                 'errors' => $e->errors(),
-            ], 422);
+            ], 400);
         });
 
         // No Permission
