@@ -78,8 +78,10 @@ class UserController extends Controller
         // Kirim respons dengan informasi login
         return response()->json([
             'message' => 'User registered successfully',
-            'kode_akses' => $kode_akses,
-            'password' => $password, // Kirim password plain sebagai respons
+            'data' => [
+                'kode_akses' => $kode_akses,
+                'password' => $password, // Kirim password plain sebagai respons
+            ]
         ], 201);
     }
 
