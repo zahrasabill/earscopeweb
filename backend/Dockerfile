@@ -21,14 +21,13 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 # Set working directory
 WORKDIR /app
 
-# Copy hanya file yang penting untuk caching lebih baik
-COPY composer.json composer.lock ./
+# Copy all files
+COPY . .
 
 # Install dependencies lebih awal untuk caching
 RUN composer install --ignore-platform-reqs --no-dev -a
 
 # Copy semua file aplikasi setelah dependencies terinstall
-COPY . .
 
 # Set Environment Production
 ENV APP_ENV=production
