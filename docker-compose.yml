@@ -26,6 +26,8 @@ services:
       - earscopeweb-network
       - nginx-network
     restart: unless-stopped
+    volumes:
+      - /var/www/earscopeweb-frontend/build:/app/dist
 
 networks:
   earscopeweb-network:

@@ -7,6 +7,8 @@ use Spatie\Permission\Exceptions\UnauthorizedException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Illuminate\Validation\ValidationException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -28,27 +30,39 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        // Unauthorized (JWT)
         $exceptions->renderable(function (UnauthorizedHttpException $e) {
             return response()->json([
                 'responseMessage' => 'Unauthorized access, please authenticate.',
             ], 401);
         });
 
+        // Bad Request
+        $exceptions->renderable(function (ValidationException $e, $request) {
+            return response()->json([
+                'responseMessage' => 'Bad Request',
+                'errors' => $e->errors(),
+            ], 400);
+        });
+
+        // No Permission
         $exceptions->renderable(function (UnauthorizedException $e) {
             return response()->json([
                 'responseMessage' => 'You do not have the required authorization.',
             ], 403);
         });
 
+        // Not Found (404)
         $exceptions->renderable(function (NotFoundHttpException $e) {
             return response()->json([
                 'responseMessage' => 'The requested resource was not found.',
             ], 404);
         });
 
+        // General HTTP Error Handler
         $exceptions->renderable(function (HttpException $e) {
             return response()->json([
-                'responseMessage' => 'An unexpected error occurred on the server.',
-            ], 500);
+                'responseMessage' => $e->getMessage() ?: 'An unexpected error occurred.',
+            ], $e->getStatusCode() ?: 500);
         });
     })->create();
