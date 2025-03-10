@@ -44,10 +44,6 @@ const router = createRouter({
       path: '/pemeriksaan',
       name: 'pemeriksaan',
       component: PemeriksaanView,
-      meta: {
-        requiresAuth: true,
-        role: ['dokter', 'admin']
-      }
     },
   ],
 })
