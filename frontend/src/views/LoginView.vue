@@ -13,14 +13,14 @@
         </p>
         <form @submit.prevent="login">
           <div class="form-group mb-3">
-            <label for="email" class="form-label">Email</label>
+            <label for="name" class="form-label">Nama</label>
             <div class="input-wrapper">
               <input
-                type="email"
-                v-model="email"
+                type="name"
+                v-model="name"
                 class="form-control"
-                id="email"
-                placeholder="Masukkan Email Anda"
+                id="name"
+                placeholder="Masukkan Nama Anda"
                 required
               />
             </div>

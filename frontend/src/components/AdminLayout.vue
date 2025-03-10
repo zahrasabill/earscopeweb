@@ -18,7 +18,7 @@
             class="nav-link text-white d-flex align-items-center"
             :class="{ active: activePage === 'dashboard' }"
           >
-            <i class="bi bi-speedometer2 me-3"></i>
+            <i class="bi bi-house me-3"></i>
             <span>Dashboard</span>
           </router-link>
         </li>
@@ -50,16 +50,6 @@
           >
             <i class="bi bi-clipboard2-pulse me-3"></i>
             <span>Hasil Pemeriksaan</span>
-          </router-link>
-        </li>
-        <li class="nav-item mb-2">
-          <router-link
-            to="/konsultasi"
-            class="nav-link text-white d-flex align-items-center"
-            :class="{ active: activePage === 'konsultasi' }"
-          >
-            <i class="bi bi-clipboard2-pulse me-3"></i>
-            <span>Konsultasi</span>
           </router-link>
         </li>
       </ul>
@@ -149,10 +139,6 @@ export default {
       type: String,
       default: "pemeriksaan",
     },
-    activePage: {
-      type: String,
-      default: "konsultasi",
-    },
   },
   data() {
     return {
@@ -176,7 +162,6 @@ export default {
         dokter: "Kelola Dokter",
         pasien: "Kelola Pasien",
         pemeriksaan: "Hasil Pemeriksaan",
-        konsultasi: "Konsultasi",
       };
       this.pageTitle = titles[page] || "Dashboard";
     },

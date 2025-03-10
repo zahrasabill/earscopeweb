@@ -65,6 +65,9 @@
                   <button class="btn btn-sm btn-danger" @click="confirmDelete(pasien)" title="Hapus">
                     <i class="bi bi-trash"></i>
                   </button>
+                  <button class="btn btn-sm btn-success ms-1" @click="goToPemeriksaanView(pasien)" title="Periksa">
+                    <i class="bi bi-arrow-right-square"></i>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -363,6 +366,14 @@ export default {
         // Show success message (in a real app)
         alert('Pasien berhasil dihapus!');
       }
+    },
+
+    goToPemeriksaanView(pasien){
+      this.$store.commit('setPasienTerpilih', pasien);
+      this.$router.push({
+        name: 'Pemeriksaan',
+        params: {id: pasien.id}
+      });
     }
   }
 };
