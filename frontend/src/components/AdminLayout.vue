@@ -3,11 +3,9 @@
     <!-- Sidebar -->
     <div class="sidebar bg-primary p-3 text-white">
       <div class="sidebar-header mb-4">
-        <h4 class="text-center">Admin Page</h4>
-        <div class="text-center mb-3"></div>
-        <div class="text-center small text-white-50 mb-3">
-          <p class="mb-0">Dr. {{ adminName }}</p>
-          <p class="mb-0">{{ adminRole }}</p>
+        <!-- Only showing logo image, removed admin name and role text -->
+        <div class="text-center">
+          <img src="@/assets/logooido.png" alt="Hospital Logo" class="sidebar-logo" />
         </div>
       </div>
 
@@ -58,7 +56,7 @@
         <hr class="border-light" />
         <ul class="nav flex-column">
           <li class="nav-item mb-2">
-            <router-link to="/admin/settings" class="nav-link text-white d-flex align-items-center">
+            <router-link to="/pengaturan" class="nav-link text-white d-flex align-items-center">
               <i class="bi bi-gear me-3"></i>
               <span>Pengaturan</span>
             </router-link>
@@ -92,14 +90,14 @@
                 data-bs-toggle="dropdown"
                 aria-expanded="false"
               >
-                <i class="bi bi-person-circle me-1"></i> {{ adminName }}
+                <i class="bi bi-person-circle me-1"></i> {{ currentUser.name }}
               </button>
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
                 <li>
                   <a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profil</a>
                 </li>
                 <li>
-                  <a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Pengaturan</a>
+                  <a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Pengaturan Akun</a>
                 </li>
                 <li><hr class="dropdown-divider" /></li>
                 <li>
@@ -127,25 +125,19 @@ export default {
       type: String,
       default: "dashboard",
     },
-    activePage: {
-      type: String,
-      default: "dokter",
-    },
-    activePage: {
-      type: String,
-      default: "pasien",
-    },
-    activePage: {
-      type: String,
-      default: "pemeriksaan",
-    },
   },
   data() {
     return {
-      adminName: "Admin Rumah Sakit",
-      adminRole: "Administrator",
+      currentUser: {
+        name: "", // Will be populated from user store or authentication
+        role: "",
+      },
       pageTitle: "Dashboard",
     };
+  },
+  created() {
+    // Get logged in user data - you should adapt this to your actual auth system
+    this.getCurrentUser();
   },
   watch: {
     activePage: {
@@ -156,18 +148,34 @@ export default {
     },
   },
   methods: {
+    getCurrentUser() {
+      // Replace this with your actual authentication method
+      // This is just a placeholder - you should get the user from your auth system
+      // For example: this.currentUser = this.$store.state.auth.user;
+      // Or fetch from localStorage, API, etc.
+      
+      // Temporary mock for demonstration
+      this.currentUser = {
+        name: localStorage.getItem('userName') || "User Login",
+        role: localStorage.getItem('userRole') || "Guest"
+      };
+    },
     updatePageTitle(page) {
       const titles = {
         dashboard: "Dashboard",
         dokter: "Kelola Dokter",
         pasien: "Kelola Pasien",
         pemeriksaan: "Hasil Pemeriksaan",
+        pengaturan: "Pengaturan",
       };
       this.pageTitle = titles[page] || "Dashboard";
     },
     logout() {
       // Implement logout logic here
       console.log("Logging out...");
+      // Clear user data
+      localStorage.removeItem('userName');
+      localStorage.removeItem('userRole');
       this.$router.push("/login");
     },
   },
@@ -207,12 +215,21 @@ export default {
 
 .sidebar-header {
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  padding-bottom: 10px;
+  padding-bottom: 20px;
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
 }
 
 .page-header {
   border-bottom: 1px solid #dee2e6;
   padding-bottom: 10px;
+}
+
+/* Adjusted style for the logo */
+.sidebar-logo {
+  width: 150px;
+  height: auto;
 }
 
 @media (max-width: 768px) {
@@ -221,9 +238,7 @@ export default {
     padding: 10px;
   }
 
-  .sidebar span,
-  .sidebar .sidebar-header p,
-  .sidebar h4 {
+  .sidebar span {
     display: none;
   }
 
@@ -232,7 +247,8 @@ export default {
     width: calc(100% - 70px);
   }
 
-  .sidebar img {
+  /* Adjusted logo size for mobile view */
+  .sidebar-logo {
     width: 40px;
     height: 40px;
   }
