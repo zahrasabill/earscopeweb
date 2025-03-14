@@ -22,7 +22,7 @@ class RoleandPermissionSeeder extends Seeder
             'view roles',
             'assign roles',
             'view data',
-            'konsultasi user',
+            'konsultasi pasien',
             'konsultasi dokter',
         ];
 
@@ -38,8 +38,8 @@ class RoleandPermissionSeeder extends Seeder
         $editorRole = Role::firstOrCreate(['name' => 'dokter']);
         $editorRole->givePermissionTo(['view users', 'create users', 'edit users', 'view data']);
 
-        $userRole = Role::firstOrCreate(['name' => 'user']);
-        $userRole->givePermissionTo(['view data', 'konsultasi user']);
+        $userRole = Role::firstOrCreate(['name' => 'pasien']);
+        $userRole->givePermissionTo(['view data', 'konsultasi pasien']);
 
         $this->command->info('Roles dan Permissions berhasil dibuat!');
     }

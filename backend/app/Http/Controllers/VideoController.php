@@ -66,20 +66,20 @@ class VideoController extends Controller
 
         // Simpan video mentah
         $rawVideoFilename = "raw_{$timestamp}.mp4";
-        $rawVideoPath = $request->file('raw_video')->storeAs($folderPath, $rawVideoFilename, 'public');
-        $rawVideoFullPath = storage_path("app/public/{$rawVideoPath}");
+        $rawVideoPath = $request->file('raw_video')->storeAs($folderPath, $rawVideoFilename, 'private');
+        $rawVideoFullPath = storage_path("app/private/{$rawVideoPath}");
 
         // Simpan video dengan bounding box
         $processedVideoFilename = "bb_{$timestamp}.mp4";
-        $processedVideoPath = $request->file('processed_video')->storeAs($folderPath, $processedVideoFilename, 'public');
-        $processedVideoFullPath = storage_path("app/public/{$processedVideoPath}");
+        $processedVideoPath = $request->file('processed_video')->storeAs($folderPath, $processedVideoFilename, 'private');
+        $processedVideoFullPath = storage_path("app/private/{$processedVideoPath}");
 
         // Konversi ke H.264
         $convertedRawVideoFilename = "raw_{$timestamp}_h264.mp4";
-        $convertedRawVideoPath = storage_path("app/public/{$folderPath}/{$convertedRawVideoFilename}");
+        $convertedRawVideoPath = storage_path("app/private/{$folderPath}/{$convertedRawVideoFilename}");
 
         $convertedProcessedVideoFilename = "bb_{$timestamp}_h264.mp4";
-        $convertedProcessedVideoPath = storage_path("app/public/{$folderPath}/{$convertedProcessedVideoFilename}");
+        $convertedProcessedVideoPath = storage_path("app/private/{$folderPath}/{$convertedProcessedVideoFilename}");
 
         // Jalankan FFmpeg untuk konversi
         $this->convertToH264($rawVideoFullPath, $convertedRawVideoPath);
@@ -181,9 +181,12 @@ class VideoController extends Controller
      */
     public function index()
     {
+        if (!auth()->user()->hasRole(['admin', 'doctor'])) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $videos = Video::with('user')->get();
 
-        // Tambahkan URL lengkap untuk setiap video
         $videos->transform(function ($video) {
             $video->raw_video_url = Storage::url($video->raw_video_path);
             $video->processed_video_url = Storage::url($video->processed_video_path);
@@ -218,16 +221,28 @@ class VideoController extends Controller
      *     @OA\Response(response=404, description="Video not found")
      * )
      */
-    public function show($videoId)
+    public function show()
     {
-        $video = Video::with('user')->findOrFail($videoId);
+        $user = auth()->user();
 
-        // Tambahkan URL lengkap untuk video
-        $video->raw_video_url = Storage::url($video->raw_video_path);
-        $video->processed_video_url = Storage::url($video->processed_video_path);
+        // Jika user memiliki role "patient", hanya tampilkan video yang di-assign ke dirinya
+        if ($user->hasRole('pasien')) {
+            $videos = Video::where('user_id', $user->id)->get();
+        } else {
+            // Admin dan dokter bisa melihat semua video
+            $videos = Video::with('user')->get();
+        }
 
-        return response()->json($video);
+        // Tambahkan URL lengkap untuk setiap video
+        $videos->transform(function ($video) {
+            $video->raw_video_url = Storage::url($video->raw_video_path);
+            $video->processed_video_url = Storage::url($video->processed_video_path);
+            return $video;
+        });
+
+        return response()->json($videos);
     }
+
 
     /**
      * Convert video to H.264 using FFmpeg
