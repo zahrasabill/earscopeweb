@@ -6,7 +6,9 @@ use Illuminate\Http\Request;
 use App\Models\Video;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Http\Response;
 use Illuminate\Http\File;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class VideoController extends Controller
 {
@@ -359,42 +361,118 @@ class VideoController extends Controller
      * )
      */
 
-    public function streamVideo($filename)
+    public function streamVideo(Request $request, $filename)
     {
         // Cari video berdasarkan nama file di database
         $video = Video::where('raw_video_path', 'like', "%{$filename}")
             ->orWhere('processed_video_path', 'like', "%{$filename}")
             ->first();
 
-        // Jika video tidak ditemukan dalam database
         if (!$video) {
             return response()->json(['message' => 'Video not found in database'], 404);
         }
 
-        // Pastikan file benar-benar ada di penyimpanan private
+        // Tentukan path file
         $filePath = null;
         if (Storage::disk('private')->exists($video->raw_video_path)) {
-            $filePath = $video->raw_video_path;
+            $filePath = Storage::disk('private')->path($video->raw_video_path);
         } elseif (Storage::disk('private')->exists($video->processed_video_path)) {
-            $filePath = $video->processed_video_path;
+            $filePath = Storage::disk('private')->path($video->processed_video_path);
         }
 
-        // Jika file tidak ditemukan di storage
-        if (!$filePath) {
+        if (!$filePath || !file_exists($filePath)) {
             return response()->json(['message' => 'Video file not found'], 404);
         }
 
-        // Stream video
-        return new StreamedResponse(function () use ($filePath) {
-            $stream = Storage::disk('private')->readStream($filePath);
-            fpassthru($stream);
-            fclose($stream);
-        }, 200, [
-            'Content-Type' => 'video/mp4',
-            'Accept-Ranges' => 'bytes',
-            'Content-Disposition' => 'inline; filename="' . basename($filePath) . '"'
-        ]);
+        // Mendapatkan ukuran file
+        $fileSize = filesize($filePath);
+        $start = 0;
+        $end = $fileSize - 1;
+
+        // Cek apakah ada header "Range" untuk mendukung streaming
+        if ($request->headers->has('Range')) {
+            $rangeHeader = $request->header('Range');
+            preg_match('/bytes=(\d+)-(\d*)/', $rangeHeader, $matches);
+
+            $start = intval($matches[1]); // Ambil posisi awal dari range
+
+            if (!empty($matches[2])) {
+                $end = intval($matches[2]); // Ambil posisi akhir jika ada
+            }
+
+            if ($end >= $fileSize) {
+                $end = $fileSize - 1;
+            }
+        }
+
+        // Hitung panjang data yang akan dikirim
+        $length = ($end - $start) + 1;
+
+        $response = new StreamedResponse(function () use ($filePath, $start, $length) {
+            $handle = fopen($filePath, 'rb');
+            fseek($handle, $start);
+            $bufferSize = 8192; // Buffer untuk membaca file
+            $bytesSent = 0;
+
+            while (!feof($handle) && $bytesSent < $length) {
+                $remaining = $length - $bytesSent;
+                $readSize = ($remaining < $bufferSize) ? $remaining : $bufferSize;
+                echo fread($handle, $readSize);
+                flush();
+                $bytesSent += $readSize;
+            }
+
+            fclose($handle);
+        });
+
+        // Tambahkan header untuk mendukung streaming
+        $response->setStatusCode(Response::HTTP_PARTIAL_CONTENT); // 206 Partial Content
+        $response->headers->set('Content-Type', 'video/mp4');
+        $response->headers->set('Accept-Ranges', 'bytes');
+        $response->headers->set('Content-Length', $length);
+        $response->headers->set('Content-Range', "bytes $start-$end/$fileSize");
+        $response->headers->set('Content-Disposition', 'inline; filename="' . basename($filePath) . '"');
+
+        return $response;
     }
+
+
+    // public function streamVideo($filename)
+    // {
+    //     // Cari video berdasarkan nama file di database
+    //     $video = Video::where('raw_video_path', 'like', "%{$filename}")
+    //         ->orWhere('processed_video_path', 'like', "%{$filename}")
+    //         ->first();
+
+    //     // Jika video tidak ditemukan dalam database
+    //     if (!$video) {
+    //         return response()->json(['message' => 'Video not found in database'], 404);
+    //     }
+
+    //     // Pastikan file benar-benar ada di penyimpanan private
+    //     $filePath = null;
+    //     if (Storage::disk('private')->exists($video->raw_video_path)) {
+    //         $filePath = $video->raw_video_path;
+    //     } elseif (Storage::disk('private')->exists($video->processed_video_path)) {
+    //         $filePath = $video->processed_video_path;
+    //     }
+
+    //     // Jika file tidak ditemukan di storage
+    //     if (!$filePath) {
+    //         return response()->json(['message' => 'Video file not found'], 404);
+    //     }
+
+    //     // Stream video
+    //     return new StreamedResponse(function () use ($filePath) {
+    //         $stream = Storage::disk('private')->readStream($filePath);
+    //         fpassthru($stream);
+    //         fclose($stream);
+    //     }, 200, [
+    //         'Content-Type' => 'video/mp4',
+    //         'Accept-Ranges' => 'bytes',
+    //         'Content-Disposition' => 'inline; filename="' . basename($filePath) . '"'
+    //     ]);
+    // }
 
 
 }
