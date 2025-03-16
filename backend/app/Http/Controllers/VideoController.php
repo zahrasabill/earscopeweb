@@ -64,29 +64,41 @@ class VideoController extends Controller
         $timestamp = now()->format('Ymd_His');
         $folderPath = "videos/{$timestamp}";
 
-        // Simpan video mentah
+        // Simpan video mentah ke folder sementara sebelum konversi
         $rawVideoFilename = "raw_{$timestamp}.mp4";
-        $rawVideoPath = $request->file('raw_video')->storeAs($folderPath, $rawVideoFilename, 'private');
+        $rawTempPath = storage_path("app/temp/{$rawVideoFilename}");
+        $request->file('raw_video')->move(storage_path('app/temp'), $rawVideoFilename);
 
-        // Simpan video dengan bounding box
+        // Simpan video dengan bounding box ke folder sementara sebelum konversi
         $processedVideoFilename = "bb_{$timestamp}.mp4";
-        $processedVideoPath = $request->file('processed_video')->storeAs($folderPath, $processedVideoFilename, 'private');
+        $processedTempPath = storage_path("app/temp/{$processedVideoFilename}");
+        $request->file('processed_video')->move(storage_path('app/temp'), $processedVideoFilename);
 
-        // Konversi ke H.264
+        // Path hasil konversi
         $convertedRawVideoFilename = "raw_{$timestamp}_h264.mp4";
-        $convertedRawVideoPath = "{$folderPath}/{$convertedRawVideoFilename}";
+        $convertedRawVideoPath = storage_path("app/temp/{$convertedRawVideoFilename}");
 
         $convertedProcessedVideoFilename = "bb_{$timestamp}_h264.mp4";
-        $convertedProcessedVideoPath = "{$folderPath}/{$convertedProcessedVideoFilename}";
+        $convertedProcessedVideoPath = storage_path("app/temp/{$convertedProcessedVideoFilename}");
 
         // Jalankan FFmpeg untuk konversi
-        $this->convertToH264(storage_path("app/private/{$rawVideoPath}"), storage_path("app/private/{$convertedRawVideoPath}"));
-        $this->convertToH264(storage_path("app/private/{$processedVideoPath}"), storage_path("app/private/{$convertedProcessedVideoPath}"));
+        $this->convertToH264($rawTempPath, $convertedRawVideoPath);
+        $this->convertToH264($processedTempPath, $convertedProcessedVideoPath);
+
+        // Simpan hasil konversi ke storage Laravel
+        $storedRawVideoPath = Storage::disk('private')->putFileAs($folderPath, new \Illuminate\Http\File($convertedRawVideoPath), $convertedRawVideoFilename);
+        $storedProcessedVideoPath = Storage::disk('private')->putFileAs($folderPath, new \Illuminate\Http\File($convertedProcessedVideoPath), $convertedProcessedVideoFilename);
+
+        // Hapus file sementara
+        unlink($rawTempPath);
+        unlink($processedTempPath);
+        unlink($convertedRawVideoPath);
+        unlink($convertedProcessedVideoPath);
 
         // Simpan data ke database
         $video = Video::create([
-            'raw_video_path' => $convertedRawVideoPath,
-            'processed_video_path' => $convertedProcessedVideoPath,
+            'raw_video_path' => $storedRawVideoPath,
+            'processed_video_path' => $storedProcessedVideoPath,
             'status' => 'unassigned',
         ]);
 
@@ -95,6 +107,7 @@ class VideoController extends Controller
             'data' => $video,
         ], 201);
     }
+
 
 
     /**
@@ -290,14 +303,7 @@ class VideoController extends Controller
         if ($returnCode !== 0) {
             \Log::error('FFmpeg conversion failed', ['output' => $output]);
         }
-
-        // Jika berhasil, simpan file ke storage Laravel
-        if (file_exists($outputPath)) {
-            Storage::disk('private')->put($outputPath, file_get_contents($outputPath));
-            unlink($outputPath); // Hapus file sementara dari local
-        }
     }
-
 
     /**
      * @OA\Get(
