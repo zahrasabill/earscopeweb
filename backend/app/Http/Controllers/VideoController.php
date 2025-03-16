@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Video;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Http\File;
 
 class VideoController extends Controller
 {
@@ -63,31 +64,42 @@ class VideoController extends Controller
 
         $timestamp = now()->format('Ymd_His');
         $folderPath = "videos/{$timestamp}";
+        $tempPath = storage_path('app/temp');
 
-        // Simpan video mentah ke folder sementara sebelum konversi
+        // Pastikan folder temp ada
+        if (!file_exists($tempPath)) {
+            mkdir($tempPath, 0777, true);
+        }
+
+        // Simpan video mentah sementara sebelum konversi
         $rawVideoFilename = "raw_{$timestamp}.mp4";
-        $rawTempPath = storage_path("app/temp/{$rawVideoFilename}");
-        $request->file('raw_video')->move(storage_path('app/temp'), $rawVideoFilename);
+        $rawTempPath = "{$tempPath}/{$rawVideoFilename}";
+        $request->file('raw_video')->move($tempPath, $rawVideoFilename);
 
-        // Simpan video dengan bounding box ke folder sementara sebelum konversi
+        // Simpan video dengan bounding box sementara sebelum konversi
         $processedVideoFilename = "bb_{$timestamp}.mp4";
-        $processedTempPath = storage_path("app/temp/{$processedVideoFilename}");
-        $request->file('processed_video')->move(storage_path('app/temp'), $processedVideoFilename);
+        $processedTempPath = "{$tempPath}/{$processedVideoFilename}";
+        $request->file('processed_video')->move($tempPath, $processedVideoFilename);
 
         // Path hasil konversi
         $convertedRawVideoFilename = "raw_{$timestamp}_h264.mp4";
-        $convertedRawVideoPath = storage_path("app/temp/{$convertedRawVideoFilename}");
+        $convertedRawVideoPath = "{$tempPath}/{$convertedRawVideoFilename}";
 
         $convertedProcessedVideoFilename = "bb_{$timestamp}_h264.mp4";
-        $convertedProcessedVideoPath = storage_path("app/temp/{$convertedProcessedVideoFilename}");
+        $convertedProcessedVideoPath = "{$tempPath}/{$convertedProcessedVideoFilename}";
 
-        // Jalankan FFmpeg untuk konversi
+        // Konversi ke H.264
         $this->convertToH264($rawTempPath, $convertedRawVideoPath);
         $this->convertToH264($processedTempPath, $convertedProcessedVideoPath);
 
+        // Pastikan hasil konversi ada sebelum menyimpan ke storage
+        if (!file_exists($convertedRawVideoPath) || !file_exists($convertedProcessedVideoPath)) {
+            throw new \Exception("Converted video files not found.");
+        }
+
         // Simpan hasil konversi ke storage Laravel
-        $storedRawVideoPath = Storage::disk('private')->putFileAs($folderPath, new \Illuminate\Http\File($convertedRawVideoPath), $convertedRawVideoFilename);
-        $storedProcessedVideoPath = Storage::disk('private')->putFileAs($folderPath, new \Illuminate\Http\File($convertedProcessedVideoPath), $convertedProcessedVideoFilename);
+        $storedRawVideoPath = Storage::disk('private')->putFileAs($folderPath, new File($convertedRawVideoPath), $convertedRawVideoFilename);
+        $storedProcessedVideoPath = Storage::disk('private')->putFileAs($folderPath, new File($convertedProcessedVideoPath), $convertedProcessedVideoFilename);
 
         // Hapus file sementara
         unlink($rawTempPath);
@@ -107,9 +119,6 @@ class VideoController extends Controller
             'data' => $video,
         ], 201);
     }
-
-
-
     /**
      * @OA\Post(
      *     path="/v1/videos/{videoId}/assign/{userId}",
@@ -297,11 +306,22 @@ class VideoController extends Controller
      */
     private function convertToH264($inputPath, $outputPath)
     {
-        $command = "ffmpeg -i {$inputPath} -c:v libx264 -preset fast -crf 23 -c:a aac -b:a 128k {$outputPath} 2>&1";
+        // Pastikan direktori tujuan ada
+        $outputDir = dirname($outputPath);
+        if (!file_exists($outputDir)) {
+            mkdir($outputDir, 0777, true);
+        }
+
+        // Perintah FFmpeg
+        $command = "ffmpeg -i \"{$inputPath}\" -c:v libx264 -preset fast -crf 23 -c:a aac -b:a 128k \"{$outputPath}\" 2>&1";
         exec($command, $output, $returnCode);
 
-        if ($returnCode !== 0) {
-            \Log::error('FFmpeg conversion failed', ['output' => $output]);
+        // Logging hasil eksekusi
+        \Log::info('FFmpeg output', ['output' => $output]);
+
+        if ($returnCode !== 0 || !file_exists($outputPath)) {
+            \Log::error('FFmpeg conversion failed', ['command' => $command, 'output' => $output]);
+            throw new \Exception("FFmpeg conversion failed. See logs for details.");
         }
     }
 
