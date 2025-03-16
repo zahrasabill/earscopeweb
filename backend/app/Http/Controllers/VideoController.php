@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Video;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class VideoController extends Controller
 {
@@ -55,7 +56,6 @@ class VideoController extends Controller
      */
     public function store(Request $request)
     {
-        // Validasi input
         $request->validate([
             'raw_video' => 'required|file|mimetypes:video/mp4,video/quicktime',
             'processed_video' => 'required|file|mimetypes:video/mp4,video/quicktime',
@@ -67,28 +67,26 @@ class VideoController extends Controller
         // Simpan video mentah
         $rawVideoFilename = "raw_{$timestamp}.mp4";
         $rawVideoPath = $request->file('raw_video')->storeAs($folderPath, $rawVideoFilename, 'private');
-        $rawVideoFullPath = storage_path("app/private/{$rawVideoPath}");
 
         // Simpan video dengan bounding box
         $processedVideoFilename = "bb_{$timestamp}.mp4";
         $processedVideoPath = $request->file('processed_video')->storeAs($folderPath, $processedVideoFilename, 'private');
-        $processedVideoFullPath = storage_path("app/private/{$processedVideoPath}");
 
         // Konversi ke H.264
         $convertedRawVideoFilename = "raw_{$timestamp}_h264.mp4";
-        $convertedRawVideoPath = storage_path("app/private/{$folderPath}/{$convertedRawVideoFilename}");
+        $convertedRawVideoPath = "{$folderPath}/{$convertedRawVideoFilename}";
 
         $convertedProcessedVideoFilename = "bb_{$timestamp}_h264.mp4";
-        $convertedProcessedVideoPath = storage_path("app/private/{$folderPath}/{$convertedProcessedVideoFilename}");
+        $convertedProcessedVideoPath = "{$folderPath}/{$convertedProcessedVideoFilename}";
 
         // Jalankan FFmpeg untuk konversi
-        $this->convertToH264($rawVideoFullPath, $convertedRawVideoPath);
-        $this->convertToH264($processedVideoFullPath, $convertedProcessedVideoPath);
+        $this->convertToH264(storage_path("app/private/{$rawVideoPath}"), storage_path("app/private/{$convertedRawVideoPath}"));
+        $this->convertToH264(storage_path("app/private/{$processedVideoPath}"), storage_path("app/private/{$convertedProcessedVideoPath}"));
 
         // Simpan data ke database
         $video = Video::create([
-            'raw_video_path' => "videos/{$timestamp}/{$convertedRawVideoFilename}",
-            'processed_video_path' => "videos/{$timestamp}/{$convertedProcessedVideoFilename}",
+            'raw_video_path' => $convertedRawVideoPath,
+            'processed_video_path' => $convertedProcessedVideoPath,
             'status' => 'unassigned',
         ]);
 
@@ -97,6 +95,7 @@ class VideoController extends Controller
             'data' => $video,
         ], 201);
     }
+
 
     /**
      * @OA\Post(
@@ -182,13 +181,6 @@ class VideoController extends Controller
      */
     public function showAllVideos()
     {
-        $user = auth()->user();
-
-        // Pastikan hanya admin dan dokter yang bisa mengakses endpoint ini
-        if (!$user->hasRole(['admin', 'doctor'])) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
         // Ambil semua video beserta relasi user
         $videos = Video::with('user')->get();
 
@@ -201,6 +193,7 @@ class VideoController extends Controller
 
         return response()->json($videos);
     }
+
 
     /**
      * @OA\Get(
@@ -297,5 +290,85 @@ class VideoController extends Controller
         if ($returnCode !== 0) {
             \Log::error('FFmpeg conversion failed', ['output' => $output]);
         }
+
+        // Jika berhasil, simpan file ke storage Laravel
+        if (file_exists($outputPath)) {
+            Storage::disk('private')->put($outputPath, file_get_contents($outputPath));
+            unlink($outputPath); // Hapus file sementara dari local
+        }
     }
+
+
+    /**
+     * @OA\Get(
+     *     path="/v1/videos/stream/{filename}",
+     *     summary="Stream a video file",
+     *     tags={"Videos"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="filename",
+     *         in="path",
+     *         required=true,
+     *         description="The name of the video file to stream",
+     *         @OA\Schema(type="string")
+     *     ),
+     *@OA\Response(
+     *response=200,
+     *description="Video streaming successfully",
+     *@OA\Header(
+     *    header="Content-Type",
+     *    description="MIME type of the video",
+     *    @OA\Schema(type="string", example="video/mp4")
+     *),
+     *@OA\Header(
+     *   header="Accept-Ranges",
+     *   description="bytes range support",
+     *   @OA\Schema(type="string", example="bytes")
+     *)
+     *),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Video not found"
+     *     )
+     * )
+     */
+
+    public function streamVideo($filename)
+    {
+        // Cari video berdasarkan nama file di database
+        $video = Video::where('raw_video_path', 'like', "%{$filename}")
+            ->orWhere('processed_video_path', 'like', "%{$filename}")
+            ->first();
+
+        // Jika video tidak ditemukan dalam database
+        if (!$video) {
+            return response()->json(['message' => 'Video not found in database'], 404);
+        }
+
+        // Pastikan file benar-benar ada di penyimpanan private
+        $filePath = null;
+        if (Storage::disk('private')->exists($video->raw_video_path)) {
+            $filePath = $video->raw_video_path;
+        } elseif (Storage::disk('private')->exists($video->processed_video_path)) {
+            $filePath = $video->processed_video_path;
+        }
+
+        // Jika file tidak ditemukan di storage
+        if (!$filePath) {
+            return response()->json(['message' => 'Video file not found'], 404);
+        }
+
+        // Stream video
+        return new StreamedResponse(function () use ($filePath) {
+            $stream = Storage::disk('private')->readStream($filePath);
+            fpassthru($stream);
+            fclose($stream);
+        }, 200, [
+            'Content-Type' => 'video/mp4',
+            'Accept-Ranges' => 'bytes',
+            'Content-Disposition' => 'inline; filename="' . basename($filePath) . '"'
+        ]);
+    }
+
+
 }

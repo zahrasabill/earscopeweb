@@ -865,6 +865,55 @@
                     }
                 ]
             }
+        },
+        "/v1/videos/stream/{filename}": {
+            "get": {
+                "tags": [
+                    "Videos"
+                ],
+                "summary": "Stream a video file",
+                "operationId": "1b927ddc0005c5ebec55da753647ef4a",
+                "parameters": [
+                    {
+                        "name": "filename",
+                        "in": "path",
+                        "description": "The name of the video file to stream",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Video streaming successfully",
+                        "headers": {
+                            "Content-Type": {
+                                "description": "MIME type of the video",
+                                "schema": {
+                                    "type": "string",
+                                    "example": "video/mp4"
+                                }
+                            },
+                            "Accept-Ranges": {
+                                "description": "bytes range support",
+                                "schema": {
+                                    "type": "string",
+                                    "example": "bytes"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Video not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
         }
     },
     "tags": [
