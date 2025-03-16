@@ -13,7 +13,7 @@ services:
     restart: unless-stopped
     volumes:
       - /var/www/log/earscopeweb-backend/storage/logs:/app/storage/logs # Sinkronisasi log ke host
-      - /var/www/earscopeweb-backend/storage/app/public:/app/storage/app/public # Sinkronisasi storage
+      - /var/www/earscopeweb-backend/storage/app/private:/app/storage/app/private # Sinkronisasi storage
 
   earscopeweb-frontend:
     image: earscopeweb-frontend:latest
