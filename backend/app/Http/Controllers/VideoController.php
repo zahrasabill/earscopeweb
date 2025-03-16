@@ -176,17 +176,23 @@ class VideoController extends Controller
      *             )
      *         )
      *     ),
-     *     @OA\Response(response=401, description="Unauthorized")
+     *     @OA\Response(response=401, description="Unauthorized"),
+     *     @OA\Response(response=403, description="Forbidden")
      * )
      */
-    public function index()
+    public function showAllVideos()
     {
-        if (!auth()->user()->hasRole(['admin', 'doctor'])) {
+        $user = auth()->user();
+
+        // Pastikan hanya admin dan dokter yang bisa mengakses endpoint ini
+        if (!$user->hasRole(['admin', 'doctor'])) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
+        // Ambil semua video beserta relasi user
         $videos = Video::with('user')->get();
 
+        // Tambahkan URL lengkap untuk setiap video
         $videos->transform(function ($video) {
             $video->raw_video_url = Storage::url($video->raw_video_path);
             $video->processed_video_url = Storage::url($video->processed_video_path);
@@ -218,20 +224,57 @@ class VideoController extends Controller
      *             )
      *         )
      *     ),
-     *     @OA\Response(response=404, description="Video not found")
+     *     @OA\Response(response=404, description="Video not found"),
+     *     @OA\Response(response=401, description="Unauthorized")
      * )
      */
-    public function show()
+    public function showById($videoId)
+    {
+        // Cari video berdasarkan ID
+        $video = Video::with('user')->findOrFail($videoId);
+
+        // Tambahkan URL lengkap untuk video
+        $video->raw_video_url = Storage::url($video->raw_video_path);
+        $video->processed_video_url = Storage::url($video->processed_video_path);
+
+        return response()->json($video);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/v1/videos/pasien",
+     *     summary="Get videos assigned to the logged-in patient",
+     *     tags={"Videos"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of videos assigned to the patient",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(
+     *                 type="object",
+     *                 @OA\Property(property="id", type="integer"),
+     *                 @OA\Property(property="raw_video_url", type="string"),
+     *                 @OA\Property(property="processed_video_url", type="string"),
+     *                 @OA\Property(property="status", type="string")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="Unauthorized"),
+     *     @OA\Response(response=403, description="Forbidden")
+     * )
+     */
+    public function showVideosByPasien()
     {
         $user = auth()->user();
 
-        // Jika user memiliki role "patient", hanya tampilkan video yang di-assign ke dirinya
-        if ($user->hasRole('pasien')) {
-            $videos = Video::where('user_id', $user->id)->get();
-        } else {
-            // Admin dan dokter bisa melihat semua video
-            $videos = Video::with('user')->get();
+        // Pastikan hanya user dengan role "pasien" yang bisa mengakses endpoint ini
+        if (!$user->hasRole('pasien')) {
+            return response()->json(['message' => 'Forbidden: Only patients can access this endpoint'], 403);
         }
+
+        // Ambil video yang di-assign ke pasien ini (berdasarkan user_id)
+        $videos = Video::where('user_id', $user->id)->get();
 
         // Tambahkan URL lengkap untuk setiap video
         $videos->transform(function ($video) {
@@ -242,7 +285,6 @@ class VideoController extends Controller
 
         return response()->json($videos);
     }
-
 
     /**
      * Convert video to H.264 using FFmpeg

@@ -17,7 +17,7 @@ Route::middleware('jwt.auth')->group(function () {
 
     // Route untuk admin
     Route::middleware('role:admin')->group(function () {
-        Route::post('register', [UserController::class, 'register']);
+        Route::post('register/dokter', [UserController::class, 'registerDokter']);
         Route::get('users', [UserController::class, 'getAllUsers']);
         Route::get('users/{id}', [UserController::class, 'show']);
         Route::delete('users/{id}', [UserController::class, 'delete']);
@@ -26,21 +26,26 @@ Route::middleware('jwt.auth')->group(function () {
 
         Route::post('videos/{videoId}/assign/{userId}', [VideoController::class, 'assignToUser']); // Assign video ke user
         Route::patch('/videos/{videoId}', [VideoController::class, 'updateStatusVideo']);
-        Route::get('videos', [VideoController::class, 'index']); // Lihat semua video
-        Route::get('videos/{videoId}', [VideoController::class, 'show']); // Lihat detail video
+        Route::get('videos', [VideoController::class, 'showAllVideos']); // Lihat semua video
+        Route::get('videos/{videoId}', [VideoController::class, 'showById']); // Lihat detail video
     });
-    
-    // Route untuk admin dan dokter
-    Route::middleware('role:admin|dokter')->group(function () {
-        Route::post('register', [UserController::class, 'register']);
+
+    // Route untuk dokter
+    Route::middleware('role:dokter')->group(function () {
+        Route::post('register/pasien', [UserController::class, 'registerPasien']);
         Route::get('users', [UserController::class, 'getAllUsers']);
         Route::put('users/{id}', [UserController::class, 'update']);
         Route::get('users/{id}', [UserController::class, 'show']);
 
         Route::post('videos/{videoId}/assign/{userId}', [VideoController::class, 'assignToUser']); // Assign video ke user
         Route::patch('/videos/{videoId}', [VideoController::class, 'updateStatusVideo']);
-        Route::get('videos', [VideoController::class, 'index']); // Lihat semua video
-        Route::get('videos/{videoId}', [VideoController::class, 'show']); // Lihat detail video
+        Route::get('videos', [VideoController::class, 'showAllVideos']); // Lihat semua video
+        Route::get('videos/{videoId}', [VideoController::class, 'showById']); // Lihat detail video
+    });
+
+    // Route untuk pasien
+    Route::middleware('role:pasien')->group(function () {
+        Route::get('videos/pasien', [VideoController::class, 'showVideosByPasien']);
     });
 
     // Route tanpa pembatasan role
