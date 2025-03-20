@@ -48,7 +48,7 @@ class UserController extends Controller
      *             property="gender",
      *             type="string",
      *             description="Jenis kelamin, hanya diisi 'laki-laki' atau 'perempuan'",
-     *             example="Laki-laki"
+     *             example="laki-laki"
      *         ),
      *         
      *         @OA\Property(
@@ -173,7 +173,7 @@ class UserController extends Controller
      *             property="gender",
      *             type="string",
      *             description="Jenis kelamin, hanya diisi 'laki-laki' atau 'perempuan'",
-     *             example="Laki-laki"
+     *             example="laki-laki"
      *         ),
      *         
      *         @OA\Property(
