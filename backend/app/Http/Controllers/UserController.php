@@ -28,12 +28,37 @@ class UserController extends Controller
      *     tags={"User"},
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(
-     *             required={"name", "tanggal_lahir"},
-     *             @OA\Property(property="name", type="string", example="John Doe"),
-     *             @OA\Property(property="tanggal_lahir", type="string", format="date", example="2012-12-31"),
+     *     @OA\JsonContent(
+     *         required={"name", "tanggal_lahir", "gender", "no_telp"},
+     *         
+     *         @OA\Property(
+     *             property="name",
+     *             type="string",
+     *             example="John Doe"
+     *         ),
+     *         
+     *         @OA\Property(
+     *             property="tanggal_lahir",
+     *             type="string",
+     *             format="date",
+     *             example="2012-12-31"
+     *         ),
+     *         
+     *         @OA\Property(
+     *             property="gender",
+     *             type="string",
+     *             description="Jenis kelamin, hanya diisi 'laki-laki' atau 'perempuan'",
+     *             example="Laki-laki"
+     *         ),
+     *         
+     *         @OA\Property(
+     *             property="no_telp",
+     *             type="string",
+     *             description="Nomor telepon, hanya angka, 10 sampai 15 digit",
+     *             example="081234567890"
      *         )
-     *     ),
+     *     )
+     * ),
      *     @OA\Response(response=201, description="User registered successfully"),
      *     @OA\Response(
      *       response=400,
@@ -61,10 +86,15 @@ class UserController extends Controller
             $request->validate([
                 'name' => 'required|string|max:255|unique:users,name',
                 'tanggal_lahir' => 'required|date|before:today',
+                'gender' => 'required|in:laki-laki,perempuan',
+                'no_telp' => 'required|digits_between:10,15|regex:/^[0-9]+$/',
             ], [
                 'name.unique' => 'Nama sudah terdaftar, silakan gunakan nama lain.',
                 'tanggal_lahir.before' => 'Tanggal lahir tidak boleh melebihi hari ini.',
-                'tanggal_lahir.date' => 'Format tanggal lahir tidak valid. Gunakan format YYYY-MM-DD.'
+                'tanggal_lahir.date' => 'Format tanggal lahir tidak valid. Gunakan format YYYY-MM-DD.',
+                'gender.in' => 'Jenis kelamin harus salah satu dari: laki-laki atau perempuan.',
+                'no_telp.digits_between' => 'Nomor telepon harus 10-15 digit.',
+                'no_telp.regex' => 'Nomor telepon harus berupa angka.',
             ]);
 
             // Hitung usia berdasarkan tanggal lahir
@@ -83,7 +113,8 @@ class UserController extends Controller
                 'name' => $request->name,
                 'tanggal_lahir' => $request->tanggal_lahir,
                 'usia' => $usia,
-                'no_ktp' => null, // Nomor KTP tidak wajib jika tidak digunakan
+                'no_telp' => $request->no_telp, // Nomor KTP tidak wajib jika tidak digunakan
+                'gender' => $request->gender,
                 'email' => null, // Email tidak wajib jika tidak digunakan
                 'password' => Hash::make($password), // Hash password sebelum disimpan
             ]);
@@ -122,12 +153,37 @@ class UserController extends Controller
      *     tags={"User"},
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(
-     *             required={"name", "tanggal_lahir"},
-     *             @OA\Property(property="name", type="string", example="John Doe"),
-     *             @OA\Property(property="tanggal_lahir", type="string", format="date", example="2012-12-31"),
+     *     @OA\JsonContent(
+     *         required={"name", "tanggal_lahir", "gender", "no_telp"},
+     *         
+     *         @OA\Property(
+     *             property="name",
+     *             type="string",
+     *             example="John Doe"
+     *         ),
+     *         
+     *         @OA\Property(
+     *             property="tanggal_lahir",
+     *             type="string",
+     *             format="date",
+     *             example="2012-12-31"
+     *         ),
+     *         
+     *         @OA\Property(
+     *             property="gender",
+     *             type="string",
+     *             description="Jenis kelamin, hanya diisi 'laki-laki' atau 'perempuan'",
+     *             example="Laki-laki"
+     *         ),
+     *         
+     *         @OA\Property(
+     *             property="no_telp",
+     *             type="string",
+     *             description="Nomor telepon, hanya angka, 10 sampai 15 digit",
+     *             example="081234567890"
      *         )
-     *     ),
+     *     )
+     * ),
      *     @OA\Response(response=201, description="User registered successfully"),
      *     @OA\Response(
      *       response=400,
@@ -155,10 +211,15 @@ class UserController extends Controller
             $request->validate([
                 'name' => 'required|string|max:255|unique:users,name',
                 'tanggal_lahir' => 'required|date|before:today',
+                'gender' => 'required|in:laki-laki,perempuan',
+                'no_telp' => 'required|digits_between:10,15|regex:/^[0-9]+$/', // Nomor telepon harus 10-15 digit
             ], [
                 'name.unique' => 'Nama sudah terdaftar, silakan gunakan nama lain.',
                 'tanggal_lahir.before' => 'Tanggal lahir tidak boleh melebihi hari ini.',
-                'tanggal_lahir.date' => 'Format tanggal lahir tidak valid. Gunakan format YYYY-MM-DD.'
+                'tanggal_lahir.date' => 'Format tanggal lahir tidak valid. Gunakan format YYYY-MM-DD.',
+                'gender.in' => 'Jenis kelamin harus salah satu dari: laki-laki atau perempuan.',
+                'no_telp.digits_between' => 'Nomor telepon harus 10-15 digit.',
+                'no_telp.regex' => 'Nomor telepon harus berupa angka.',
             ]);
 
             // Hitung usia berdasarkan tanggal lahir
@@ -177,7 +238,8 @@ class UserController extends Controller
                 'name' => $request->name,
                 'tanggal_lahir' => $request->tanggal_lahir,
                 'usia' => $usia,
-                'no_ktp' => null, // Nomor KTP tidak wajib jika tidak digunakan
+                'no_telp' => $request->no_telp, // Nomor KTP tidak wajib jika tidak digunakan
+                'gender' => $request->gender,
                 'email' => null, // Email tidak wajib jika tidak digunakan
                 'password' => Hash::make($password), // Hash password sebelum disimpan
             ]);

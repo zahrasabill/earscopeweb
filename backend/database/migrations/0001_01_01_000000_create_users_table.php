@@ -15,8 +15,9 @@ return new class extends Migration
             $table->id();
             $table->string('kode_akses');
             $table->date('tanggal_lahir');
-            $table->integer('usia')->nullable();
-            $table->bigInteger('no_ktp')->nullable();
+            $table->integer('usia');
+            $table->string('gender');
+            $table->bigInteger('no_telp');
             $table->string('name');
             $table->string('email')->unique()->nullable();
             $table->timestamp('email_verified_at')->nullable();

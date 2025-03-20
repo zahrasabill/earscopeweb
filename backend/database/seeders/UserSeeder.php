@@ -30,6 +30,8 @@ class UserSeeder extends Seeder
                 'name' => $adminUsername,
                 'email' => $adminEmail,
                 'tanggal_lahir' => '2000-01-01', // Tanggal lahir default
+                'gender' => 'laki-laki',
+                'no_telp' => '081234567890', // Nomor telepon default
                 'usia' => 25, // Usia default
                 'password' => bcrypt($adminPassword), // Hash password
             ]

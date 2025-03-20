@@ -100,7 +100,9 @@
                             "schema": {
                                 "required": [
                                     "name",
-                                    "tanggal_lahir"
+                                    "tanggal_lahir",
+                                    "gender",
+                                    "no_telp"
                                 ],
                                 "properties": {
                                     "name": {
@@ -111,6 +113,16 @@
                                         "type": "string",
                                         "format": "date",
                                         "example": "2012-12-31"
+                                    },
+                                    "gender": {
+                                        "description": "Jenis kelamin, hanya diisi 'Laki-laki' atau 'Perempuan'",
+                                        "type": "string",
+                                        "example": "Laki-laki"
+                                    },
+                                    "no_telp": {
+                                        "description": "Nomor telepon, hanya angka, 10 sampai 15 digit",
+                                        "type": "string",
+                                        "example": "081234567890"
                                     }
                                 },
                                 "type": "object"
@@ -167,7 +179,9 @@
                             "schema": {
                                 "required": [
                                     "name",
-                                    "tanggal_lahir"
+                                    "tanggal_lahir",
+                                    "gender",
+                                    "no_telp"
                                 ],
                                 "properties": {
                                     "name": {
@@ -178,6 +192,16 @@
                                         "type": "string",
                                         "format": "date",
                                         "example": "2012-12-31"
+                                    },
+                                    "gender": {
+                                        "description": "Jenis kelamin, hanya diisi 'Laki-laki' atau 'Perempuan'",
+                                        "type": "string",
+                                        "example": "Laki-laki"
+                                    },
+                                    "no_telp": {
+                                        "description": "Nomor telepon, hanya angka, 10 sampai 15 digit",
+                                        "type": "string",
+                                        "example": "081234567890"
                                     }
                                 },
                                 "type": "object"
