@@ -30,7 +30,11 @@ class User extends Authenticatable implements JWTSubject
      */
     public function getJWTCustomClaims()
     {
-        return [];
+        return [
+            'user_id' => $this->id,
+            'kode_akses' => $this->kode_akses,
+            'role' => $this->getRoleNames()->first(),
+        ];
     }
     /**
      * The attributes that are mass assignable.
