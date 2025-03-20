@@ -115,7 +115,7 @@
                                         "example": "2012-12-31"
                                     },
                                     "gender": {
-                                        "description": "Jenis kelamin, hanya diisi 'Laki-laki' atau 'Perempuan'",
+                                        "description": "Jenis kelamin, hanya diisi 'laki-laki' atau 'perempuan'",
                                         "type": "string",
                                         "example": "Laki-laki"
                                     },
@@ -194,7 +194,7 @@
                                         "example": "2012-12-31"
                                     },
                                     "gender": {
-                                        "description": "Jenis kelamin, hanya diisi 'Laki-laki' atau 'Perempuan'",
+                                        "description": "Jenis kelamin, hanya diisi 'laki-laki' atau 'perempuan'",
                                         "type": "string",
                                         "example": "Laki-laki"
                                     },
