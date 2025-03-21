@@ -9,32 +9,52 @@
       <div class="login-form-container">
         <h2 class="welcome-title">Selamat Datang!</h2>
         <p class="instruction-text">
-          Silahkan masukkan Nama dan Tanggal Lahir Anda!
+          Silahkan masukkan Kode Akses dan Password Anda!
         </p>
         <form @submit.prevent="login">
           <div class="form-group mb-3">
-            <label for="name" class="form-label">Nama</label>
+            <label for="accessCode" class="form-label">Kode Akses</label>
             <div class="input-wrapper">
               <input
                 type="text"
-                v-model="name"
+                v-model="accessCode"
                 class="form-control"
-                id="name"
-                placeholder="Masukkan Nama Anda"
+                id="accessCode"
+                placeholder="Masukkan Kode Akses Anda"
                 required
               />
             </div>
           </div>
           <div class="form-group mb-4">
-            <label for="birthdate" class="form-label">Tanggal Lahir</label>
+            <label for="password" class="form-label">Password</label>
             <div class="input-wrapper">
               <input
-                type="date"
-                v-model="birthdate"
+                type="password"
+                v-model="password"
                 class="form-control"
-                id="birthdate"
+                id="password"
+                placeholder="Masukkan Password Anda"
                 required
               />
+              <i 
+                class="bi" 
+                :class="showPassword ? 'bi-eye-slash' : 'bi-eye'" 
+                @click="togglePasswordVisibility"
+                style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer;"
+              ></i>
+            </div>
+          </div>
+          <div class="form-group mb-3">
+            <div class="form-check">
+              <input 
+                type="checkbox" 
+                v-model="rememberMe" 
+                class="form-check-input" 
+                id="rememberMe"
+              />
+              <label class="form-check-label" for="rememberMe">
+                Ingat Saya
+              </label>
             </div>
           </div>
           <button type="submit" class="btn btn-login w-100" :disabled="loading">
@@ -42,10 +62,6 @@
           </button>
           <div v-if="error" class="error-message mt-2">
             {{ error }}
-          </div>
-          <div class="register-link">
-            Belum punya akun? 
-            <a href="#" @click.prevent="goToRegister" class="register-text">Daftar di sini</a>
           </div>
         </form>
       </div>
@@ -61,33 +77,70 @@ import router from "@/router";
 export default {
   data() {
     return {
-      name: "",
-      birthdate: "",
+      accessCode: "",
+      password: "",
+      showPassword: false,
+      rememberMe: false,
       logo: logoImage,
       loading: false,
-      error: null
+      error: null,
+      sessionId: null
     };
   },
+  created() {
+    // Cek apakah ada sessionId di cookie
+    this.checkExistingSession();
+  },
   methods: {
+    async checkExistingSession() {
+      const sessionId = this.getCookie('session_id');
+      if (sessionId) {
+        try {
+          // Verifikasi session dengan server
+          const response = await axios.post('https://api.earscope.adrfstwn.cloud/v1/verify-session', {
+            sessionId: sessionId
+          });
+          
+          if (response.data.valid) {
+            // Session valid, redirect ke dashboard
+            this.$router.push('/dashboard');
+          }
+        } catch (error) {
+          console.error('Session verification error:', error);
+          // Hapus cookie jika session tidak valid
+          this.deleteCookie('session_id');
+        }
+      }
+    },
+    
     async login() {
       this.loading = true;
       this.error = null;
       
-      console.log("Nama:", this.name);
-      console.log("Tanggal Lahir:", this.birthdate);
+      console.log("Kode Akses:", this.accessCode);
+      console.log("Password:", this.password);
+      console.log("Remember Me:", this.rememberMe);
       
       try {
         // Memanggil API dari backend untuk login
         const response = await axios.post('https://api.earscope.adrfstwn.cloud/v1/login', {
-          name: this.name,
-          birthdate: this.birthdate
+          accessCode: this.accessCode,
+          password: this.password,
+          rememberMe: this.rememberMe
         });
         
-        // Simpan token dan data user ke localStorage
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        // Dapatkan sessionId dari server
+        const sessionId = response.data.sessionId;
         
-        // Redirect ke dashboard tanpa memeriksa peran
+        // Simpan sessionId ke cookie dengan waktu kedaluwarsa sesuai
+        // rememberMe: true = 30 hari, false = sampai browser ditutup
+        if (this.rememberMe) {
+          this.setCookie('session_id', sessionId, 30);
+        } else {
+          this.setCookie('session_id', sessionId, '');
+        }
+        
+        // Redirect ke dashboard
         this.$router.push('/dashboard');
         
       } catch (error) {
@@ -97,9 +150,39 @@ export default {
         this.loading = false;
       }
     },
-    goToRegister() {
-      console.log("Navigasi ke halaman register");
-      this.$router.push('/register');
+    
+    // Fungsi untuk mengelola cookie
+    setCookie(name, value, days) {
+      let expires = '';
+      if (days) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = '; expires=' + date.toUTCString();
+      }
+      document.cookie = name + '=' + (value || '') + expires + '; path=/; SameSite=Strict; Secure';
+    },
+    
+    getCookie(name) {
+      const nameEQ = name + '=';
+      const ca = document.cookie.split(';');
+      for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+      }
+      return null;
+    },
+    
+    deleteCookie(name) {
+      document.cookie = name + '=; Max-Age=-99999999; path=/';
+    },
+    
+    togglePasswordVisibility() {
+      this.showPassword = !this.showPassword;
+      const passwordInput = document.getElementById('password');
+      if (passwordInput) {
+        passwordInput.type = this.showPassword ? 'text' : 'password';
+      }
     }
   },
 };
@@ -206,8 +289,26 @@ export default {
   background-color: #f8f9fa;
 }
 
+.input-wrapper {
+  position: relative;
+}
+
 .form-control::placeholder {
   color: #aaa;
+}
+
+.form-check {
+  display: flex;
+  align-items: center;
+}
+
+.form-check-input {
+  margin-right: 8px;
+}
+
+.form-check-label {
+  font-size: 14px;
+  color: #555;
 }
 
 .btn-login {
