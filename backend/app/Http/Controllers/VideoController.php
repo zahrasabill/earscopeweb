@@ -362,9 +362,9 @@ class VideoController extends Controller
 
     public function streamVideo($filename)
     {
-        // Cari video berdasarkan nama file di database
-        $video = Video::where('raw_video_path', 'like', "%{$filename}")
-            ->orWhere('processed_video_path', 'like', "%{$filename}")
+        // Cari video yang sesuai di database dengan path lengkap
+        $video = Video::where('raw_video_path', 'videos/' . $filename)
+            ->orWhere('processed_video_path', 'videos/' . $filename)
             ->first();
 
         // Jika video tidak ditemukan dalam database
@@ -372,11 +372,11 @@ class VideoController extends Controller
             return response()->json(['message' => 'Video not found in database'], 404);
         }
 
-        // Pastikan file benar-benar ada di penyimpanan private
+        // Tentukan path yang benar-benar sesuai dengan yang ada di database
         $filePath = null;
-        if (Storage::disk('private')->exists($video->raw_video_path)) {
+        if ($video->raw_video_path === 'videos/' . $filename && Storage::disk('private')->exists($video->raw_video_path)) {
             $filePath = $video->raw_video_path;
-        } elseif (Storage::disk('private')->exists($video->processed_video_path)) {
+        } elseif ($video->processed_video_path === 'videos/' . $filename && Storage::disk('private')->exists($video->processed_video_path)) {
             $filePath = $video->processed_video_path;
         }
 
@@ -396,6 +396,7 @@ class VideoController extends Controller
             'Content-Disposition' => 'inline; filename="' . basename($filePath) . '"'
         ]);
     }
+
 
 
 }
