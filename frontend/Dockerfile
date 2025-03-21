@@ -1,5 +1,5 @@
 # Stage 1: Build stage
-FROM node:20-alpine AS build
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -18,16 +18,6 @@ COPY . .
 # Build aplikasi untuk production
 RUN npm run build
 
-# Stage 2: Production stage (final image)
-FROM node:20-alpine AS production
-
-# Install http-server tanpa cache
-RUN npm install -g http-server --no-cache
-
-WORKDIR /app
-
-# Copy hasil build dari stage sebelumnya
-COPY --from=build /app/dist /app/dist
 
 # Jalankan server
 CMD ["http-server", "dist"]
