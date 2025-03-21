@@ -1,18 +1,30 @@
-FROM node:lts-alpine
+# Stage 1: Build stage
+FROM node:20-alpine AS build
 
-# install simple http server for serving static content
-RUN npm install -g http-server
-
-# make the 'app' folder the current working directory
 WORKDIR /app
 
-# copy project files and folders to the current working directory (i.e. 'app' folder)
+# Copy package.json dan package-lock.json untuk memanfaatkan caching layer Docker
+COPY package.json package-lock.json ./
+
+# Install dependencies dengan npm ci untuk memastikan versi yang tepat dari package-lock.json
+RUN npm ci
+
+# Copy semua source code setelah dependencies terinstall
 COPY . .
 
-# install project dependencies
-RUN npm install
-
-# build app for production with minification
+# Build aplikasi untuk production
 RUN npm run build
 
-CMD [ "http-server", "dist" ]
+# Stage 2: Production stage (final image)
+FROM node:20-alpine AS production
+
+# Install http-server untuk serving aplikasi statis
+RUN npm install -g http-server
+
+WORKDIR /app
+
+# Copy hasil build dari stage sebelumnya
+COPY --from=build /app/dist /app/dist
+
+# Jalankan server
+CMD ["http-server", "dist"]
