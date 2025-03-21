@@ -117,7 +117,7 @@
                                     "gender": {
                                         "description": "Jenis kelamin, hanya diisi 'laki-laki' atau 'perempuan'",
                                         "type": "string",
-                                        "example": "Laki-laki"
+                                        "example": "laki-laki"
                                     },
                                     "no_telp": {
                                         "description": "Nomor telepon, hanya angka, 10 sampai 15 digit",
@@ -196,7 +196,7 @@
                                     "gender": {
                                         "description": "Jenis kelamin, hanya diisi 'laki-laki' atau 'perempuan'",
                                         "type": "string",
-                                        "example": "Laki-laki"
+                                        "example": "laki-laki"
                                     },
                                     "no_telp": {
                                         "description": "Nomor telepon, hanya angka, 10 sampai 15 digit",
@@ -450,13 +450,67 @@
                 ]
             }
         },
-        "/v1/users": {
+        "/v1/pasien": {
             "get": {
                 "tags": [
                     "User"
                 ],
-                "summary": "Get all users",
-                "operationId": "3f54252a5fcc629bcf8fff9c64dcdc01",
+                "summary": "Get all pasien",
+                "operationId": "38ffdb85192c1e00fca9886d8680a751",
+                "responses": {
+                    "200": {
+                        "description": "List of all users",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer"
+                                            },
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "email": {
+                                                "type": "string"
+                                            },
+                                            "roles": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "deleted_at": {
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "nullable": true
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/v1/dokter": {
+            "get": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get all dokter",
+                "operationId": "33be195307cb462d2aa95ab5b5845ad8",
                 "responses": {
                     "200": {
                         "description": "List of all users",

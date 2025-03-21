@@ -17,7 +17,8 @@ Route::middleware('jwt.auth')->group(function () {
 
     // Route untuk admin
     Route::middleware('role:admin|dokter')->group(function () {
-        Route::get('users', [UserController::class, 'getAllUsers']);
+        Route::get('pasien', [UserController::class, 'getAllPasien']);
+        Route::get('dokter', [UserController::class, 'getAllDokter']);
         Route::get('users/{id}', [UserController::class, 'show']);
         Route::put('users/{id}', [UserController::class, 'update']);
         Route::delete('users/{id}', [UserController::class, 'delete']);

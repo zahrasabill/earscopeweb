@@ -403,8 +403,8 @@ class UserController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/v1/users",
-     *     summary="Get all users",
+     *     path="/v1/pasien",
+     *     summary="Get all pasien",
      *     tags={"User"},
      *     security={{"bearerAuth":{}}},
      *     @OA\Response(
@@ -425,20 +425,72 @@ class UserController extends Controller
      *     @OA\Response(response=401, description="Unauthorized")
      * )
      */
-    public function getAllUsers()
+    public function getAllPasien()
     {
         // Ambil semua pengguna beserta role mereka
         $users = User::withTrashed()
+            ->role('pasien')
             ->with('roles') // Muat relasi roles
             ->get()
             ->map(function ($user) {
                 return [
                     'id' => $user->id,
+                    'kode_akses' => $user->kode_akses,
                     'name' => $user->name,
                     'email' => $user->email,
                     'tanggal_lahir' => $user->tanggal_lahir,
                     'usia' => $user->usia,
-                    'no_ktp' => $user->no_ktp,
+                    'no_telp' => $user->no_telp,
+                    'gender' => $user->gender,
+                    'roles' => $user->roles->pluck('name'), // Ambil nama role
+                    'deleted_at' => $user->deleted_at,
+                ];
+            });
+
+        return response()->json($users);
+    }
+
+        /**
+     * @OA\Get(
+     *     path="/v1/dokter",
+     *     summary="Get all dokter",
+     *     tags={"User"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of all users",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(
+     *                 type="object",
+     *                 @OA\Property(property="id", type="integer"),
+     *                 @OA\Property(property="name", type="string"),
+     *                 @OA\Property(property="email", type="string"),
+     *                 @OA\Property(property="roles", type="array", @OA\Items(type="string")),
+     *                 @OA\Property(property="deleted_at", type="string", format="date-time", nullable=true)
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="Unauthorized")
+     * )
+     */
+    public function getAllDokter()
+    {
+        // Ambil semua pengguna beserta role mereka
+        $users = User::withTrashed()
+            ->role('dokter')
+            ->with('roles') // Muat relasi roles
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'kode_akses' => $user->kode_akses,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'tanggal_lahir' => $user->tanggal_lahir,
+                    'usia' => $user->usia,
+                    'no_telp' => $user->no_telp,
+                    'gender' => $user->gender,
                     'roles' => $user->roles->pluck('name'), // Ambil nama role
                     'deleted_at' => $user->deleted_at,
                 ];
