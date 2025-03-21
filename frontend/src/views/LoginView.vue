@@ -13,13 +13,13 @@
         </p>
         <form @submit.prevent="login">
           <div class="form-group mb-3">
-            <label for="accessCode" class="form-label">Kode Akses</label>
+            <label for="kode_akses" class="form-label">Kode Akses</label>
             <div class="input-wrapper">
               <input
                 type="text"
-                v-model="accessCode"
+                v-model="kode_akses"
                 class="form-control"
-                id="accessCode"
+                id="kode_akses"
                 placeholder="Masukkan Kode Akses Anda"
                 required
               />
