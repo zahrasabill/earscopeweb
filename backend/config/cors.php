@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['https://earscope.adrfstwn.cloud', 'http://localhost:5713'],
+    'allowed_origins' => ['https://earscope.adrfstwn.cloud', 'http://localhost:5173'],
 
     'allowed_origins_patterns' => [],
 
