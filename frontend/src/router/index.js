@@ -1,11 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
+
 import DashboardView from '@/views/DashboardView.vue'
 import DokterView from '@/views/DokterView.vue'
-import RegisterView from '@/views/RegisterView.vue'
 import PasienView from '@/views/PasienView.vue'
-import PemeriksaanView from '@/views/PemeriksaanView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -21,11 +20,6 @@ const router = createRouter({
       component: LoginView,
     },
     {
-      path: '/register',
-      name: 'register',
-      component: RegisterView,
-    },
-    {
       path: '/dashboard',
       name: 'dashboard',
       component: DashboardView,
@@ -39,11 +33,6 @@ const router = createRouter({
       path: '/pasien',
       name: 'pasien',
       component: PasienView,
-    },
-    {
-      path: '/pemeriksaan',
-      name: 'pemeriksaan',
-      component: PemeriksaanView,
     },
   ],
 })
