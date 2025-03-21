@@ -7,7 +7,6 @@ use Spatie\Permission\Exceptions\UnauthorizedException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Illuminate\Validation\ValidationException;
 
 return Application::configure(basePath: dirname(__DIR__))

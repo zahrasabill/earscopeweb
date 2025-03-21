@@ -15,11 +15,11 @@ return [
     |
     */
 
-    'paths' => ['api/*'],
+    'paths' => ['v1/*'],
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => ['http://earscope.adrfstwn.cloud', 'http://localhost:5713'],
 
     'allowed_origins_patterns' => [],
 
