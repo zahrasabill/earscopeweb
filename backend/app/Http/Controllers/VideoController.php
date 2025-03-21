@@ -7,7 +7,7 @@ use App\Models\Video;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Http\File;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Illuminate\Support\Facades\Log;
 
 class VideoController extends Controller
 {
@@ -362,28 +362,35 @@ class VideoController extends Controller
 
     public function streamVideo($filename)
     {
-        // Cari video yang sesuai di database dengan path lengkap
+        Log::info("Streaming request received for: " . $filename);
+
+        // Cari video berdasarkan path lengkap di database
         $video = Video::where('raw_video_path', 'videos/' . $filename)
             ->orWhere('processed_video_path', 'videos/' . $filename)
             ->first();
 
-        // Jika video tidak ditemukan dalam database
         if (!$video) {
+            Log::error("Video not found in database: videos/" . $filename);
             return response()->json(['message' => 'Video not found in database'], 404);
         }
 
-        // Tentukan path yang benar-benar sesuai dengan yang ada di database
+        Log::info("Video found in database: " . json_encode($video));
+
+        // Tentukan path file berdasarkan yang benar-benar sesuai di database
         $filePath = null;
-        if ($video->raw_video_path === 'videos/' . $filename && Storage::disk('private')->exists($video->raw_video_path)) {
+        if ($video->raw_video_path === 'videos/' . $filename) {
             $filePath = $video->raw_video_path;
-        } elseif ($video->processed_video_path === 'videos/' . $filename && Storage::disk('private')->exists($video->processed_video_path)) {
+        } elseif ($video->processed_video_path === 'videos/' . $filename) {
             $filePath = $video->processed_video_path;
         }
 
-        // Jika file tidak ditemukan di storage
-        if (!$filePath) {
-            return response()->json(['message' => 'Video file not found'], 404);
+        // Cek apakah file benar-benar ada di storage
+        if (!$filePath || !Storage::disk('private')->exists($filePath)) {
+            Log::error("Video file not found in storage: " . $filePath);
+            return response()->json(['message' => 'Video file not found in storage'], 404);
         }
+
+        Log::info("Streaming video file: " . $filePath);
 
         // Stream video
         return new StreamedResponse(function () use ($filePath) {
@@ -396,7 +403,5 @@ class VideoController extends Controller
             'Content-Disposition' => 'inline; filename="' . basename($filePath) . '"'
         ]);
     }
-
-
 
 }
