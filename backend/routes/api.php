@@ -15,6 +15,8 @@ Route::middleware('jwt.auth')->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
     Route::post('refresh', [AuthController::class, 'refresh']);
 
+    Route::get('videos/stream/{filename}', [VideoController::class, 'streamVideo']);
+
     // Route untuk admin
     Route::middleware('role:admin|dokter')->group(function () {
         Route::get('pasien', [UserController::class, 'getAllPasien']);
@@ -29,8 +31,6 @@ Route::middleware('jwt.auth')->group(function () {
         Route::patch('/videos/{videoId}', [VideoController::class, 'updateStatusVideo']);
         Route::get('videos', [VideoController::class, 'showAllVideos']); // Lihat semua video
         Route::get('videos/{videoId}', [VideoController::class, 'showById']); // Lihat detail video
-
-        Route::get('videos/stream/{filename}', [VideoController::class, 'streamVideo']);
 
     });
 
