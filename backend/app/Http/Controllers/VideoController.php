@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Video;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Http\File;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class VideoController extends Controller
 {
@@ -55,7 +58,6 @@ class VideoController extends Controller
      */
     public function store(Request $request)
     {
-        // Validasi input
         $request->validate([
             'raw_video' => 'required|file|mimetypes:video/mp4,video/quicktime',
             'processed_video' => 'required|file|mimetypes:video/mp4,video/quicktime',
@@ -63,32 +65,53 @@ class VideoController extends Controller
 
         $timestamp = now()->format('Ymd_His');
         $folderPath = "videos/{$timestamp}";
+        $tempPath = storage_path('app/temp');
 
-        // Simpan video mentah
+        // Pastikan folder temp ada
+        if (!file_exists($tempPath)) {
+            mkdir($tempPath, 0777, true);
+        }
+
+        // Simpan video mentah sementara sebelum konversi
         $rawVideoFilename = "raw_{$timestamp}.mp4";
-        $rawVideoPath = $request->file('raw_video')->storeAs($folderPath, $rawVideoFilename, 'public');
-        $rawVideoFullPath = storage_path("app/public/{$rawVideoPath}");
+        $rawTempPath = "{$tempPath}/{$rawVideoFilename}";
+        $request->file('raw_video')->move($tempPath, $rawVideoFilename);
 
-        // Simpan video dengan bounding box
+        // Simpan video dengan bounding box sementara sebelum konversi
         $processedVideoFilename = "bb_{$timestamp}.mp4";
-        $processedVideoPath = $request->file('processed_video')->storeAs($folderPath, $processedVideoFilename, 'public');
-        $processedVideoFullPath = storage_path("app/public/{$processedVideoPath}");
+        $processedTempPath = "{$tempPath}/{$processedVideoFilename}";
+        $request->file('processed_video')->move($tempPath, $processedVideoFilename);
 
-        // Konversi ke H.264
+        // Path hasil konversi
         $convertedRawVideoFilename = "raw_{$timestamp}_h264.mp4";
-        $convertedRawVideoPath = storage_path("app/public/{$folderPath}/{$convertedRawVideoFilename}");
+        $convertedRawVideoPath = "{$tempPath}/{$convertedRawVideoFilename}";
 
         $convertedProcessedVideoFilename = "bb_{$timestamp}_h264.mp4";
-        $convertedProcessedVideoPath = storage_path("app/public/{$folderPath}/{$convertedProcessedVideoFilename}");
+        $convertedProcessedVideoPath = "{$tempPath}/{$convertedProcessedVideoFilename}";
 
-        // Jalankan FFmpeg untuk konversi
-        $this->convertToH264($rawVideoFullPath, $convertedRawVideoPath);
-        $this->convertToH264($processedVideoFullPath, $convertedProcessedVideoPath);
+        // Konversi ke H.264
+        $this->convertToH264($rawTempPath, $convertedRawVideoPath);
+        $this->convertToH264($processedTempPath, $convertedProcessedVideoPath);
+
+        // Pastikan hasil konversi ada sebelum menyimpan ke storage
+        if (!file_exists($convertedRawVideoPath) || !file_exists($convertedProcessedVideoPath)) {
+            throw new \Exception("Converted video files not found.");
+        }
+
+        // Simpan hasil konversi ke storage Laravel
+        $storedRawVideoPath = Storage::disk('private')->putFileAs($folderPath, new File($convertedRawVideoPath), $convertedRawVideoFilename);
+        $storedProcessedVideoPath = Storage::disk('private')->putFileAs($folderPath, new File($convertedProcessedVideoPath), $convertedProcessedVideoFilename);
+
+        // Hapus file sementara
+        unlink($rawTempPath);
+        unlink($processedTempPath);
+        unlink($convertedRawVideoPath);
+        unlink($convertedProcessedVideoPath);
 
         // Simpan data ke database
         $video = Video::create([
-            'raw_video_path' => "videos/{$timestamp}/{$convertedRawVideoFilename}",
-            'processed_video_path' => "videos/{$timestamp}/{$convertedProcessedVideoFilename}",
+            'raw_video_path' => $storedRawVideoPath,
+            'processed_video_path' => $storedProcessedVideoPath,
             'status' => 'unassigned',
         ]);
 
@@ -97,7 +120,6 @@ class VideoController extends Controller
             'data' => $video,
         ], 201);
     }
-
     /**
      * @OA\Post(
      *     path="/v1/videos/{videoId}/assign/{userId}",
@@ -176,11 +198,13 @@ class VideoController extends Controller
      *             )
      *         )
      *     ),
-     *     @OA\Response(response=401, description="Unauthorized")
+     *     @OA\Response(response=401, description="Unauthorized"),
+     *     @OA\Response(response=403, description="Forbidden")
      * )
      */
-    public function index()
+    public function showAllVideos()
     {
+        // Ambil semua video beserta relasi user
         $videos = Video::with('user')->get();
 
         // Tambahkan URL lengkap untuk setiap video
@@ -192,6 +216,7 @@ class VideoController extends Controller
 
         return response()->json($videos);
     }
+
 
     /**
      * @OA\Get(
@@ -215,11 +240,13 @@ class VideoController extends Controller
      *             )
      *         )
      *     ),
-     *     @OA\Response(response=404, description="Video not found")
+     *     @OA\Response(response=404, description="Video not found"),
+     *     @OA\Response(response=401, description="Unauthorized")
      * )
      */
-    public function show($videoId)
+    public function showById($videoId)
     {
+        // Cari video berdasarkan ID
         $video = Video::with('user')->findOrFail($videoId);
 
         // Tambahkan URL lengkap untuk video
@@ -230,15 +257,145 @@ class VideoController extends Controller
     }
 
     /**
+     * @OA\Get(
+     *     path="/v1/videos/pasien",
+     *     summary="Get videos assigned to the logged-in patient",
+     *     tags={"Videos"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of videos assigned to the patient",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(
+     *                 type="object",
+     *                 @OA\Property(property="id", type="integer"),
+     *                 @OA\Property(property="raw_video_url", type="string"),
+     *                 @OA\Property(property="processed_video_url", type="string"),
+     *                 @OA\Property(property="status", type="string")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="Unauthorized"),
+     *     @OA\Response(response=403, description="Forbidden")
+     * )
+     */
+    public function showVideosByPasien()
+    {
+        $user = auth()->user();
+
+        // Pastikan hanya user dengan role "pasien" yang bisa mengakses endpoint ini
+        if (!$user->hasRole('pasien')) {
+            return response()->json(['message' => 'Forbidden: Only patients can access this endpoint'], 403);
+        }
+
+        // Ambil video yang di-assign ke pasien ini (berdasarkan user_id)
+        $videos = Video::where('user_id', $user->id)->get();
+
+        // Tambahkan URL lengkap untuk setiap video
+        $videos->transform(function ($video) {
+            $video->raw_video_url = Storage::url($video->raw_video_path);
+            $video->processed_video_url = Storage::url($video->processed_video_path);
+            return $video;
+        });
+
+        return response()->json($videos);
+    }
+
+    /**
      * Convert video to H.264 using FFmpeg
      */
     private function convertToH264($inputPath, $outputPath)
     {
-        $command = "ffmpeg -i {$inputPath} -c:v libx264 -preset fast -crf 23 -c:a aac -b:a 128k {$outputPath} 2>&1";
+        // Pastikan direktori tujuan ada
+        $outputDir = dirname($outputPath);
+        if (!file_exists($outputDir)) {
+            mkdir($outputDir, 0777, true);
+        }
+
+        // Perintah FFmpeg
+        $command = "ffmpeg -i \"{$inputPath}\" -c:v libx264 -preset fast -crf 23 -c:a aac -b:a 128k \"{$outputPath}\" 2>&1";
         exec($command, $output, $returnCode);
 
-        if ($returnCode !== 0) {
-            \Log::error('FFmpeg conversion failed', ['output' => $output]);
+        // Logging hasil eksekusi
+        \Log::info('FFmpeg output', ['output' => $output]);
+
+        if ($returnCode !== 0 || !file_exists($outputPath)) {
+            \Log::error('FFmpeg conversion failed', ['command' => $command, 'output' => $output]);
+            throw new \Exception("FFmpeg conversion failed. See logs for details.");
         }
     }
+
+    /**
+     * @OA\Get(
+     *     path="/v1/videos/stream/{filename}",
+     *     summary="Stream a video file",
+     *     tags={"Videos"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="filename",
+     *         in="path",
+     *         required=true,
+     *         description="The name of the video file to stream",
+     *         @OA\Schema(type="string")
+     *     ),
+     *@OA\Response(
+     *response=200,
+     *description="Video streaming successfully",
+     *@OA\Header(
+     *    header="Content-Type",
+     *    description="MIME type of the video",
+     *    @OA\Schema(type="string", example="video/mp4")
+     *),
+     *@OA\Header(
+     *   header="Accept-Ranges",
+     *   description="bytes range support",
+     *   @OA\Schema(type="string", example="bytes")
+     *)
+     *),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Video not found"
+     *     )
+     * )
+     */
+
+    public function streamVideo($filename)
+    {
+        // Cari video berdasarkan nama file di database
+        $video = Video::where('raw_video_path', 'like', "%{$filename}")
+            ->orWhere('processed_video_path', 'like', "%{$filename}")
+            ->first();
+
+        // Jika video tidak ditemukan dalam database
+        if (!$video) {
+            return response()->json(['message' => 'Video not found in database'], 404);
+        }
+
+        // Pastikan file benar-benar ada di penyimpanan private
+        $filePath = null;
+        if (Storage::disk('private')->exists($video->raw_video_path)) {
+            $filePath = $video->raw_video_path;
+        } elseif (Storage::disk('private')->exists($video->processed_video_path)) {
+            $filePath = $video->processed_video_path;
+        }
+
+        // Jika file tidak ditemukan di storage
+        if (!$filePath) {
+            return response()->json(['message' => 'Video file not found'], 404);
+        }
+
+        // Stream video
+        return new StreamedResponse(function () use ($filePath) {
+            $stream = Storage::disk('private')->readStream($filePath);
+            fpassthru($stream);
+            fclose($stream);
+        }, 200, [
+            'Content-Type' => 'video/mp4',
+            'Accept-Ranges' => 'bytes',
+            'Content-Disposition' => 'inline; filename="' . basename($filePath) . '"'
+        ]);
+    }
+
+
 }
