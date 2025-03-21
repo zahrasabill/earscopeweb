@@ -364,9 +364,9 @@ class VideoController extends Controller
     {
         Log::info("Streaming request received for: " . $filename);
 
-        // Cari video berdasarkan path lengkap di database
-        $video = Video::where('raw_video_path', 'videos/' . $filename)
-            ->orWhere('processed_video_path', 'videos/' . $filename)
+        // Cari video berdasarkan path di database
+        $video = Video::where('raw_video_path', 'like', "%{$filename}")
+            ->orWhere('processed_video_path', 'like', "%{$filename}")
             ->first();
 
         if (!$video) {
@@ -376,32 +376,31 @@ class VideoController extends Controller
 
         Log::info("Video found in database: " . json_encode($video));
 
-        // Tentukan path file berdasarkan yang benar-benar sesuai di database
+        // Tentukan path file yang benar
         $filePath = null;
-        if ($video->raw_video_path === 'videos/' . $filename) {
-            $filePath = $video->raw_video_path;
-        } elseif ($video->processed_video_path === 'videos/' . $filename) {
-            $filePath = $video->processed_video_path;
+        if (str_ends_with($video->raw_video_path, $filename)) {
+            $filePath = Storage::disk('private')->path($video->raw_video_path);
+        } elseif (str_ends_with($video->processed_video_path, $filename)) {
+            $filePath = Storage::disk('private')->path($video->processed_video_path);
         }
 
-        // Cek apakah file benar-benar ada di storage
-        if (!$filePath || !Storage::disk('private')->exists($filePath)) {
-            Log::error("Video file not found in storage: " . $filePath);
-            return response()->json(['message' => 'Video file not found in storage'], 404);
+        if (!$filePath || !file_exists($filePath)) {
+            Log::error("File not found on storage: " . $filePath);
+            return response()->json(['message' => 'File not found'], 404);
         }
 
-        Log::info("Streaming video file: " . $filePath);
+        Log::info("Streaming file path: " . $filePath);
 
-        // Stream video
-        return new StreamedResponse(function () use ($filePath) {
-            $stream = Storage::disk('private')->readStream($filePath);
+        return response()->stream(function () use ($filePath) {
+            $stream = fopen($filePath, 'rb');
             fpassthru($stream);
             fclose($stream);
         }, 200, [
             'Content-Type' => 'video/mp4',
             'Accept-Ranges' => 'bytes',
-            'Content-Disposition' => 'inline; filename="' . basename($filePath) . '"'
+            'Content-Length' => filesize($filePath),
         ]);
     }
+
 
 }
