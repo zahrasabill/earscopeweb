@@ -77,7 +77,7 @@ import router from "@/router";
 export default {
   data() {
     return {
-      accessCode: "",
+      kode_akses: "",
       password: "",
       showPassword: false,
       rememberMe: false,
@@ -117,14 +117,14 @@ export default {
       this.loading = true;
       this.error = null;
       
-      console.log("Kode Akses:", this.accessCode);
+      console.log("Kode Akses:", this.kode_akses);
       console.log("Password:", this.password);
       console.log("Remember Me:", this.rememberMe);
       
       try {
         // Memanggil API dari backend untuk login
         const response = await axios.post('https://api.earscope.adrfstwn.cloud/v1/login', {
-          accessCode: this.accessCode,
+          kode_akses: this.kode_akses,
           password: this.password,
           rememberMe: this.rememberMe
         });
