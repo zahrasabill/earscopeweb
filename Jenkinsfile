@@ -122,7 +122,7 @@ pipeline {
 
                     echo "Checking frontend working directory..."
                     docker exec earscopeweb-frontend pwd
-                    docker exec earscopeweb-frontend ls -al /app
+                    docker exec earscopeweb-frontend ls -al /usr/share/nginx/html
                     """
                 }
             }
