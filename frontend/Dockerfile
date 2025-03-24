@@ -1,20 +1,14 @@
 # Stage 1: Build stage
-FROM node:lts-alpine
-
-# Install http-server
-RUN npm install -g http-server
+FROM node:lts-alpine AS build
 
 # Workdir
 WORKDIR /app
 
-# rm cache
-RUN rm -rf node_modules dist && npm cache clean --force
-
-# Copy package
+# Copy package.json dan package-lock.json
 COPY package.json package-lock.json ./
 
 # Install dependencies
-RUN npm install --no-cache
+RUN npm ci --no-audit --prefer-offline
 
 # Copy
 COPY . .
@@ -22,6 +16,14 @@ COPY . .
 # Build
 RUN npm run build
 
+# Stage 2: Production stage
+FROM nginx:alpine
+
+# Salin hasil build 
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Expose port 80 
+EXPOSE 80
 
 # Run
-ENTRYPOINT ["http-server", "dist"]
+CMD ["nginx", "-g", "daemon off;"]
