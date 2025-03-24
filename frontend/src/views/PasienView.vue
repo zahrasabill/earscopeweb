@@ -22,8 +22,8 @@
         <div class="col-md-4">
           <select class="form-select" v-model="filterGender">
             <option value="">Semua Gender</option>
-            <option value="Laki-laki">Laki-laki</option>
-            <option value="Perempuan">Perempuan</option>
+            <option value="Laki-laki">laki-laki</option>
+            <option value="Perempuan">perempuan</option>
           </select>
         </div>
       </div>

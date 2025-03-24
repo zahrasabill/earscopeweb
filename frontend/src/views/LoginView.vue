@@ -14,22 +14,20 @@
         <form @submit.prevent="login">
           <div class="form-group mb-3">
             <label for="kode_akses" class="form-label">Kode Akses</label>
-            <div class="input-wrapper">
-              <input
-                type="text"
-                v-model="kode_akses"
-                class="form-control"
-                id="kode_akses"
-                placeholder="Masukkan Kode Akses Anda"
-                required
-              />
-            </div>
+            <input
+              type="text"
+              v-model="kode_akses"
+              class="form-control"
+              id="kode_akses"
+              placeholder="Masukkan Kode Akses Anda"
+              required
+            />
           </div>
           <div class="form-group mb-4">
             <label for="password" class="form-label">Password</label>
             <div class="input-wrapper">
               <input
-                type="password"
+                :type="showPassword ? 'text' : 'password'"
                 v-model="password"
                 class="form-control"
                 id="password"
@@ -72,7 +70,7 @@
 <script>
 import logoImage from "@/assets/logooido.png";
 import axios from "axios";
-import router from "@/router";
+import api from "@/api.js";
 
 export default {
   data() {
@@ -84,109 +82,75 @@ export default {
       logo: logoImage,
       loading: false,
       error: null,
-      sessionId: null
     };
   },
   created() {
-    // Cek apakah ada sessionId di cookie
-    this.checkExistingSession();
+    this.checkExistingToken();
   },
   methods: {
-    async checkExistingSession() {
-      const sessionId = this.getCookie('session_id');
-      if (sessionId) {
-        try {
-          // Verifikasi session dengan server
-          const response = await axios.post('https://api.earscope.adrfstwn.cloud/v1/verify-session', {
-            sessionId: sessionId
-          });
-          
-          if (response.data.valid) {
-            // Session valid, redirect ke dashboard
-            this.$router.push('/dashboard');
-          }
-        } catch (error) {
-          console.error('Session verification error:', error);
-          // Hapus cookie jika session tidak valid
-          this.deleteCookie('session_id');
+    async checkExistingToken() {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      const expiry = localStorage.getItem('expiry') || sessionStorage.getItem('expiry');
+      
+      if (token && expiry) {
+        const now = Math.floor(Date.now() / 1000); // Waktu sekarang dalam UNIX timestamp
+        if (now < expiry) {
+          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          this.$router.push('/dashboard');
+        } else {
+          this.logout(); // Hapus token jika sudah expired
         }
       }
     },
-    
+
     async login() {
       this.loading = true;
       this.error = null;
-      
-      console.log("Kode Akses:", this.kode_akses);
-      console.log("Password:", this.password);
-      console.log("Remember Me:", this.rememberMe);
-      
+
       try {
-        // Memanggil API dari backend untuk login
-        const response = await axios.post('https://api.earscope.adrfstwn.cloud/v1/login', {
+        const response = await axios.post(api.getEndpoint("login"), {
           kode_akses: this.kode_akses,
           password: this.password,
-          rememberMe: this.rememberMe
         });
-        
-        // Dapatkan sessionId dari server
-        const sessionId = response.data.sessionId;
-        
-        // Simpan sessionId ke cookie dengan waktu kedaluwarsa sesuai
-        // rememberMe: true = 30 hari, false = sampai browser ditutup
+
+        const token = response.data.access_token;
+        const expiry = response.data.expires_in; // Perbaiki dari expires_in ke expiry
+
         if (this.rememberMe) {
-          this.setCookie('session_id', sessionId, 30);
+          localStorage.setItem('token', token);
+          localStorage.setItem('expiry', expiry);
         } else {
-          this.setCookie('session_id', sessionId, '');
+          sessionStorage.setItem('token', token);
+          sessionStorage.setItem('expiry', expiry);
         }
-        
-        // Redirect ke dashboard
+
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         this.$router.push('/dashboard');
-        
       } catch (error) {
         console.error('Login error:', error);
-        this.error = error.response?.data?.message || 'Login gagal. Silakan coba lagi.';
+        this.error = error.response?.data?.error || 'Login gagal. Silakan coba lagi.';
       } finally {
         this.loading = false;
       }
+      //console.log(axios.defaults.headers.common['Authorization']);
     },
-    
-    // Fungsi untuk mengelola cookie
-    setCookie(name, value, days) {
-      let expires = '';
-      if (days) {
-        const date = new Date();
-        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-        expires = '; expires=' + date.toUTCString();
-      }
-      document.cookie = name + '=' + (value || '') + expires + '; path=/; SameSite=Strict; Secure';
+
+    logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('expiry');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('expiry');
+      delete axios.defaults.headers.common['Authorization'];
+      this.$router.push('/login');
     },
-    
-    getCookie(name) {
-      const nameEQ = name + '=';
-      const ca = document.cookie.split(';');
-      for (let i = 0; i < ca.length; i++) {
-        let c = ca[i];
-        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-      }
-      return null;
-    },
-    
-    deleteCookie(name) {
-      document.cookie = name + '=; Max-Age=-99999999; path=/';
-    },
-    
+
     togglePasswordVisibility() {
       this.showPassword = !this.showPassword;
-      const passwordInput = document.getElementById('password');
-      if (passwordInput) {
-        passwordInput.type = this.showPassword ? 'text' : 'password';
-      }
     }
   },
 };
 </script>
+
 
 <style scoped>
 /* Import Bootstrap Icons */
