@@ -19,6 +19,9 @@ RUN npm run build
 # Stage 2: Production stage
 FROM nginx:alpine
 
+# workdir
+WORKDIR /app
+
 # Salin hasil build 
 COPY --from=build /app/dist /usr/share/nginx/html
 
