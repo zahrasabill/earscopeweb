@@ -45,7 +45,7 @@
           <div class="card-body">
             <div v-if="pasien">
               <div class="mb-3">
-                <label class="fw-bold">ID Pasien:</label>
+                <label class="fw-bold">Kode Akses Pasien:</label>
                 <span class="ms-2">{{ pasien.id }}</span>
               </div>
               <div class="mb-3">
@@ -53,14 +53,20 @@
                 <span class="ms-2">{{ pasien.nama }}</span>
               </div>
               <div class="mb-3">
+                <label class="fw-bold">Gender:</label>
+                <span class="ms-2">{{ pasien.nama }}</span>
+              </div>
+              <div class="mb-3">
+                <label class="fw-bold">Tanggal Lahir:</label>
+                <span class="ms-2">{{ pasien.nama }}</span>
+              </div>
+              <div class="mb-3">
                 <label class="fw-bold">Umur:</label>
                 <span class="ms-2">{{ pasien.umur }} tahun</span>
               </div>
               <div class="mb-3">
-                <label class="fw-bold">Status Pemeriksaan:</label>
-                <span class="ms-2 badge" :class="getStatusBadgeClass(pasien.status)">
-                  {{ pasien.status }}
-                </span>
+                <label class="fw-bold">No Telepon:</label>
+                <span class="ms-2">{{ pasien.no_telp }}</span>
               </div>
             </div>
             <div v-else class="alert alert-info">
