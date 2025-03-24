@@ -31,7 +31,7 @@
                   <p><strong>Diagnosis:</strong> {{ video.hasil_diagnosis }}</p>
                 </div>
                 <div class="card-footer text-center">
-                  <small class="text-muted">Terakhir diperbarui: {{ new Date(video.created_at).toLocaleString() }}</small>
+                  <small class="text-muted">Waktu diambil: {{ new Date(video.created_at).toLocaleString() }}</small>
                   
                   <!-- Tombol Assign hanya muncul jika video belum di-assign -->
                   <div v-if="video.status !== 'assigned'">
