@@ -19,11 +19,9 @@
                     </div>
                     <div v-else class="video-wrapper">
                       <div class="video-section">
-                        <h6 class="text-center">Video RAW</h6>
                         <video v-if="video.rawBlobUrl" :src="video.rawBlobUrl" controls class="video-stream"></video>
                       </div>
                       <div class="video-section">
-                        <h6 class="text-center">Video PROCESSED</h6>
                         <video v-if="video.processedBlobUrl" :src="video.processedBlobUrl" controls
                           class="video-stream"></video>
                       </div>
