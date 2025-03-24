@@ -21,7 +21,7 @@ services:
     build: 
       context: ./frontend
     ports:
-      - "8011:8080"
+      - "8011:80"
     networks:
       - earscopeweb-network
       - nginx-network
