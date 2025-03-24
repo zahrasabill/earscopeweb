@@ -70,6 +70,8 @@ pipeline {
                     cd earscopeweb
                     
                     docker compose down || true
+
+                    docker system prune -af --volumes
                     
                     echo "Checking and removing old backend and frontend images..."
                     
@@ -97,7 +99,7 @@ pipeline {
                     sh """
                     echo "Building Docker images..."
                     cd earscopeweb
-                    docker compose build --no-cache
+                    docker compose build --no-cache --pull
                     """
                 }
             }
@@ -110,6 +112,11 @@ pipeline {
                     cd earscopeweb
                     echo "Deploying containers..."
                     docker compose up -d --force-recreate
+
+                    sleep 5
+
+                    echo "Updating frontend build in host..."
+                    docker cp earscopeweb-frontend:/app/dist /var/www/earscopeweb-frontend/build
 
                     echo "Checking running containers..."
                     docker ps -a
