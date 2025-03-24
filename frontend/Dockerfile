@@ -7,21 +7,21 @@ RUN npm install -g http-server
 # Workdir
 WORKDIR /app
 
-# Pastikan tidak ada cache lama
+# rm cache
 RUN rm -rf node_modules dist && npm cache clean --force
 
-# Copy package.json dan package-lock.json lebih dulu
+# Copy package
 COPY package.json package-lock.json ./
 
-# Install dependencies tanpa cache
+# Install dependencies
 RUN npm install --no-cache
 
-# Copy semua source code setelah dependencies terinstall
+# Copy
 COPY . .
 
-# Build aplikasi untuk production
+# Build
 RUN npm run build
 
 
-# Jalankan server
-CMD ["http-server", "dist"]
+# Run
+ENTRYPOINT ["http-server", "dist"]
