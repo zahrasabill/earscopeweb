@@ -11,41 +11,29 @@
 
       <ul class="nav flex-column">
         <li class="nav-item mb-2">
-          <router-link
-            to="/dashboard"
-            class="nav-link text-white d-flex align-items-center"
-            :class="{ active: activePage === 'dashboard' }"
-          >
+          <router-link to="/dashboard" class="nav-link text-white d-flex align-items-center"
+            :class="{ active: activePage === 'dashboard' }">
             <i class="bi bi-house me-3"></i>
             <span>Dashboard</span>
           </router-link>
         </li>
         <li class="nav-item mb-2">
-          <router-link
-            to="/dokter"
-            class="nav-link text-white d-flex align-items-center"
-            :class="{ active: activePage === 'dokter' }"
-          >
+          <router-link to="/dokter" class="nav-link text-white d-flex align-items-center"
+            :class="{ active: activePage === 'dokter' }">
             <i class="bi bi-person-badge me-3"></i>
             <span>Dokter</span>
           </router-link>
         </li>
         <li class="nav-item mb-2">
-          <router-link
-            to="/pasien"
-            class="nav-link text-white d-flex align-items-center"
-            :class="{ active: activePage === 'pasien' }"
-          >
+          <router-link to="/pasien" class="nav-link text-white d-flex align-items-center"
+            :class="{ active: activePage === 'pasien' }">
             <i class="bi bi-people me-3"></i>
             <span>Pasien</span>
           </router-link>
         </li>
         <li class="nav-item mb-2">
-          <router-link
-            to="/pemeriksaan"
-            class="nav-link text-white d-flex align-items-center"
-            :class="{ active: activePage === 'pemeriksaan' }"
-          >
+          <router-link to="/pemeriksaan" class="nav-link text-white d-flex align-items-center"
+            :class="{ active: activePage === 'pemeriksaan' }">
             <i class="bi bi-clipboard2-pulse me-3"></i>
             <span>Hasil Pemeriksaan</span>
           </router-link>
@@ -62,11 +50,7 @@
             </router-link>
           </li>
           <li class="nav-item">
-            <a
-              href="#"
-              @click.prevent="logout"
-              class="nav-link text-white d-flex align-items-center"
-            >
+            <a href="#" @click.prevent="logout" class="nav-link text-white d-flex align-items-center">
               <i class="bi bi-box-arrow-right me-3"></i>
               <span>Logout</span>
             </a>
@@ -83,14 +67,12 @@
           <h2>{{ pageTitle }}</h2>
           <div>
             <div class="dropdown">
-              <button
-                class="btn btn-light dropdown-toggle"
-                type="button"
-                id="dropdownMenuButton"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-              >
-                <i class="bi bi-person-circle me-1"></i> {{ currentUser.name }}
+              <button class="btn btn-light dropdown-toggle d-flex align-items-center" type="button" id="dropdownMenuButton"
+                data-bs-toggle="dropdown" aria-expanded="false">
+                <div class="user-info text-start">
+                  <span class="kode-akses">{{ currentUser.kode_akses }}</span>
+                  <span class="role">{{ currentUser.role }}</span>
+                </div>
               </button>
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
                 <li>
@@ -99,11 +81,12 @@
                 <li>
                   <a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Pengaturan Akun</a>
                 </li>
-                <li><hr class="dropdown-divider" /></li>
                 <li>
-                  <a class="dropdown-item" href="#" @click.prevent="logout"
-                    ><i class="bi bi-box-arrow-right me-2"></i>Logout</a
-                  >
+                  <hr class="dropdown-divider" />
+                </li>
+                <li>
+                  <a class="dropdown-item" href="#" @click.prevent="logout"><i
+                      class="bi bi-box-arrow-right me-2"></i>Logout</a>
                 </li>
               </ul>
             </div>
@@ -118,6 +101,8 @@
 </template>
 
 <script>
+import { jwtDecode } from "jwt-decode"; // Import jwt-decode
+
 export default {
   name: "AdminLayout",
   props: {
@@ -129,14 +114,13 @@ export default {
   data() {
     return {
       currentUser: {
-        name: "", // Will be populated from user store or authentication
+        kode_akses: "",
         role: "",
       },
       pageTitle: "Dashboard",
     };
   },
   created() {
-    // Get logged in user data - you should adapt this to your actual auth system
     this.getCurrentUser();
   },
   watch: {
@@ -149,17 +133,25 @@ export default {
   },
   methods: {
     getCurrentUser() {
-      // Replace this with your actual authentication method
-      // This is just a placeholder - you should get the user from your auth system
-      // For example: this.currentUser = this.$store.state.auth.user;
-      // Or fetch from localStorage, API, etc.
-      
-      // Temporary mock for demonstration
-      this.currentUser = {
-        name: localStorage.getItem('userName') || "User Login",
-        role: localStorage.getItem('userRole') || "Guest"
-      };
+      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+
+      if (token) {
+        try {
+          // Decode JWT tanpa verifikasi
+          const payload = jwtDecode(token);
+
+          // Ambil `kode_akses` dari payload
+          this.currentUser.kode_akses = payload.kode_akses || "Tidak Ada Akses";
+          this.currentUser.role = payload.role || "Tidak Ada Role";
+        } catch (error) {
+          console.error("Gagal decode JWT:", error);
+          this.currentUser.kode_akses = "JWT Tidak Valid";
+        }
+      } else {
+        this.currentUser.kode_akses = "Token Tidak Ditemukan";
+      }
     },
+
     updatePageTitle(page) {
       const titles = {
         dashboard: "Dashboard",
@@ -170,12 +162,11 @@ export default {
       };
       this.pageTitle = titles[page] || "Dashboard";
     },
+
     logout() {
-      // Implement logout logic here
       console.log("Logging out...");
-      // Clear user data
-      localStorage.removeItem('userName');
-      localStorage.removeItem('userRole');
+      localStorage.removeItem("token");
+      sessionStorage.removeItem("token");
       this.$router.push("/login");
     },
   },
@@ -183,6 +174,19 @@ export default {
 </script>
 
 <style scoped>
+.kode-akses {
+  display: block;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #333;
+}
+
+.role {
+  display: block;
+  font-size: 0.85rem;
+  color: #777;
+  margin-top: -3px;
+}
 .sidebar {
   width: 250px;
   height: 100vh;

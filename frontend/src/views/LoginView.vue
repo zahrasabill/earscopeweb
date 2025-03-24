@@ -70,6 +70,7 @@
 <script>
 import logoImage from "@/assets/logooido.png";
 import axios from "axios";
+import api from "@/api.js";
 
 export default {
   data() {
@@ -107,7 +108,7 @@ export default {
       this.error = null;
 
       try {
-        const response = await axios.post('https://api.earscope.adrfstwn.cloud/v1/login', {
+        const response = await axios.post(api.getEndpoint("login"), {
           kode_akses: this.kode_akses,
           password: this.password,
         });
