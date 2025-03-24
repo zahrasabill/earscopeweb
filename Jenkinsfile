@@ -34,6 +34,14 @@ pipeline {
                         """
                     }
                 }
+                script {
+                    withCredentials([file(credentialsId: 'earscopeweb-frontend-env', variable: 'ENV_FILE')]) {
+                        sh """
+                        echo "Copying .env file..."
+                        cp \${ENV_FILE} earscopeweb/frontend/.env
+                        """
+                    }
+                }
             }
         }
         stage('Update Image Tags in docker-compose.yml') {
