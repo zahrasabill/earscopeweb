@@ -113,11 +113,6 @@ pipeline {
                     echo "Deploying containers..."
                     docker compose up -d --force-recreate
 
-                    sleep 5
-
-                    echo "Updating frontend build in host..."
-                    docker cp earscopeweb-frontend:/app/dist /var/www/earscopeweb-frontend/build
-
                     echo "Checking running containers..."
                     docker ps -a
 
