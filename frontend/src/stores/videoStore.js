@@ -7,7 +7,7 @@ export const useVideoStore = defineStore("videoStore", {
     videos: [],
     lastUpdated: "-",
   }),
-
+  persist: true,
   actions: {
     async fetchVideos() {
       try {

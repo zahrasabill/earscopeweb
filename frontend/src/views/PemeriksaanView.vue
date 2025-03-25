@@ -23,7 +23,8 @@
                         <video v-if="video.rawBlobUrl" :src="video.rawBlobUrl" controls class="video-stream"></video>
                       </div>
                       <div class="video-section">
-                        <video v-if="video.processedBlobUrl" :src="video.processedBlobUrl" controls class="video-stream"></video>
+                        <video v-if="video.processedBlobUrl" :src="video.processedBlobUrl" controls
+                          class="video-stream"></video>
                       </div>
                     </div>
                   </div>
@@ -78,13 +79,9 @@ export default {
 
     onMounted(async () => {
       try {
-        await videoStore.fetchVideos();
-        videos.value.forEach(video => {
-          video.isLoading = true;
-          setTimeout(() => {
-            video.isLoading = false;
-          }, 3000);
-        });
+        if (videoStore.videos.length === 0) {
+          await videoStore.fetchVideos();
+        }
       } catch (error) {
         console.error('Error fetching videos:', error);
       }
@@ -117,7 +114,7 @@ export default {
 
           videoToAssign.value.user = response.data.user;
           videoToAssign.value.status = 'assigned';
-          
+
           await videoStore.fetchVideos();
           closeAssignModal();
         } catch (error) {
@@ -138,7 +135,7 @@ export default {
 
           video.user = null;
           video.status = 'unassigned';
-          
+
           await videoStore.fetchVideos();
         } catch (error) {
           console.error('Failed to unassign video:', error);
