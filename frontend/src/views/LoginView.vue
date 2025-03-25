@@ -93,12 +93,12 @@ export default {
       const expiry = localStorage.getItem('expiry') || sessionStorage.getItem('expiry');
       
       if (token && expiry) {
-        const now = Math.floor(Date.now() / 1000); // Waktu sekarang dalam UNIX timestamp
+        const now = Math.floor(Date.now() / 1000);
         if (now < expiry) {
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           this.$router.push('/dashboard');
         } else {
-          this.logout(); // Hapus token jika sudah expired
+          this.logout();
         }
       }
     },
