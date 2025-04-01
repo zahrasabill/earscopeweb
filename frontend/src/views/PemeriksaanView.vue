@@ -12,32 +12,42 @@
                 </div>
                 <div class="card-body">
                   <div class="video-container mb-3">
+                    <!-- Loading Spinner -->
                     <div v-if="video.isLoading" class="text-center py-3">
                       <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Loading...</span>
                       </div>
                       <p class="mt-2">Menghubungkan ke video stream...</p>
                     </div>
+
+                    <!-- Video -->
                     <div v-else class="video-wrapper">
                       <div class="video-section">
                         <video v-if="video.rawBlobUrl" :src="video.rawBlobUrl" controls class="video-stream"></video>
+                        <p v-else class="text-center text-muted">Video asli tidak tersedia</p>
                       </div>
+
                       <div class="video-section">
                         <video v-if="video.processedBlobUrl" :src="video.processedBlobUrl" controls
                           class="video-stream"></video>
+                        <p v-else class="text-center text-muted">Video hasil tidak tersedia</p>
                       </div>
                     </div>
                   </div>
+
                   <p><strong>Status:</strong> {{ video.status }}</p>
                   <p><strong>Diagnosis:</strong> {{ video.hasil_diagnosis }}</p>
                 </div>
+
                 <div class="card-footer text-center">
                   <small class="text-muted">Waktu diambil: {{ new Date(video.created_at).toLocaleString() }}</small>
+
                   <div v-if="video.status !== 'assigned'">
                     <button @click="openAssignModal(video)" class="btn btn-primary">
                       Assign
                     </button>
                   </div>
+
                   <div v-if="video.status === 'assigned'">
                     <button @click="confirmUnassign(video)" class="btn btn-danger">
                       Unassign
@@ -70,7 +80,7 @@ export default {
   setup() {
     const videoStore = useVideoStore();
     const userStore = useUserStore();
-    const { videos, lastUpdated } = storeToRefs(videoStore);
+    const { videos } = storeToRefs(videoStore);
     const { users } = storeToRefs(userStore);
 
     const showAssignModal = ref(false);
@@ -79,7 +89,7 @@ export default {
 
     onMounted(async () => {
       try {
-        if (videoStore.videos.length === 0) {
+        if (videos.value.length === 0) {
           await videoStore.fetchVideos();
         }
       } catch (error) {
@@ -144,11 +154,8 @@ export default {
     };
 
     return {
-      videoStore,
-      userStore,
       videos,
       users,
-      lastUpdated,
       showAssignModal,
       selectedUserId,
       videoToAssign,
