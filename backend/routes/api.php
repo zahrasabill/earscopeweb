@@ -30,7 +30,6 @@ Route::middleware('jwt.auth')->group(function () {
         Route::post('videos/{videoId}/assign/{userId}', [VideoController::class, 'assignToUser']); // Assign video ke user
         Route::patch('/videos/{videoId}', [VideoController::class, 'updateStatusVideo']);
         Route::get('videos', [VideoController::class, 'showAllVideos']); // Lihat semua video
-        Route::get('videos/{videoId}', [VideoController::class, 'showById']); // Lihat detail video
 
     });
 

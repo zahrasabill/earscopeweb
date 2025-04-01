@@ -45,7 +45,6 @@ const routes = [
     name: "pemeriksaan",
     component: PemeriksaanView,
     meta: { requiresAuth: true },
-    meta: { keepAlive: true },
   },
   {
     path: "/detail-pemeriksaan",
