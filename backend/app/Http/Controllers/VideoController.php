@@ -362,58 +362,76 @@ class VideoController extends Controller
     //     ]);
     // }
 
-    public function streamVideo($filename){
+    public function streamVideo($filename)
+    {
         Log::info("Streaming request received for: " . $filename);
-        // Cari video berdasarkan path di database      
+
+        // Cari video berdasarkan path di database
         $video = Video::where('raw_video_path', 'like', "%{$filename}")
             ->orWhere('processed_video_path', 'like', "%{$filename}")
             ->first();
-        if (!$video) {  
+
+        if (!$video) {
             Log::error("Video not found in database: videos/" . $filename);
             return response()->json(['message' => 'Video not found in database'], 404);
         }
-        Log::info("Video found in database: " . json_encode($video));
+
         // Tentukan path file yang benar
-        $filePath = null;       
+        $filePath = null;
         if (str_ends_with($video->raw_video_path, $filename)) {
             $filePath = Storage::disk('private')->path($video->raw_video_path);
         } elseif (str_ends_with($video->processed_video_path, $filename)) {
             $filePath = Storage::disk('private')->path($video->processed_video_path);
         }
+
         if (!$filePath || !file_exists($filePath)) {
             Log::error("File not found on storage: " . $filePath);
             return response()->json(['message' => 'File not found'], 404);
         }
-        Log::info("Streaming file path: " . $filePath);
-        
-        $fileSize = filesize($filePath);
-        $start = 0;
-        $end = $fileSize - 1;
 
-        if (isset($_SERVER['HTTP_RANGE'])) {
-            preg_match('/bytes=(\d+)-(\d+)?/', $_SERVER['HTTP_RANGE'], $matches);
-            $start = intval($matches[1]);
-            if (isset($matches[2])) {
-                $end = intval($matches[2]);
-            }
+        Log::info("Streaming file path: " . $filePath);
+
+        // Mendapatkan ukuran file
+        $fileSize = filesize($filePath);
+        $mimeType = 'video/mp4';
+
+        // Cek apakah ada header "Range" dari client
+        $range = request()->header('Range');
+
+        if ($range) {
+            // Format "bytes=0-100" atau "bytes=200-"
+            list(, $range) = explode('=', $range, 2);
+            list($start, $end) = explode('-', $range, 2);
+
+            $start = intval($start);
+            $end = $end !== '' ? intval($end) : $fileSize - 1;
+            $length = $end - $start + 1;
+
+            // Buka file dan geser pointer ke posisi start
+            $file = fopen($filePath, 'rb');
+            fseek($file, $start);
+
+            return response()->stream(function () use ($file, $length) {
+                echo fread($file, $length);
+                fclose($file);
+            }, 206, [
+                'Content-Type' => $mimeType,
+                'Content-Length' => $length,
+                'Content-Range' => "bytes $start-$end/$fileSize",
+                'Accept-Ranges' => 'bytes',
+            ]);
         }
 
-        $length = $end - $start + 1;
-        $stream = fopen($filePath, 'rb');
-        fseek($stream, $start);
-
-        $headers = [
-            'Content-Type' => 'video/mp4',
+        // Jika tidak ada "Range", kirim seluruh file
+        return response()->stream(function () use ($filePath) {
+            readfile($filePath);
+        }, 200, [
+            'Content-Type' => $mimeType,
+            'Content-Length' => $fileSize,
             'Accept-Ranges' => 'bytes',
-            'Content-Length' => $length,
-            'Content-Range' => "bytes {$start}-{$end}/{$fileSize}",
-        ];
-
-        return response()->stream(function () use ($stream, $length) {
-            echo fread($stream, $length);
-            fclose($stream);
-        }, 206, $headers);
+        ]);
     }
+
 
 
 }
