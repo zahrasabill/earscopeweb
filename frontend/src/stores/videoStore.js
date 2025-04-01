@@ -66,10 +66,6 @@ import api from "@/api";
 //   },
 // });
 
-import { defineStore } from "pinia";
-import axios from "axios";
-import api from "@/api";
-
 export const useVideoStore = defineStore("videoStore", {
   state: () => ({
     videos: [],
