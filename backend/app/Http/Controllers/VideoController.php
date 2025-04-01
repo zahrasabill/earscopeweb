@@ -419,7 +419,8 @@ class VideoController extends Controller
                 'Content-Length' => $length,
                 'Content-Range' => "bytes $start-$end/$fileSize",
                 'Accept-Ranges' => 'bytes',
-                'Access-Control-Allow-Origin' => '*',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',  // Untuk menghindari cache
+                'Access-Control-Allow-Origin' => '*',  // CORS
             ]);
         }
 
@@ -432,7 +433,6 @@ class VideoController extends Controller
             'Accept-Ranges' => 'bytes',
         ]);
     }
-
 
 
 }
