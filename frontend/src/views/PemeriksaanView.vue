@@ -20,10 +20,10 @@
                     </div>
                     <div v-else class="video-wrapper">
                       <div class="video-section">
-                        <video v-if="video.rawBlobUrl" :src="video.rawBlobUrl" controls class="video-stream"></video>
+                        <video v-if="video.raw_video_stream_url" :src="video.raw_video_stream_url" controls class="video-stream"></video>
                       </div>
                       <div class="video-section">
-                        <video v-if="video.processedBlobUrl" :src="video.processedBlobUrl" controls
+                        <video v-if="video.processed_video_stream_url" :src="video.processed_video_stream_url" controls
                           class="video-stream"></video>
                       </div>
                     </div>

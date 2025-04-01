@@ -98,30 +98,6 @@ export const useVideoStore = defineStore("videoStore", {
       }
     },
 
-    async loadVideoBlob(video, index, token) {
-      try {
-        if (video.raw_video_stream_url) {
-          video.rawBlobUrl = await this.fetchVideoBlob(
-            video.raw_video_stream_url,
-            token,
-            video.controller
-          );
-        }
-        if (video.processed_video_stream_url) {
-          video.processedBlobUrl = await this.fetchVideoBlob(
-            video.processed_video_stream_url,
-            token,
-            video.controller
-          );
-        }
-      } catch (error) {
-        console.error("Error loading video blob:", error);
-      } finally {
-        this.videos[index] = { ...video, isLoading: false };
-        this.videos = [...this.videos]; // Memastikan Vue mendeteksi perubahan
-      }
-    },
-
     async fetchVideoBlob(url, token, controller) {
       try {
         const response = await fetch(url, {
