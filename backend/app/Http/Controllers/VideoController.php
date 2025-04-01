@@ -419,6 +419,7 @@ class VideoController extends Controller
                 'Content-Length' => $length,
                 'Content-Range' => "bytes $start-$end/$fileSize",
                 'Accept-Ranges' => 'bytes',
+                'Access-Control-Allow-Origin' => '*',
             ]);
         }
 
