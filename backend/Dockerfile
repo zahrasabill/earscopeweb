@@ -27,11 +27,6 @@ COPY . .
 # Install dependencies
 RUN composer install --ignore-platform-reqs --no-dev -a
 
-
-# Set Environment Production
-ENV APP_ENV=production
-ENV APP_DEBUG=false
-
 # Install Octane
 RUN echo "yes" | php artisan octane:install --server=frankenphp --no-interaction
 
