@@ -203,7 +203,13 @@ class VideoController extends Controller
      */
     public function showAllVideos()
     {
-        $videos = Video::with('user')->get();
+        $user = auth()->user();
+        
+        if ($user->hasRole('admin')) {
+            $videos = Video::with('user')->get();
+        } elseif ($user->hasRole('pasien')) {
+            $videos = Video::where('user_id', $user->id)->with('user')->get();
+        }
 
         $videos->transform(function ($video) {
             // $video->raw_video_url = Storage::url($video->raw_video_path);
