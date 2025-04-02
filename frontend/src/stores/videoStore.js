@@ -82,8 +82,8 @@ export const useVideoStore = defineStore("videoStore", {
 
         this.videos = response.data.map((video) => ({
           ...video,
-          rawBlobUrl: video.raw_video_stream_url, // 🎯 Gunakan URL streaming langsung
-          processedBlobUrl: video.processed_video_stream_url,
+          rawVideoUrl: video.raw_video_stream_url, // 🎯 Gunakan URL streaming langsung
+          processedVideoUrl: video.processed_video_stream_url,
           isLoading: false,
         }));
 
