@@ -56,7 +56,7 @@
 </template>
 
 <script>
-import AdminLayout from '@/components/AdminLayout.vue';
+import AdminLayout from '@/components/AppLayout.vue';
 
 export default {
   name: "DashboardView",

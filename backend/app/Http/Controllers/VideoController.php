@@ -376,6 +376,8 @@ class VideoController extends Controller
             return response()->json(['message' => 'Video not found in database'], 404);
         }
 
+        Log::info("Video found in database: " . json_encode($video));
+
         // Tentukan path file yang benar
         $filePath = null;
         if (str_ends_with($video->raw_video_path, $filename)) {
@@ -391,46 +393,61 @@ class VideoController extends Controller
 
         Log::info("Streaming file path: " . $filePath);
 
-        // Mendapatkan ukuran file
+        // Dapatkan informasi file
         $fileSize = filesize($filePath);
-        $mimeType = mime_content_type($filePath); // Gunakan MIME type dinamis
+        $fileExtension = pathinfo($filePath, PATHINFO_EXTENSION);
+        $contentType = $this->getMimeType($fileExtension);
 
-        // Cek apakah ada header "Range" dari client
-        $range = request()->header('Range');
+        // Handle HTTP Range Requests
+        $headers = [
+            'Content-Type' => $contentType,
+            'Accept-Ranges' => 'bytes',
+            'Content-Length' => $fileSize,
+        ];
 
-        if ($range) {
-            list(, $range) = explode('=', $range, 2);
-            list($start, $end) = explode('-', $range, 2);
+        if (isset($_SERVER['HTTP_RANGE'])) {
+            // Parse range header
+            $range = $_SERVER['HTTP_RANGE'];
+            preg_match('/bytes=(\d+)-(\d*)/', $range, $matches);
+            $start = intval($matches[1]);
+            $end = isset($matches[2]) && $matches[2] !== '' ? intval($matches[2]) : $fileSize - 1;
 
-            $start = intval($start);
-            $end = $end !== '' ? intval($end) : $fileSize - 1;
+            if ($start > $end || $start >= $fileSize) {
+                return response('', 416)->header('Content-Range', "bytes */$fileSize");
+            }
+
             $length = $end - $start + 1;
+            $headers['Content-Range'] = "bytes $start-$end/$fileSize";
+            $headers['Content-Length'] = $length;
+            $status = 206; // Partial Content
 
-            // Buka file
-            $file = fopen($filePath, 'rb');
-            fseek($file, $start);
-
-            return response()->stream(function () use ($file, $length) {
-                echo fread($file, $length);
-                fclose($file);
-            }, 206, [
-                'Content-Type' => $mimeType,
-                'Content-Length' => $length,
-                'Content-Range' => "bytes $start-$end/$fileSize",
-                'Accept-Ranges' => 'bytes',
-                'Access-Control-Allow-Headers' => 'Range, Content-Type',
-                'Access-Control-Allow-Methods' => 'GET, OPTIONS',
-            ]);
+            return response()->stream(function () use ($filePath, $start, $length) {
+                $stream = fopen($filePath, 'rb');
+                fseek($stream, $start);
+                echo fread($stream, $length);
+                fclose($stream);
+            }, $status, $headers);
         }
 
-        // Jika tidak ada "Range", kirim seluruh file
+        // Jika tidak ada range request, kirim file secara keseluruhan
         return response()->stream(function () use ($filePath) {
-            readfile($filePath);
-        }, 200, [
-            'Content-Type' => $mimeType,
-            'Content-Length' => $fileSize,
-            'Accept-Ranges' => 'bytes',
-        ]);
+            $stream = fopen($filePath, 'rb');
+            fpassthru($stream);
+            fclose($stream);
+        }, 200, $headers);
+    }
+
+    private function getMimeType($extension)
+    {
+        $mimeTypes = [
+            'mp4' => 'video/mp4',
+            'webm' => 'video/webm',
+            'ogg' => 'video/ogg',
+            'mkv' => 'video/x-matroska',
+            // Tambahkan format lain jika diperlukan
+        ];
+
+        return $mimeTypes[$extension] ?? 'application/octet-stream';
     }
 
 }

@@ -3,13 +3,13 @@
     <!-- Sidebar -->
     <div class="sidebar bg-primary p-3 text-white">
       <div class="sidebar-header mb-4">
-        <!-- Only showing logo image, removed admin name and role text -->
         <div class="text-center">
           <img src="@/assets/logooido.png" alt="Hospital Logo" class="sidebar-logo" />
         </div>
       </div>
 
       <ul class="nav flex-column">
+        <!-- Dashboard (Semua Role Bisa Akses) -->
         <li class="nav-item mb-2">
           <router-link to="/dashboard" class="nav-link text-white d-flex align-items-center"
             :class="{ active: activePage === 'dashboard' }">
@@ -17,21 +17,27 @@
             <span>Dashboard</span>
           </router-link>
         </li>
-        <li class="nav-item mb-2">
+
+        <!-- Admin hanya melihat menu Dokter -->
+        <li v-if="currentUser.role === 'admin'" class="nav-item mb-2">
           <router-link to="/dokter" class="nav-link text-white d-flex align-items-center"
             :class="{ active: activePage === 'dokter' }">
             <i class="bi bi-person-badge me-3"></i>
             <span>Dokter</span>
           </router-link>
         </li>
-        <li class="nav-item mb-2">
+
+        <!-- Dokter hanya melihat menu Pasien -->
+        <li v-if="currentUser.role === 'dokter'" class="nav-item mb-2">
           <router-link to="/pasien" class="nav-link text-white d-flex align-items-center"
             :class="{ active: activePage === 'pasien' }">
             <i class="bi bi-people me-3"></i>
             <span>Pasien</span>
           </router-link>
         </li>
-        <li class="nav-item mb-2">
+
+        <!-- Dokter & Pasien bisa melihat menu Hasil Pemeriksaan -->
+        <li v-if="currentUser.role === 'dokter' || currentUser.role === 'pasien'" class="nav-item mb-2">
           <router-link to="/pemeriksaan" class="nav-link text-white d-flex align-items-center"
             :class="{ active: activePage === 'pemeriksaan' }">
             <i class="bi bi-clipboard2-pulse me-3"></i>
@@ -104,7 +110,7 @@
 import { jwtDecode } from "jwt-decode"; // Import jwt-decode
 
 export default {
-  name: "AdminLayout",
+  name: "AppLayout",
   props: {
     activePage: {
       type: String,
