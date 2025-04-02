@@ -24,13 +24,13 @@
                     <div v-else class="video-wrapper">
                       <div class="video-section">
                         <video v-if="video.rawVideoUrl" :src="video.rawVideoUrl" controls class="video-stream"
-                          crossorigin="anonymous" type="video/mp4"></video>
+                          type="video/mp4"></video>
                         <p v-else class="text-center text-muted">Video asli tidak tersedia</p>
                       </div>
 
                       <div class="video-section">
                         <video v-if="video.processedVideoUrl" :src="video.processedVideoUrl" controls class="video-stream"
-                          crossorigin="anonymous" type="video/mp4"></video>
+                          type="video/mp4"></video>
                         <p v-else class="text-center text-muted">Video hasil tidak tersedia</p>
                       </div>
                     </div>
