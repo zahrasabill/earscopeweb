@@ -1,9 +1,32 @@
 <template>
   <app-layout active-page="pemeriksaan">
     <div class="container-fluid pemeriksaan-container">
+      <!-- Modal Assign -->
+      <div v-if="showAssignModal" class="modal-overlay" @click.self="closeAssignModal">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Assign Video</h5>
+              <button type="button" class="btn-close" @click="closeAssignModal"></button>
+            </div>
+            <div class="modal-body">
+              <label for="assignUser">Pilih Pasien:</label>
+              <select v-model="selectedUserId" id="assignUser" class="form-select">
+                <option v-for="user in users" :key="user.id" :value="user.id">
+                  {{ user.name }}
+                </option>
+              </select>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" @click="closeAssignModal">Batal</button>
+              <button class="btn btn-primary" @click="assignToUser">Assign</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="row">
         <div class="col-lg-12">
-          <!-- Tampilan Video -->
           <div class="row">
             <div v-for="video in videos" :key="video.id" class="col-lg-4 col-md-6 mb-4">
               <div class="card shadow">
@@ -12,7 +35,6 @@
                 </div>
                 <div class="card-body">
                   <div class="video-container mb-3">
-                    <!-- Loading Spinner -->
                     <div v-if="video.isLoading" class="text-center py-3">
                       <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Loading...</span>
@@ -20,39 +42,28 @@
                       <p class="mt-2">Menghubungkan ke video stream...</p>
                     </div>
 
-                    <!-- Video Streaming -->
                     <div v-else class="video-wrapper">
                       <div class="video-section">
-                        <video v-if="video.rawVideoUrl" :src="video.rawVideoUrl" controls class="video-stream"
-                          type="video/mp4"></video>
+                        <video v-if="video.rawVideoUrl" :src="video.rawVideoUrl" controls class="video-stream" type="video/mp4"></video>
                         <p v-else class="text-center text-muted">Video asli tidak tersedia</p>
                       </div>
 
                       <div class="video-section">
-                        <video v-if="video.processedVideoUrl" :src="video.processedVideoUrl" controls
-                          class="video-stream" type="video/mp4"></video>
+                        <video v-if="video.processedVideoUrl" :src="video.processedVideoUrl" controls class="video-stream" type="video/mp4"></video>
                         <p v-else class="text-center text-muted">Video hasil tidak tersedia</p>
                       </div>
                     </div>
                   </div>
-
                   <p><strong>Status:</strong> {{ video.status }}</p>
                   <p><strong>Diagnosis:</strong> {{ video.hasil_diagnosis }}</p>
                 </div>
-
                 <div class="card-footer text-center">
                   <small class="text-muted">Waktu diambil: {{ new Date(video.created_at).toLocaleString() }}</small>
-
                   <div v-if="video.status !== 'assigned'">
-                    <button @click="openAssignModal(video)" class="btn btn-primary">
-                      Assign
-                    </button>
+                    <button @click="openAssignModal(video)" class="btn btn-primary">Assign</button>
                   </div>
-
                   <div v-if="video.status === 'assigned'">
-                    <button @click="confirmUnassign(video)" class="btn btn-danger">
-                      Unassign
-                    </button>
+                    <button @click="confirmUnassign(video)" class="btn btn-danger">Unassign</button>
                   </div>
                 </div>
               </div>
@@ -173,7 +184,17 @@ export default {
 .pemeriksaan-container {
   padding: 20px;
 }
-
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 .video-container {
   min-height: 200px;
   background-color: #f8f9fa;
