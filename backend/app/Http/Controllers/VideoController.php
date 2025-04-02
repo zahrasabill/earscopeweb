@@ -204,11 +204,14 @@ class VideoController extends Controller
     public function showAllVideos()
     {
         $user = auth()->user();
-        
-        if ($user->hasRole('admin')) {
+        $videos = collect();
+
+        if ($user->hasRole('dokter')) {
             $videos = Video::with('user')->get();
         } elseif ($user->hasRole('pasien')) {
             $videos = Video::where('user_id', $user->id)->with('user')->get();
+        } else {
+            return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         $videos->transform(function ($video) {
