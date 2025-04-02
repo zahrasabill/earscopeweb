@@ -393,13 +393,12 @@ class VideoController extends Controller
 
         // Mendapatkan ukuran file
         $fileSize = filesize($filePath);
-        $mimeType = 'video/mp4';
+        $mimeType = mime_content_type($filePath); // Gunakan MIME type dinamis
 
         // Cek apakah ada header "Range" dari client
         $range = request()->header('Range');
 
         if ($range) {
-            // Format "bytes=0-100" atau "bytes=200-"
             list(, $range) = explode('=', $range, 2);
             list($start, $end) = explode('-', $range, 2);
 
@@ -407,7 +406,7 @@ class VideoController extends Controller
             $end = $end !== '' ? intval($end) : $fileSize - 1;
             $length = $end - $start + 1;
 
-            // Buka file dan geser pointer ke posisi start
+            // Buka file
             $file = fopen($filePath, 'rb');
             fseek($file, $start);
 
@@ -419,7 +418,6 @@ class VideoController extends Controller
                 'Content-Length' => $length,
                 'Content-Range' => "bytes $start-$end/$fileSize",
                 'Accept-Ranges' => 'bytes',
-                'Access-Control-Allow-Origin' => '*',
                 'Access-Control-Allow-Headers' => 'Range, Content-Type',
                 'Access-Control-Allow-Methods' => 'GET, OPTIONS',
             ]);
@@ -434,6 +432,5 @@ class VideoController extends Controller
             'Accept-Ranges' => 'bytes',
         ]);
     }
-
 
 }
