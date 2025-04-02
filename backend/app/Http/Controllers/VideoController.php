@@ -215,8 +215,6 @@ class VideoController extends Controller
         }
 
         $videos->transform(function ($video) {
-            // $video->raw_video_url = Storage::url($video->raw_video_path);
-            // $video->processed_video_url = Storage::url($video->processed_video_path);
             $video->raw_video_stream_url = url("/v1/videos/stream/" . basename($video->raw_video_path));
             $video->processed_video_stream_url = url("/v1/videos/stream/" . basename($video->processed_video_path));
             return $video;
