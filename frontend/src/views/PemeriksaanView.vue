@@ -1,5 +1,5 @@
 <template>
-  <admin-layout active-page="pemeriksaan">
+  <app-layout active-page="pemeriksaan">
     <div class="container-fluid pemeriksaan-container">
       <div class="row">
         <div class="col-lg-12">
@@ -62,12 +62,12 @@
         </div>
       </div>
     </div>
-  </admin-layout>
+  </app-layout>
 </template>
 
 <script>
 import { ref, onMounted } from 'vue';
-import AdminLayout from '@/components/AdminLayout.vue';
+import AppLayout from '@/components/AppLayout.vue';
 import { useVideoStore } from '@/stores/videoStore';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
@@ -77,7 +77,7 @@ import axios from 'axios';
 export default {
   name: 'PemeriksaanView',
   components: {
-    AdminLayout
+    AppLayout
   },
   setup() {
     const videoStore = useVideoStore();
