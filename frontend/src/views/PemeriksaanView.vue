@@ -20,20 +20,22 @@
                       <p class="mt-2">Menghubungkan ke video stream...</p>
                     </div>
 
-                    <!-- Video -->
+                    <!-- Video Streaming -->
                     <div v-else class="video-wrapper">
                       <div class="video-section">
-                        <video v-if="video.rawBlobUrl" :src="video.rawBlobUrl" controls class="video-stream"></video>
+                        <video v-if="video.rawVideoUrl" :src="video.rawVideoUrl" controls class="video-stream"
+                          crossorigin="anonymous" type="video/mp4"></video>
                         <p v-else class="text-center text-muted">Video asli tidak tersedia</p>
                       </div>
 
                       <div class="video-section">
-                        <video v-if="video.processedBlobUrl" :src="video.processedBlobUrl" controls
-                          class="video-stream"></video>
+                        <video v-if="video.processedVideoUrl" :src="video.processedVideoUrl" controls class="video-stream"
+                          crossorigin="anonymous" type="video/mp4"></video>
                         <p v-else class="text-center text-muted">Video hasil tidak tersedia</p>
                       </div>
                     </div>
                   </div>
+
 
                   <p><strong>Status:</strong> {{ video.status }}</p>
                   <p><strong>Diagnosis:</strong> {{ video.hasil_diagnosis }}</p>
