@@ -398,10 +398,8 @@ class VideoController extends Controller
             'webm' => 'video/webm',
             'ogg' => 'video/ogg',
             'mkv' => 'video/x-matroska',
-            // Tambahkan format lain jika diperlukan
         ];
 
         return $mimeTypes[$extension] ?? 'application/octet-stream';
     }
-
 }
