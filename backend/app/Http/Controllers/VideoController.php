@@ -217,52 +217,6 @@ class VideoController extends Controller
     }
 
     /**
-     * @OA\Get(
-     *     path="/v1/videos/pasien",
-     *     summary="Get videos assigned to the logged-in patient",
-     *     tags={"Videos"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="List of videos assigned to the patient",
-     *         @OA\JsonContent(
-     *             type="array",
-     *             @OA\Items(
-     *                 type="object",
-     *                 @OA\Property(property="id", type="integer"),
-     *                 @OA\Property(property="raw_video_url", type="string"),
-     *                 @OA\Property(property="processed_video_url", type="string"),
-     *                 @OA\Property(property="status", type="string")
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(response=401, description="Unauthorized"),
-     *     @OA\Response(response=403, description="Forbidden")
-     * )
-     */
-    public function showVideosByPasien()
-    {
-        $user = auth()->user();
-
-        // Pastikan hanya user dengan role "pasien" yang bisa mengakses endpoint ini
-        if (!$user->hasRole('pasien')) {
-            return response()->json(['message' => 'Forbidden: Only patients can access this endpoint'], 403);
-        }
-
-        // Ambil video yang di-assign ke pasien ini (berdasarkan user_id)
-        $videos = Video::where('user_id', $user->id)->get();
-
-        // Tambahkan URL lengkap untuk setiap video
-        $videos->transform(function ($video) {
-            $video->raw_video_stream_url = url("/v1/videos/stream/" . basename($video->raw_video_path));
-            $video->processed_video_stream_url = url("/v1/videos/stream/" . basename($video->processed_video_path));
-            return $video;
-        });
-
-        return response()->json($videos);
-    }
-
-    /**
      * Convert video to H.264 using FFmpeg
      */
     private function convertToH264($inputPath, $outputPath)
