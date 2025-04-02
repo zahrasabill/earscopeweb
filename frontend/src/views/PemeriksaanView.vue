@@ -29,13 +29,12 @@
                       </div>
 
                       <div class="video-section">
-                        <video v-if="video.processedVideoUrl" :src="video.processedVideoUrl" controls class="video-stream"
-                          type="video/mp4"></video>
+                        <video v-if="video.processedVideoUrl" :src="video.processedVideoUrl" controls
+                          class="video-stream" type="video/mp4"></video>
                         <p v-else class="text-center text-muted">Video hasil tidak tersedia</p>
                       </div>
                     </div>
                   </div>
-
 
                   <p><strong>Status:</strong> {{ video.status }}</p>
                   <p><strong>Diagnosis:</strong> {{ video.hasil_diagnosis }}</p>

@@ -80,16 +80,38 @@ export const useVideoStore = defineStore("videoStore", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        this.videos = response.data.map((video) => ({
-          ...video,
-          rawVideoUrl: video.raw_video_stream_url, // 🎯 Gunakan URL streaming langsung
-          processedVideoUrl: video.processed_video_stream_url,
-          isLoading: false,
-        }));
+        // Map data video dan download blob untuk streaming
+        this.videos = await Promise.all(
+          response.data.map(async (video) => ({
+            ...video,
+            rawVideoUrl: video.raw_video_stream_url
+              ? await this.fetchVideoBlob(video.raw_video_stream_url, token)
+              : null,
+            processedVideoUrl: video.processed_video_stream_url
+              ? await this.fetchVideoBlob(video.processed_video_stream_url, token)
+              : null,
+            isLoading: false,
+          }))
+        );
 
         this.lastUpdated = new Date().toLocaleString("id-ID");
       } catch (error) {
         console.error("Gagal mengambil data video:", error);
+      }
+    },
+
+    async fetchVideoBlob(url, token) {
+      try {
+        const response = await fetch(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!response.ok) throw new Error("Gagal mengambil video");
+
+        const blob = await response.blob();
+        return URL.createObjectURL(blob); // Buat URL lokal dari blob
+      } catch (error) {
+        console.error("Error fetching video stream:", error);
+        return null;
       }
     },
   },
