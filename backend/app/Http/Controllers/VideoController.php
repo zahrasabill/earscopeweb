@@ -179,6 +179,13 @@ class VideoController extends Controller
      *     summary="Get all videos",
      *     tags={"Videos"},
      *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="date",
+     *         in="query",
+     *         description="Filter videos by created date (format: YYYY-MM-DD)",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date")
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="List of all videos",
@@ -201,19 +208,37 @@ class VideoController extends Controller
      *     @OA\Response(response=403, description="Forbidden")
      * )
      */
-    public function showAllVideos()
+    public function showAllVideos(Request $request)
     {
         $user = auth()->user();
         $videos = collect();
 
+        // Check if date parameter is provided
+        $dateFilter = $request->query('date');
+
         if ($user->hasRole('dokter')) {
-            $videos = Video::with('user')->get();
+            $videosQuery = Video::with('user');
+
+            // Apply date filter if provided
+            if ($dateFilter) {
+                $videosQuery->whereDate('created_at', $dateFilter);
+            }
+
+            $videos = $videosQuery->get();
         } elseif ($user->hasRole('pasien')) {
-            $videos = Video::where('user_id', $user->id)->with('user')->get();
+            $videosQuery = Video::where('user_id', $user->id)->with('user');
+
+            // Apply date filter if provided
+            if ($dateFilter) {
+                $videosQuery->whereDate('created_at', $dateFilter);
+            }
+
+            $videos = $videosQuery->get();
         } else {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
+        // Transform video data
         $videos->transform(function ($video) {
             $video->raw_video_stream_url = url("/v1/videos/stream/" . basename($video->raw_video_path));
             $video->processed_video_stream_url = url("/v1/videos/stream/" . basename($video->processed_video_path));
@@ -222,6 +247,7 @@ class VideoController extends Controller
 
         return response()->json($videos);
     }
+
 
     /**
      * Convert video to H.264 using FFmpeg
