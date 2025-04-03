@@ -128,7 +128,7 @@
       </div>
 
       <!-- No data message -->
-      <div v-else-if="filteredVideos.length === 0" class="no-data-container">
+      <div v-else-if="videos.length === 0" class="no-data-container">
         <div class="alert alert-info text-center" role="alert">
           <i class="fas fa-info-circle me-2"></i>
           Tidak ada video yang tersedia untuk tanggal yang dipilih.
@@ -137,39 +137,51 @@
 
       <!-- Videos grid -->
       <div v-else class="row g-4">
-        <div v-for="video in filteredVideos" :key="video.id" class="col-lg-3 col-md-4 col-sm-6 mb-4">
+        <div v-for="video in videos" :key="video.id" class="col-lg-3 col-md-4 col-sm-6 mb-4">
           <div class="card shadow h-100">
-            <div class="card-header bg-gradient text-white text-center py-2"> <!-- Mengurangi padding -->
-              <h5 class="mb-0 fw-bold">Video Pemeriksaan</h5>
+            <div class="card-header bg-gradient text-white text-center py-2">
+              <span class="badge float-end" :class="video.status === 'assigned' ? 'bg-success' : 'bg-warning'">
+                {{ video.status === 'assigned' ? 'Assigned' : 'Unassigned' }}
+              </span>
             </div>
-            <div class="card-body">
+            <div class="card-body p-3">
               <div class="video-container mb-3">
-                <div class="video-section mb-3">
-                  <h6 class="text-primary mb-2">Video Asli</h6>
-                  <video v-if="video.rawVideoUrl" :src="video.rawVideoUrl" controls class="video-stream mb-2"></video>
-                  <p v-else class="text-center text-muted">Video asli tidak tersedia</p>
-                </div>
-                <div class="video-section">
-                  <h6 class="text-primary mb-2">Video Hasil</h6>
-                  <video v-if="video.processedVideoUrl" :src="video.processedVideoUrl" controls
-                    class="video-stream mb-2"></video>
-                  <p v-else class="text-center text-muted">Video hasil tidak tersedia</p>
+                <!-- Videos stacked vertically with labels -->
+                <div class="video-row">
+                  <div class="video-item">
+                    <p class="text-center video-label">Raw Video</p>
+                    <!-- Raw Video -->
+                    <div v-if="video.raw_video_stream_url && !video.isRawLoaded" class="text-center p-2">
+                      <div class="spinner-border spinner-border-sm text-primary" role="status">
+                        <span class="visually-hidden">Memuat video...</span>
+                      </div>
+                    </div>
+                    <video v-else-if="video.rawVideoUrl" :src="video.rawVideoUrl" controls class="video-stream mb-3"></video>
+                    <p v-else class="text-center text-muted small">Video tidak tersedia</p>
+                  </div>
+
+                  <div class="video-item">
+                    <p class="text-center video-label">Processed Video</p>
+                    <!-- Processed Video -->
+                    <div v-if="video.processed_video_stream_url && !video.isProcessedLoaded" class="text-center p-2">
+                      <div class="spinner-border spinner-border-sm text-primary" role="status">
+                        <span class="visually-hidden">Memuat video...</span>
+                      </div>
+                    </div>
+                    <video v-else-if="video.processedVideoUrl" :src="video.processedVideoUrl" controls class="video-stream mb-2"></video>
+                    <p v-else class="text-center text-muted small">Video tidak tersedia</p>
+                  </div>
                 </div>
               </div>
               <div class="video-info">
-                <p class="mb-2">
-                  <span class="badge" :class="video.status === 'assigned' ? 'bg-success' : 'bg-warning'">
-                    {{ video.status === 'assigned' ? 'Assigned' : 'Unassigned' }}
-                  </span>
-                </p>
                 <p class="mb-2"><strong>Pasien:</strong> {{ video.user ? video.user.name : 'Belum di-assign' }}</p>
-                <!-- Pindah ke bawah status -->
-                <p class="mb-0"><strong>Diagnosis:</strong> {{ video.hasil_diagnosis || 'Belum ada diagnosis' }}</p>
+                <p class="mb-2"><strong>Diagnosis:</strong> {{ video.hasil_diagnosis || 'Belum ada diagnosis' }}</p>
+                <p class="mb-0"><strong>Keterangan:</strong> {{ video.keterangan || 'Tidak ada keterangan' }}</p>
               </div>
             </div>
             <div class="card-footer bg-light">
               <small class="text-muted d-block mb-2">Diupload pada: {{ formatDate(video.created_at) }}</small>
-              <div class="d-grid">
+              <div class="d-grid" v-if="userRole === 'dokter'">
                 <button v-if="video.status !== 'assigned'" @click="openAssignModal(video)"
                   class="btn btn-primary btn-sm">
                   <i class="fas fa-user-plus me-1"></i> Assign ke Pasien
@@ -189,13 +201,14 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, onBeforeUnmount, watch } from 'vue';
 import AppLayout from '@/components/AppLayout.vue';
 import { useVideoStore } from '@/stores/videoStore';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
 import api from '@/api';
 import axios from 'axios';
+import { jwtDecode } from "jwt-decode";
 
 export default {
   name: 'PemeriksaanView',
@@ -205,58 +218,104 @@ export default {
     const userStore = useUserStore();
     const { videos } = storeToRefs(videoStore);
     const { users } = storeToRefs(userStore);
+    
+    // User role from JWT
+    const userRole = ref('pasien'); // Default role
+    
+    // Use a computed property with getter and setter for the selectedDate
+    const selectedDate = computed({
+      get: () => videoStore.selectedDate,
+      set: (value) => videoStore.setSelectedDate(value)
+    });
+    
     const showAssignModal = ref(false);
     const showUnassignModal = ref(false);
     const selectedUserId = ref("");
     const videoToAssign = ref(null);
     const videoToUnassign = ref(null);
-    const isLoading = ref(true);
-    const selectedDate = ref("");
     const assignLoading = ref(false);
     const unassignLoading = ref(false);
     const assignSuccess = ref(false);
     const unassignSuccess = ref(false);
+    const isLoading = computed(() => videoStore.isLoading);
 
-    // Computed property for filtered videos
-    const filteredVideos = computed(() => {
-      if (!selectedDate.value) {
-        return videos.value;
-      }
-
-      const filterDate = new Date(selectedDate.value);
-      filterDate.setHours(0, 0, 0, 0);
-
-      return videos.value.filter(video => {
-        const videoDate = new Date(video.created_at);
-        videoDate.setHours(0, 0, 0, 0);
-        return videoDate.getTime() === filterDate.getTime();
-      });
-    });
-
-    onMounted(async () => {
-      selectedDate.value = new Date().toISOString().split('T')[0]; // Set default date to today
-      if (videos.value.length === 0) {
-        try {
-          await videoStore.fetchVideos();
-          await userStore.fetchUsers();
-        } catch (error) {
-          console.error('Error fetching data:', error);
-        } finally {
-          isLoading.value = false;
+    // Function to get the user role from JWT
+    const getUserRoleFromToken = () => {
+      try {
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+        if (token) {
+          const payload = jwtDecode(token);
+          return payload.role || 'pasien';
         }
-      } else {
-        isLoading.value = false;
+        return 'pasien';
+      } catch (error) {
+        console.error('Error decoding token:', error);
+        return 'pasien';
       }
-    });
-
-    const filterByDate = () => {
-      // In the future, you can modify this to make an API request with the selected date
-      // For now, we're filtering client-side with the computed property
-      console.log("Filtering by date:", selectedDate.value);
     };
 
-    const resetFilter = () => {
-      selectedDate.value = "";
+    onMounted(async () => {
+      try {
+        // Set user role from JWT
+        userRole.value = getUserRoleFromToken();
+        
+        // Load users data only once
+        if (users.value.length === 0) {
+          await userStore.fetchUsers();
+        }
+        
+        // If no date is set in the store, set it to today
+        if (!videoStore.selectedDate) {
+          selectedDate.value = new Date().toISOString().split('T')[0];
+        }
+        
+        // Check if we need to fetch videos or use cached data
+        if (videoStore.videos.length === 0 || videoStore.currentDate !== videoStore.selectedDate) {
+          await videoStore.fetchVideos(videoStore.selectedDate);
+        }
+        
+        // Preload all videos that are available
+        videos.value.forEach(video => {
+          if (video.raw_video_stream_url && !video.isRawLoaded) {
+            videoStore.loadVideoUrl(video.id, 'raw');
+          }
+          if (video.processed_video_stream_url && !video.isProcessedLoaded) {
+            videoStore.loadVideoUrl(video.id, 'processed');
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    });
+    
+    // Watch for changes in videos to preload them
+    watch(videos, (newVideos) => {
+      newVideos.forEach(video => {
+        if (video.raw_video_stream_url && !video.isRawLoaded) {
+          videoStore.loadVideoUrl(video.id, 'raw');
+        }
+        if (video.processed_video_stream_url && !video.isProcessedLoaded) {
+          videoStore.loadVideoUrl(video.id, 'processed');
+        }
+      });
+    }, { deep: true });
+    
+    // Clean up object URLs when component is destroyed
+    onBeforeUnmount(() => {
+      videoStore.clearVideoUrls();
+    });
+
+    const filterByDate = async () => {
+      try {
+        // Use the store action to filter by date, which will also update the store's state
+        await videoStore.filterByDate(selectedDate.value);
+      } catch (error) {
+        console.error("Error filtering by date:", error);
+      }
+    };
+
+    const resetFilter = async () => {
+      await videoStore.resetDateFilter();
     };
 
     const formatDate = (dateString) => {
@@ -308,7 +367,8 @@ export default {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        await videoStore.fetchVideos();
+        // Refresh videos with current date filter
+        await videoStore.fetchVideos(selectedDate.value, true); // Force refresh
         assignSuccess.value = true;
 
         // Close modal automatically after 3 seconds
@@ -336,7 +396,8 @@ export default {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        await videoStore.fetchVideos();
+        // Refresh videos with current date filter
+        await videoStore.fetchVideos(selectedDate.value, true); // Force refresh
         unassignSuccess.value = true;
 
         // Close modal automatically after 3 seconds
@@ -364,7 +425,6 @@ export default {
       videoToUnassign,
       isLoading,
       selectedDate,
-      filteredVideos,
       assignLoading,
       unassignLoading,
       assignSuccess,
@@ -377,7 +437,8 @@ export default {
       unassignVideo,
       formatDate,
       filterByDate,
-      resetFilter
+      resetFilter,
+      userRole
     };
   }
 };
@@ -481,23 +542,43 @@ export default {
   background: linear-gradient(135deg, #4285f4, #34a853);
   font-weight: 500;
   border-bottom: none;
+  padding: 10px;
+  min-height: 40px;
 }
 
 .video-container {
   background-color: #f8f9fa;
   border-radius: 8px;
-  padding: 15px;
+  padding: 10px;
+  margin-top: 0;
 }
 
-.video-section {
-  text-align: center;
+/* Improved video layout styles */
+.video-row {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.video-item {
+  width: 100%;
+}
+
+.video-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 5px;
 }
 
 .video-stream {
   width: 100%;
-  max-height: 120px;
+  height: auto;
+  max-height: 130px;
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  display: block;
+  margin: 0 auto;
 }
 
 .card-footer {
@@ -629,7 +710,6 @@ export default {
 }
 
 @keyframes scale {
-
   0%,
   100% {
     transform: none;
@@ -645,13 +725,13 @@ export default {
     padding: 10px;
   }
 
-  .video-stream {
-    max-height: 100px;
-  }
-
   .filter-section .btn {
     margin-top: 10px;
     width: 100%;
+  }
+  
+  .video-stream {
+    max-height: 100px;
   }
 }
 </style>
