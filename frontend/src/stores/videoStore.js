@@ -18,8 +18,13 @@ export const useVideoStore = defineStore("videoStore", {
       
       try {
         const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+
+        // Menyiapkan query parameter untuk tanggal jika filterDate ada
+        const params = this.filterDate ? { date: this.filterDate } : {};
+
         const response = await axios.get(api.getEndpoint("videos"), {
           headers: { Authorization: `Bearer ${token}` },
+          params, // Mengirimkan query parameter tanggal jika ada
         });
 
         // Map data video dan download blob untuk streaming
@@ -36,17 +41,7 @@ export const useVideoStore = defineStore("videoStore", {
           }))
         );
 
-        // Menyaring video berdasarkan filter tanggal
-        if (this.filterDate) {
-          const filterDate = new Date(this.filterDate);
-          this.videos = fetchedVideos.filter((video) => {
-            const videoDate = new Date(video.date); // Pastikan field 'date' ada pada data video
-            return videoDate >= filterDate;  // Menyaring video berdasarkan tanggal
-          });
-        } else {
-          this.videos = fetchedVideos;
-        }
-
+        this.videos = fetchedVideos;
         this.lastUpdated = new Date().toLocaleString("id-ID");
       } catch (error) {
         console.error("Gagal mengambil data video:", error);
