@@ -2,78 +2,20 @@ import { defineStore } from "pinia";
 import axios from "axios";
 import api from "@/api";
 
-// export const useVideoStore = defineStore("videoStore", {
-//   state: () => ({
-//     videos: [],
-//     lastUpdated: "-",
-//   }),
-//   persist: true,
-//   actions: {
-//     async fetchVideos() {
-//       try {
-//         const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-//         const response = await axios.get(api.getEndpoint("videos"), {
-//           headers: { Authorization: `Bearer ${token}` },
-//         });
-
-//         this.videos = response.data.map((video) => ({
-//           ...video,
-//           rawBlobUrl: null,
-//           processedBlobUrl: null,
-//           isLoading: true,
-//         }));
-
-//         for (const [index, video] of this.videos.entries()) {
-//           await this.loadVideoBlob(video, index, token);
-//         }
-
-//         this.lastUpdated = new Date().toLocaleString("id-ID");
-//       } catch (error) {
-//         console.error("Gagal mengambil data video:", error);
-//       }
-//     },
-
-//     async loadVideoBlob(video, index, token) {
-//       try {
-//         if (video.raw_video_stream_url) {
-//           video.rawBlobUrl = await this.fetchVideoBlob(video.raw_video_stream_url, token);
-//         }
-//         if (video.processed_video_stream_url) {
-//           video.processedBlobUrl = await this.fetchVideoBlob(video.processed_video_stream_url, token);
-//         }
-//       } catch (error) {
-//         console.error("Error loading video blob:", error);
-//       } finally {
-//         this.videos[index] = { ...video, isLoading: false };
-//         this.videos = [...this.videos]; // Pastikan Vue mendeteksi perubahan
-//       }
-//     },
-
-//     async fetchVideoBlob(url, token) {
-//       try {
-//         const response = await fetch(url, {
-//           headers: { Authorization: `Bearer ${token}` },
-//         });
-//         if (!response.ok) throw new Error("Gagal mengambil video");
-
-//         const blob = await response.blob();
-//         return URL.createObjectURL(blob);
-//       } catch (error) {
-//         console.error("Error fetching video stream:", error);
-//         return null;
-//       }
-//     },
-//   },
-// });
-
 export const useVideoStore = defineStore("videoStore", {
   state: () => ({
     videos: [],
     lastUpdated: "-",
+    filterDate: null,  // Menambahkan filter tanggal
   }),
   persist: true,
   actions: {
     async fetchVideos() {
+      if (this.videos.length > 0) {
+        console.log("Data video sudah ada, tidak perlu mengambil lagi.");
+        return;
+      }
+      
       try {
         const token = localStorage.getItem("token") || sessionStorage.getItem("token");
         const response = await axios.get(api.getEndpoint("videos"), {
@@ -81,7 +23,7 @@ export const useVideoStore = defineStore("videoStore", {
         });
 
         // Map data video dan download blob untuk streaming
-        this.videos = await Promise.all(
+        const fetchedVideos = await Promise.all(
           response.data.map(async (video) => ({
             ...video,
             rawVideoUrl: video.raw_video_stream_url
@@ -93,6 +35,17 @@ export const useVideoStore = defineStore("videoStore", {
             isLoading: false,
           }))
         );
+
+        // Menyaring video berdasarkan filter tanggal
+        if (this.filterDate) {
+          const filterDate = new Date(this.filterDate);
+          this.videos = fetchedVideos.filter((video) => {
+            const videoDate = new Date(video.date); // Pastikan field 'date' ada pada data video
+            return videoDate >= filterDate;  // Menyaring video berdasarkan tanggal
+          });
+        } else {
+          this.videos = fetchedVideos;
+        }
 
         this.lastUpdated = new Date().toLocaleString("id-ID");
       } catch (error) {
@@ -113,6 +66,11 @@ export const useVideoStore = defineStore("videoStore", {
         console.error("Error fetching video stream:", error);
         return null;
       }
+    },
+
+    // Menambahkan setter untuk filter tanggal
+    setFilterDate(date) {
+      this.filterDate = date;
     },
   },
 });
