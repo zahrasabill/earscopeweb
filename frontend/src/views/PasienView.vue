@@ -33,13 +33,12 @@
         <table class="table table-striped table-hover">
           <thead class="table-dark">
             <tr>
-              <th>ID</th>
+              <th>Kode Akses</th>
               <th>Nama</th>
-              <th>Email</th>
-              <th>Phone</th>
+              <th>Tanggal Lahir</th>
+              <th>No. Telepon</th>
               <th>Gender</th>
               <th>Umur</th>
-              <th>Role</th>
               <th>Aksi</th>
             </tr>
           </thead>
@@ -48,15 +47,12 @@
               <td colspan="8" class="text-center">Tidak ada data pasien</td>
             </tr>
             <tr v-for="pasien in paginatedPatients" :key="pasien.id">
-              <td>{{ pasien.id }}</td>
-              <td>{{ pasien.nama }}</td>
-              <td>{{ pasien.email }}</td>
-              <td>{{ pasien.phone }}</td>
+              <td>{{ pasien.kode_akses }}</td>
+              <td>{{ pasien.name }}</td>
+              <td>{{ pasien.tanggal_lahir }}</td>
+              <td>{{ pasien.no_telp }}</td>
               <td>{{ pasien.gender }}</td>
               <td>{{ pasien.umur }} tahun</td>
-              <td>
-                <span class="badge bg-primary">{{ pasien.role }}</span>
-              </td>
               <td>
                 <div class="btn-group">
                   <button class="btn btn-sm btn-info me-1" @click="showEditModal(pasien)" title="Edit">
@@ -122,8 +118,8 @@
                 </div>
                 
                 <div class="mb-3">
-                  <label for="phone" class="form-label">Nomor Telepon</label>
-                  <input type="tel" class="form-control" id="phone" v-model="formData.phone" required>
+                  <label for="no_telp" class="form-label">Nomor Telepon</label>
+                  <input type="tel" class="form-control" id="no_telp" v-model="formData.no_telp" required>
                 </div>
                 
                 <div class="mb-3">
@@ -143,14 +139,6 @@
                 <div class="mb-3">
                   <label for="umur" class="form-label">Umur</label>
                   <input type="number" class="form-control" id="umur" v-model="formData.umur" min="0" max="120" required>
-                </div>
-                
-                <div class="mb-3">
-                  <label for="role" class="form-label">Role</label>
-                  <select class="form-select" id="role" v-model="formData.role" required disabled>
-                    <option value="pasien">Pasien</option>
-                  </select>
-                  <small class="text-muted">Role default untuk semua user yang ditambahkan</small>
                 </div>
                 
                 <div class="modal-footer">
@@ -200,42 +188,43 @@ export default {
     return {
       patients: [
         { 
-          id: 1, 
-          nama: 'Budi Santoso', 
+          kode_akses: 1, 
+          name: 'Budi Santoso', 
+          tanggal_lahir: '2004-20-20', 
           email: 'budi@example.com', 
           password: 'password123', 
-          phone: '08123456789', 
+          no_telp: '08123456789', 
           gender: 'Laki-laki', 
           umur: 35,
-          role: 'pasien'
         },
         { 
-          id: 2, 
-          nama: 'Siti Aminah', 
+          kode_akses: 2, 
+          tanggal_lahir: '1995-05-15',
+          name: 'Siti Aminah', 
           email: 'siti@example.com', 
           password: 'password456', 
-          phone: '08567891234', 
+          no_telp: '08567891234', 
           gender: 'Perempuan', 
           umur: 28,
-          role: 'pasien'
         },
         { 
-          id: 3, 
-          nama: 'Joko Widodo', 
+          kode_akses: 3, 
+          tanggal_lahir: '1980-10-10',
+          name: 'Joko Widodo', 
           email: 'joko@example.com', 
           password: 'password789', 
-          phone: '08912345678', 
+          no_telp: '08912345678', 
           gender: 'Laki-laki', 
           umur: 42,
-          role: 'pasien'
         },
       ],
       formData: {
-        id: null,
-        nama: '',
+        kode_akses: null,
+        name: '',
+        tanggal_lahir: '',
         email: '',
         password: '',
-        phone: '',
+        no_telp: '',
         gender: '',
         umur: '',
         role: 'pasien'
@@ -260,7 +249,7 @@ export default {
         filtered = filtered.filter(patient => 
           patient.nama.toLowerCase().includes(query) || 
           patient.email.toLowerCase().includes(query) ||
-          patient.phone.includes(query)
+          patient.no_telp.includes(query)
         );
       }
       
@@ -305,11 +294,11 @@ export default {
     
     resetForm() {
       this.formData = {
-        id: null,
-        nama: '',
+        kode_akses: null,
+        name: '',
         email: '',
         password: '',
-        phone: '',
+        no_telp: '',
         gender: '',
         umur: '',
         role: 'pasien'
