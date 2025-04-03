@@ -9,7 +9,7 @@ use App\Http\Controllers\VideoController;
 
 Route::post('login', [AuthController::class, 'login']);
 
-Route::post('videos', [VideoController::class, 'store']); // Upload video
+Route::post('videos', [VideoController::class, 'store']);
 
 Route::middleware('jwt.auth')->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
@@ -19,7 +19,7 @@ Route::middleware('jwt.auth')->group(function () {
     
     Route::get('videos/stream/{filename}', [VideoController::class, 'streamVideo']);
 
-    // Route untuk admin
+    // Route Admin dan Dokter
     Route::middleware('role:admin|dokter')->group(function () {
         Route::get('users/{id}', [UserController::class, 'show']);
         Route::put('users/{id}', [UserController::class, 'update']);
@@ -29,25 +29,26 @@ Route::middleware('jwt.auth')->group(function () {
         
     });
 
+    // Role Pasien dan Dokter
     Route::middleware('role:dokter|pasien')->group(function () {
         Route::get('videos', [VideoController::class, 'showAllVideos']); // Lihat semua video
     });
     
-    // Route untuk admin
+    // Route Admin
     Route::middleware('role:admin')->group(function () {
         Route::get('dokter', [UserController::class, 'getAllDokter']);
         Route::post('register/dokter', [UserController::class, 'registerDokter']);
     });
 
-    // Route untuk dokter
+    // Route Dokter
     Route::middleware('role:dokter')->group(function () {
-        Route::post('videos/{videoId}/assign/{userId}', [VideoController::class, 'assignToUser']); // Assign video ke user
+        Route::get('videos/pasien', [UserController::class, 'showVideosByPasienId']);
+        Route::post('videos/{videoId}/assign/{userId}', [VideoController::class, 'assignToUser']);
         Route::patch('/videos/{videoId}', [VideoController::class, 'updateStatusVideo']);
         
         Route::get('pasien', [UserController::class, 'getAllPasien']);
         Route::post('register/pasien', [UserController::class, 'registerPasien']);
     });
-
 
 });
 
