@@ -629,6 +629,18 @@
                 ],
                 "summary": "Get all videos",
                 "operationId": "2dd39694f233ae275064d4e27e73aea0",
+                "parameters": [
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "description": "Filter videos by created date (format: YYYY-MM-DD)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "List of all videos",
