@@ -1,0 +1,86 @@
+:root {
+    --color-primary: #009EF7;
+    --color-secondary: #053071;
+    --color-accent: #53E1CD;
+    --color-success: #C5FF97;
+    --color-background: #F5FBF0;
+    --color-lightblue: #336793;
+}
+
+/* Change sidebar background */
+.fi-sidebar {
+    background-color: var(--color-secondary) !important;
+}
+
+.fi-sidebar-header {
+    background-color: var(--color-secondary) !important;
+}
+
+.fi-sidebar-item-icon {
+    color: var(--color-background) !important;
+}
+
+.fi-sidebar-item-label {
+    color: var(--color-background) !important;
+}
+
+/* Change primary button color */
+.fi-btn-primary {
+    background-color: var(--color-primary) !important;
+    border-color: var(--color-primary) !important;
+}
+
+/* Change table header background */
+.fi-table th {
+    background-color: var(--color-secondary) !important;
+    color: var(--color-background) !important;
+}
+
+/* Change hover effects */
+.fi-btn:hover {
+    background-color: var(--color-accent) !important;
+}
+
+/* Change success messages */
+.fi-notifications {
+    background-color: var(--color-success) !important;
+    color: black !important;
+}
+
+/* Adjust general page background */
+body {
+    background-color: var(--color-background) !important;
+}
+
+/* Additional hover effects */
+.fi-btn-primary:hover {
+    background-color: var(--color-accent) !important;
+}
+
+.fi-btn-secondary:hover {
+    background-color: var(--color-secondary) !important;
+}
+
+/* Form elements */
+.fi-form-group input,
+.fi-form-group textarea,
+.fi-form-group select {
+    background-color: var(--color-background) !important;
+}
+
+/* Card backgrounds */
+.fi-card {
+    background-color: var(--color-background) !important;
+}
+
+/* Navigation items */
+.fi-nav-item {
+    background-color: transparent !important;
+    color: var(--color-background) !important;
+}
+
+/* Active navigation items */
+.fi-sidebar-item-active a {
+    background-color: var(--color-lightblue) !important;
+    color: var(--color-background) !important;
+}
