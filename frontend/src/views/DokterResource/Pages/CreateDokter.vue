@@ -32,6 +32,7 @@
               id="tanggalLahir"
               v-model="dokter.tanggalLahir"
               required
+              pattern="\d{4}-\d{2}-\d{2}"
             />
           </div>
           <div class="mb-3">
@@ -56,7 +57,7 @@
                 v-model="dokter.gender"
                 required
               />
-              <label class="form-check-label" for="laki">Laki-laki</label>
+              <label class="form-check-label" for="laki">laki-laki</label>
             </div>
             <div class="form-check">
               <input
@@ -67,7 +68,7 @@
                 value="Perempuan"
                 v-model="dokter.gender"
               />
-              <label class="form-check-label" for="perempuan">Perempuan</label>
+              <label class="form-check-label" for="perempuan">perempuan</label>
             </div>
           </div>
           <div class="d-flex justify-content-between">
@@ -122,7 +123,6 @@
 
 <script>
 import { Modal } from 'bootstrap';
-import axios from 'axios';
 import api from '@/api';
 
 export default {
@@ -145,87 +145,94 @@ export default {
     };
   },
   methods: {
-    async createDokter() {
-      this.loading = true;
-      this.error = null;
+    // Perubahan pada method createDokter()
+async createDokter() {
+  this.loading = true;
+  this.error = null;
 
-      try {
-        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+  try {
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
 
-        if (!token) {
-          throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
-        }
-
-        const formattedData = {
-          ...this.dokter,
-          tanggalLahir: this.formatDate(this.dokter.tanggalLahir)
-        };
-
-        const response = await axios.post(
-          this.getEndpoint('register/dokter'),
-          formattedData,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-        
-        // Simpan credentials dari response API
-        if (response.data && response.data.data) {
-          this.generatedCredentials.kodeAkses = response.data.data.kodeAkses || '';
-          this.generatedCredentials.password = response.data.data.password || '';
-          
-          console.log('Dokter berhasil dibuat:', response.data);
-          
-          // Tampilkan modal dengan credentials
-          this.showCredentialsModal();
-        } else {
-          throw new Error('Format response tidak sesuai');
-        }
-      } catch (err) {
-        console.error('Error saat membuat dokter:', err);
-        
-        if (err.response?.status === 401) {
-          this.error = 'Tidak memiliki akses. Silakan login kembali untuk mendapatkan token yang valid.';
-        } else {
-          this.error = err.response?.data?.message || err.message || 'Terjadi kesalahan saat membuat dokter. Silakan coba lagi.';
-        }
-      } finally {
-        this.loading = false;
-      }
-    },
-    
-    formatDate(dateString) {
-      // Pastikan format tanggal sesuai dengan yang diharapkan API
-      return dateString; // Asumsi format tanggal dari input sudah YYYY-MM-DD
-    },
-    
-    showCredentialsModal() {
-      // Tampilkan modal Bootstrap
-      this.modal = new Modal(document.getElementById('credentialsModal'));
-      this.modal.show();
-    },
-    
-    copyToClipboard(type) {
-      // Copy credentials ke clipboard
-      const text = type === 'kodeAkses' ? this.generatedCredentials.kodeAkses : this.generatedCredentials.password;
-      navigator.clipboard.writeText(text)
-        .then(() => {
-          alert(`${type === 'kodeAkses' ? 'Kode Akses' : 'Password'} berhasil disalin!`);
-        })
-        .catch(err => {
-          console.error('Gagal menyalin teks: ', err);
-        });
-    },
-    
-    redirectToList() {
-      // Redirect ke halaman list dokter setelah modal ditutup
-      this.$router.push('/dokter');
+    if (!token) {
+      throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
     }
+
+    // Pastikan format data sesuai yang diharapkan API
+    const formattedData = {
+      nama: this.dokter.nama,
+      tanggalLahir: this.formatDate(this.dokter.tanggalLahir),
+      no_telp: this.dokter.phone,
+      gender: this.dokter.gender
+    };
+
+    // Tambahkan logging untuk debugging
+    console.log('Data yang dikirim ke API:', formattedData);
+
+    const response = await api.post(
+      'register/dokter',
+      formattedData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json' // Tambahkan header content-type
+        }
+      }
+    );
+    
+    // Simpan credentials dari response API
+    if (response.data && response.data.data) {
+      this.generatedCredentials.kodeAkses = response.data.data.kodeAkses || '';
+      this.generatedCredentials.password = response.data.data.password || '';
+      
+      console.log('Dokter berhasil dibuat:', response.data);
+      
+      // Tampilkan modal dengan credentials
+      this.showCredentialsModal();
+    } else {
+      throw new Error('Format response tidak sesuai');
+    }
+  } catch (err) {
+    console.error('Error saat membuat dokter:', err);
+    
+    // Tampilkan detail error yang lebih spesifik
+    if (err.response) {
+      console.error('Response error data:', err.response.data);
+      console.error('Response error status:', err.response.status);
+      console.error('Response error headers:', err.response.headers);
+      
+      // Pesan error yang lebih spesifik berdasarkan response
+      if (err.response.status === 400) {
+        this.error = `Bad Request: ${err.response.data.message || 'Format data tidak valid'}`;
+      } else if (err.response.status === 401) {
+        this.error = 'Tidak memiliki akses. Silakan login kembali untuk mendapatkan token yang valid.';
+      } else {
+        this.error = err.response.data.message || 'Terjadi kesalahan saat membuat dokter.';
+      }
+    } else if (err.request) {
+      this.error = 'Tidak ada respons dari server. Periksa koneksi Anda.';
+    } else {
+      this.error = err.message || 'Terjadi kesalahan saat membuat dokter. Silakan coba lagi.';
+    }
+  } finally {
+    this.loading = false;
   }
+},
+
+// Pastikan formatDate berfungsi dengan benar
+formatDate(dateString) {
+  if (!dateString) return '';
+  
+   // Validasi string dengan format YYYY-MM-DD
+   const regex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!regex.test(dateString)) {
+    throw new Error('Format tanggal tidak valid. Harus dalam format YYYY-MM-DD.');
+  }
+
+  return dateString;
+},
+  },
 };
+
 </script>
 
 <style scoped>

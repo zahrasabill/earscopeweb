@@ -66,7 +66,7 @@
                 v-model="dokter.gender"
                 required
               />
-              <label class="form-check-label" for="laki">Laki-laki</label>
+              <label class="form-check-label" for="laki">laki-laki</label>
             </div>
             <div class="form-check">
               <input
@@ -77,7 +77,7 @@
                 value="Perempuan"
                 v-model="dokter.gender"
               />
-              <label class="form-check-label" for="perempuan">Perempuan</label>
+              <label class="form-check-label" for="perempuan">perempuan</label>
             </div>
           </div>
           
@@ -188,7 +188,6 @@ export default {
         }
         
         // Panggil API untuk mengambil data dokter berdasarkan ID menggunakan api.js
-        // Perhatikan bahwa kita tidak perlu menambahkan '/v1' karena sudah ada di baseURL
         const response = await api.get(
           `dokter/${this.dokterId}`,
           {
@@ -204,7 +203,7 @@ export default {
             kodeAkses: response.data.data.kodeAkses || '',
             nama: response.data.data.nama || '',
             tanggalLahir: response.data.data.tanggalLahir || '',
-            phone: response.data.data.phone || '',
+            no_telp: response.data.data.phone || '',
             gender: response.data.data.gender || ''
           };
         } else {
@@ -244,7 +243,7 @@ export default {
         const formattedData = {
           nama: this.dokter.nama,
           tanggalLahir: this.formatDate(this.dokter.tanggalLahir),
-          phone: this.dokter.phone,
+          no_telp: this.dokter.phone,
           gender: this.dokter.gender
         };
         
