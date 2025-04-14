@@ -1,5 +1,5 @@
 <template>
-  <admin-layout activePage="dashboard">
+  <app-layout activePage="dashboard">
     <div class="row">
       <div class="col-md-4">
         <div class="card mb-3 shadow-sm">
@@ -52,14 +52,15 @@
         </div>
       </div>
     </div>
-  </admin-layout>
+  </app-layout>
 </template>
 <script>
-import AdminLayout from '@/components/AdminLayout.vue';
+import AppLayout from '@/components/AppLayout.vue';
+
 export default {
   name: "DashboardView",
   components: {
-    AdminLayout
+    AppLayout
   }
 };
 </script>

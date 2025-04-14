@@ -1,6 +1,6 @@
 <template>
-  <admin-layout active-page="pasien">
-      <div class="d-flex justify-content-between mb-4">
+  <app-layout active-page="pasien">
+      <div class="">
         <button class="btn btn-primary" @click="showAddModal">
           <i class="bi bi-plus-circle me-1"></i> Tambah Pasien
         </button>
@@ -310,17 +310,17 @@
           </div>
         </div>
       </div>
-  </admin-layout>
+  </app-layout>
 </template>
 
 <script>
-import AdminLayout from '@/components/AdminLayout.vue';
+import AppLayout from '@/components/AppLayout.vue';
 import { Modal, Toast } from 'bootstrap';
 
 export default {
   name: "PasienView",
   components: { 
-    AdminLayout 
+    AppLayout 
   },
   data() {
     return {

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Dedoc\Scramble\Annotations\Description;
 
 /**
  * @OA\Tag(
@@ -33,6 +34,7 @@ class AuthController extends Controller
      *     @OA\Response(response=401, description="Unauthorized")
      * )
      */
+    #[Description("Login User")]
     public function login(Request $request)
     {
         $request->validate([
@@ -44,7 +46,7 @@ class AuthController extends Controller
         $credentials = $request->only('kode_akses', 'password');
 
         if (!$token = Auth::guard('api')->attempt($credentials)) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            return response()->json(['error' => 'Kode Akses atau Password Salah!'], 401);
         }
 
         return $this->respondWithToken($token);

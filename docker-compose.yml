@@ -21,13 +21,11 @@ services:
     build: 
       context: ./frontend
     ports:
-      - "8011:8080"
+      - "8011:80"
     networks:
       - earscopeweb-network
       - nginx-network
     restart: unless-stopped
-    volumes:
-      - /var/www/earscopeweb-frontend/build:/app/dist
 
 networks:
   earscopeweb-network:

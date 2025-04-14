@@ -117,7 +117,7 @@
                                     "gender": {
                                         "description": "Jenis kelamin, hanya diisi 'laki-laki' atau 'perempuan'",
                                         "type": "string",
-                                        "example": "Laki-laki"
+                                        "example": "laki-laki"
                                     },
                                     "no_telp": {
                                         "description": "Nomor telepon, hanya angka, 10 sampai 15 digit",
@@ -196,7 +196,7 @@
                                     "gender": {
                                         "description": "Jenis kelamin, hanya diisi 'laki-laki' atau 'perempuan'",
                                         "type": "string",
-                                        "example": "Laki-laki"
+                                        "example": "laki-laki"
                                     },
                                     "no_telp": {
                                         "description": "Nomor telepon, hanya angka, 10 sampai 15 digit",
@@ -450,13 +450,67 @@
                 ]
             }
         },
-        "/v1/users": {
+        "/v1/pasien": {
             "get": {
                 "tags": [
                     "User"
                 ],
-                "summary": "Get all users",
-                "operationId": "3f54252a5fcc629bcf8fff9c64dcdc01",
+                "summary": "Get all pasien",
+                "operationId": "38ffdb85192c1e00fca9886d8680a751",
+                "responses": {
+                    "200": {
+                        "description": "List of all users",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer"
+                                            },
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "email": {
+                                                "type": "string"
+                                            },
+                                            "roles": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "deleted_at": {
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "nullable": true
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/v1/dokter": {
+            "get": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get all dokter",
+                "operationId": "33be195307cb462d2aa95ab5b5845ad8",
                 "responses": {
                     "200": {
                         "description": "List of all users",
@@ -575,6 +629,18 @@
                 ],
                 "summary": "Get all videos",
                 "operationId": "2dd39694f233ae275064d4e27e73aea0",
+                "parameters": [
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "description": "Filter videos by created date (format: YYYY-MM-DD)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "List of all videos",
@@ -745,71 +811,6 @@
             }
         },
         "/v1/videos/{videoId}": {
-            "get": {
-                "tags": [
-                    "Videos"
-                ],
-                "summary": "Get video details by ID",
-                "operationId": "eeed8b39f6ddcc2f00bfaff8dec07955",
-                "parameters": [
-                    {
-                        "name": "videoId",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Video details",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "id": {
-                                            "type": "integer"
-                                        },
-                                        "raw_video_url": {
-                                            "type": "string"
-                                        },
-                                        "processed_video_url": {
-                                            "type": "string"
-                                        },
-                                        "status": {
-                                            "type": "string"
-                                        },
-                                        "user": {
-                                            "properties": {
-                                                "id": {
-                                                    "type": "integer"
-                                                },
-                                                "name": {
-                                                    "type": "string"
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Video not found"
-                    },
-                    "401": {
-                        "description": "Unauthorized"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            },
             "patch": {
                 "tags": [
                     "Videos"
@@ -846,11 +847,23 @@
                 "tags": [
                     "Videos"
                 ],
-                "summary": "Get videos assigned to the logged-in patient",
-                "operationId": "1f76df1bad6c346cd8a2e2831303dea0",
+                "summary": "Get videos assigned to a specific patient",
+                "operationId": "5dc897dbfd7ee4ac302abdd46029fdf5",
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "query",
+                        "description": "Filter videos by assigned patient ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "example": 3
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "List of videos assigned to the patient",
+                        "description": "List of videos assigned to the specified patient",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -858,6 +871,9 @@
                                     "items": {
                                         "properties": {
                                             "id": {
+                                                "type": "integer"
+                                            },
+                                            "user_id": {
                                                 "type": "integer"
                                             },
                                             "raw_video_url": {
@@ -868,6 +884,52 @@
                                             },
                                             "status": {
                                                 "type": "string"
+                                            },
+                                            "hasil_diagnosis": {
+                                                "type": "string"
+                                            },
+                                            "keterangan": {
+                                                "type": "string",
+                                                "nullable": true
+                                            },
+                                            "created_at": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                            },
+                                            "updated_at": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                            },
+                                            "user": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "kode_akses": {
+                                                        "type": "string"
+                                                    },
+                                                    "tanggal_lahir": {
+                                                        "type": "string",
+                                                        "format": "date"
+                                                    },
+                                                    "usia": {
+                                                        "type": "integer"
+                                                    },
+                                                    "gender": {
+                                                        "type": "string"
+                                                    },
+                                                    "no_telp": {
+                                                        "type": "string"
+                                                    },
+                                                    "email": {
+                                                        "type": "string",
+                                                        "format": "email"
+                                                    }
+                                                },
+                                                "type": "object"
                                             }
                                         },
                                         "type": "object"
@@ -876,60 +938,17 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "User ID is required"
+                    },
+                    "404": {
+                        "description": "Patient not found"
+                    },
                     "401": {
                         "description": "Unauthorized"
                     },
                     "403": {
                         "description": "Forbidden"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/v1/videos/stream/{filename}": {
-            "get": {
-                "tags": [
-                    "Videos"
-                ],
-                "summary": "Stream a video file",
-                "operationId": "1b927ddc0005c5ebec55da753647ef4a",
-                "parameters": [
-                    {
-                        "name": "filename",
-                        "in": "path",
-                        "description": "The name of the video file to stream",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Video streaming successfully",
-                        "headers": {
-                            "Content-Type": {
-                                "description": "MIME type of the video",
-                                "schema": {
-                                    "type": "string",
-                                    "example": "video/mp4"
-                                }
-                            },
-                            "Accept-Ranges": {
-                                "description": "bytes range support",
-                                "schema": {
-                                    "type": "string",
-                                    "example": "bytes"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Video not found"
                     }
                 },
                 "security": [

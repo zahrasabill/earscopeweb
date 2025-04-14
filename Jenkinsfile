@@ -5,7 +5,6 @@ pipeline {
         GIT_BRANCH = "main"
         DOCKER_IMAGE_NAME_BACKEND = "earscopeweb-backend"
         DOCKER_IMAGE_NAME_FRONTEND = "earscopeweb-frontend"
-        NGINX_CONF_PATH = "/etc/nginx/conf/earscope-web.conf"
     }
     stages {
         stage('Checkout Code') {
@@ -31,6 +30,14 @@ pipeline {
                         sh """
                         echo "Copying .env file..."
                         cp \${ENV_FILE} earscopeweb/backend/.env
+                        """
+                    }
+                }
+                script {
+                    withCredentials([file(credentialsId: 'earscopeweb-frontend-env', variable: 'ENV_FILE')]) {
+                        sh """
+                        echo "Copying .env file..."
+                        cp \${ENV_FILE} earscopeweb/frontend/.env
                         """
                     }
                 }
@@ -62,6 +69,8 @@ pipeline {
                     cd earscopeweb
                     
                     docker compose down || true
+
+                    docker system prune -af --volumes
                     
                     echo "Checking and removing old backend and frontend images..."
                     
@@ -89,7 +98,7 @@ pipeline {
                     sh """
                     echo "Building Docker images..."
                     cd earscopeweb
-                    docker compose build --no-cache
+                    docker compose build --no-cache --pull
                     """
                 }
             }
@@ -112,7 +121,7 @@ pipeline {
 
                     echo "Checking frontend working directory..."
                     docker exec earscopeweb-frontend pwd
-                    docker exec earscopeweb-frontend ls -al /app
+                    docker exec earscopeweb-frontend ls -al /usr/share/nginx/html
                     """
                 }
             }
