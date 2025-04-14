@@ -70,7 +70,7 @@ pipeline {
                     
                     # Change port container
                     sed -i 's/8010:8010/8020:8010/' ${NEW_COMPOSE_FILE}
-                    sed -i 's/8011:80/8021:80' ${NEW_COMPOSE_FILE}
+                    sed -i 's/8011:80/8021:80/' ${NEW_COMPOSE_FILE}
 
                     # Change path volumes
                     sed -i 's|/var/www/log/earscopeweb-backend/storage/logs|/var/www/log/earscopeweb-backend-new/storage/logs|' ${NEW_COMPOSE_FILE}
@@ -243,7 +243,7 @@ pipeline {
                 docker compose -f ${NEW_COMPOSE_FILE} down || true
                 
                 # Periksa apakah container produksi sedang berjalan
-                if ! docker ps -q --filter "name=earscopeweb-backend$" | grep -q . && ! docker ps -q --filter "name=earscopeweb-frontend$" | grep -q .; then
+                if ! docker ps -q --filter "name=earscopeweb-backend\$" | grep -q . && ! docker ps -q --filter "name=earscopeweb-frontend$" | grep -q .; then
                     echo "No running production containers found. Restoring from backup..."
                     
                     # Kembalikan compose file dari backup jika ada
@@ -267,8 +267,8 @@ pipeline {
             echo "Cleaning up any leftover test containers and temporary files..."
             sh """
             cd earscopeweb || true
-            docker compose -f ${NEW_COMPOSE_FILE} down || true
-            rm -f ${NEW_COMPOSE_FILE} || true
+            docker compose -f \${NEW_COMPOSE_FILE} down || true
+            rm -f \${NEW_COMPOSE_FILE} || true
             """
         }
     }
