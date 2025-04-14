@@ -72,14 +72,6 @@ pipeline {
                     sed -i 's/8010:8010/8020:8010/' ${NEW_COMPOSE_FILE}
                     sed -i 's/8011:80/8021:80/' ${NEW_COMPOSE_FILE}
 
-                    # Change path volumes
-                    sed -i 's|/var/www/log/earscopeweb-backend/storage/logs|/var/www/log/earscopeweb-backend-new/storage/logs|' ${NEW_COMPOSE_FILE}
-                    sed -i 's|/var/www/earscopeweb-backend/storage/app/private|/var/www/earscopeweb-backend-new/storage/app/private|' ${NEW_COMPOSE_FILE}
-                    
-                    # Pastikan direktori log dan storage untuk container testing tersedia
-                    mkdir -p /var/www/log/earscopeweb-backend-new/storage/logs
-                    mkdir -p /var/www/earscopeweb-backend-new/storage/app/private
-
                     echo "Final new docker compose file..."
                     cat ${NEW_COMPOSE_FILE}
                     '''
