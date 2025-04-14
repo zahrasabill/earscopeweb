@@ -240,7 +240,7 @@ pipeline {
                 cd earscopeweb || true
                 
                 # Hentikan container pengujian jika masih berjalan
-                docker compose -f ${NEW_COMPOSE_FILE} down || true
+                docker compose -f \${NEW_COMPOSE_FILE} down || true
                 
                 # Periksa apakah container produksi sedang berjalan
                 if ! docker ps -q --filter "name=earscopeweb-backend\$" | grep -q . && ! docker ps -q --filter "name=earscopeweb-frontend$" | grep -q .; then
