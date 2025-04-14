@@ -1,5 +1,5 @@
 <template>
-  <admin-layout activePage="dashboard">
+  <app-layout activePage="dashboard">
     <div class="row">
       <div class="col-md-4">
         <div class="card mb-3 shadow-sm">
@@ -34,34 +34,15 @@
         </div>
       </div>
     </div>
-    
-    <div class="row mt-4">
-      <div class="col-md-8">
-        <div class="card shadow-sm">
-          <div class="card-header bg-white">
-            <h5 class="card-title mb-0">Statistik Kunjungan</h5>
-          </div>
-          <div class="card-body">
-            <div class="chart-container" style="height: 300px;">
-              <!-- Chart placeholder -->
-              <div class="d-flex justify-content-center align-items-center h-100 bg-light">
-                <span class="text-muted">Area Grafik Statistik Kunjungan</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </admin-layout>
+  </app-layout>
 </template>
-
 <script>
-import AdminLayout from '@/components/AppLayout.vue';
+import AppLayout from '@/components/AppLayout.vue';
 
 export default {
   name: "DashboardView",
   components: {
-    AdminLayout
+    AppLayout
   }
 };
 </script>

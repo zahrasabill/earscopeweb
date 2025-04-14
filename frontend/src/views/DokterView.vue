@@ -33,13 +33,10 @@
         <table class="table table-striped table-hover">
           <thead class="table-dark">
             <tr>
-              <th>ID</th>
+              <th>Kode Akses</th>
               <th>Nama</th>
-              <th>Email</th>
-              <th>Phone</th>
+              <th>No. Telepon</th>
               <th>Gender</th>
-              <th>Role</th>
-              <th>Status</th>
               <th>Aksi</th>
             </tr>
           </thead>
@@ -48,19 +45,10 @@
               <td colspan="8" class="text-center">Tidak ada data dokter</td>
             </tr>
             <tr v-for="dokter in paginatedDoctors" :key="dokter.id">
-              <td>{{ dokter.id }}</td>
-              <td>{{ dokter.nama }}</td>
-              <td>{{ dokter.email }}</td>
-              <td>{{ dokter.phone }}</td>
+              <td>{{ dokter.kode_akses }}</td>
+              <td>{{ dokter.name }}</td>
+              <td>{{ dokter.no_telp }}</td>
               <td>{{ dokter.gender }}</td>
-              <td>
-                <span class="badge bg-success">{{ dokter.role }}</span>
-              </td>
-              <td>
-                <span :class="'badge ' + (dokter.status === 'Aktif' ? 'bg-success' : 'bg-warning')">
-                  {{ dokter.status }}
-                </span>
-              </td>
               <td>
                 <div class="btn-group">
                   <button class="btn btn-sm btn-info me-1" @click="showEditModal(dokter)" title="Edit">
@@ -207,44 +195,33 @@ export default {
     return {
       doctors: [
         { 
-          id: 1, 
-          nama: 'Dr. Bambang Sutejo', 
-          email: 'bambang@example.com', 
+          kode_akses: 1, 
+          name: 'Dr. Bambang Sutejo', 
           password: 'password123', 
-          phone: '08123456789', 
+          no_telp: '08123456789', 
           gender: 'Laki-laki', 
-          role: 'dokter',
-          status: 'Aktif'
         },
         { 
-          id: 2, 
-          nama: 'Dr. Ratna Dewi', 
-          email: 'ratna@example.com', 
+          kode_akses: 2, 
+          name: 'Dr. Ratna Dewi', 
           password: 'password456', 
-          phone: '08567891234', 
+          no_telp: '08567891234', 
           gender: 'Perempuan', 
-          role: 'dokter',
-          status: 'Aktif'
         },
         { 
-          id: 3, 
-          nama: 'Dr. Ahmad Hidayat', 
-          email: 'ahmad@example.com', 
+          kode_akses: 3, 
+          name: 'Dr. Ahmad Hidayat', 
           password: 'password789', 
-          phone: '08912345678', 
+          no_telp: '08912345678', 
           gender: 'Laki-laki', 
-          role: 'dokter',
-          status: 'Aktif'
         },
       ],
       formData: {
-        id: null,
-        nama: '',
-        email: '',
+        kode_akses: null,
+        name: '',
         password: '',
-        phone: '',
+        no_telp: '',
         gender: '',
-        role: 'dokter',
         status: 'Aktif'
       },
       selectedDoctor: {},
