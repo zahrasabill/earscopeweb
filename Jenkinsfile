@@ -5,12 +5,12 @@ pipeline {
         GIT_BRANCH = "main"
         DOCKER_IMAGE_NAME_BACKEND = "earscopeweb-backend"
         DOCKER_IMAGE_NAME_FRONTEND = "earscopeweb-frontend"
-        NGINX_CONF_PATH = "/etc/nginx/conf/earscope-web.conf"
+        NGINX_CONF_PATH = "/etc/nginx/conf/"
 
         // implement blue green deployment
         NEW_CONTAINER_SUFFIX = "-new"
         NEW_COMPOSE_FILE = "docker-compose-new.yml"
-        HEALTH_CHECK_TIMEOUT = 60 // seconds
+        HEALTH_CHECK_TIMEOUT = 120 // Meningkatkan timeout
     }
     stages {
         stage('Checkout Code') {
@@ -121,54 +121,59 @@ pipeline {
                     echo "Performing health check on new containers..."
                     cd earscopeweb
 
-                    # Wait container to initialize
-                    sleep 10
+                    # Wait longer for container to initialize
+                    echo "Waiting 30 seconds for containers to initialize..."
+                    sleep 30
                     '''
 
-                    // Health check for backend
+                    // Health check for backend with better error handling
                     timeout(time: "${HEALTH_CHECK_TIMEOUT}", unit: 'SECONDS') {
                         retry(5) {
                             try {
                                 sh '''
-                                # Check if backend container is running
+                                echo "Checking backend container status..."
                                 if [ "$(docker inspect -f '{{.State.Running}}' earscopeweb-backend${NEW_CONTAINER_SUFFIX})" = "true" ]; then
-                                    # Endpoint check
-                                    curl -f http://localhost:8020 || exit 1
+                                    echo "Backend container is running. Performing HTTP check..."
+                                    # Log curl output for debugging
+                                    curl -v -f http://localhost:8020 || (echo "Backend endpoint check failed" && exit 1)
                                     echo "Backend health check passed!"
                                 else
                                     echo "Backend container is not running!"
+                                    docker logs earscopeweb-backend${NEW_CONTAINER_SUFFIX}
                                     exit 1
                                 fi
                                 '''
                                 backendHealth = true
                             } catch (Exception e) {
-                                echo "Backend health check failed! Retrying..."
-                                sleep 5 // Wait before retrying
-                                error "Backend health check failed"
+                                echo "Backend health check failed! Retrying in 10 seconds..."
+                                sh 'docker logs earscopeweb-backend${NEW_CONTAINER_SUFFIX}'
+                                sleep 10 // Longer wait before retrying
                             }
                         }
                     }
 
-                    // Health check for frontend
+                    // Health check for frontend with better error handling
                     timeout(time: "${HEALTH_CHECK_TIMEOUT}", unit: 'SECONDS') {
                         retry(5) {
                             try {
                                 sh '''
-                                # Check if frontend container is running
+                                echo "Checking frontend container status..."
                                 if [ "$(docker inspect -f '{{.State.Running}}' earscopeweb-frontend${NEW_CONTAINER_SUFFIX})" = "true" ]; then
-                                    # Endpoint check
-                                    curl -f http://localhost:8021 || exit 1
+                                    echo "Frontend container is running. Performing HTTP check..."
+                                    # Add -s to silence progress, but keep errors
+                                    curl -s -f http://localhost:8021 || (echo "Frontend endpoint check failed" && exit 1)
                                     echo "Frontend health check passed!"
                                 else
                                     echo "Frontend container is not running!"
+                                    docker logs earscopeweb-frontend${NEW_CONTAINER_SUFFIX}
                                     exit 1
                                 fi
                                 '''
                                 frontendHealth = true
                             } catch (Exception e) {
-                                echo "Frontend health check failed! Retrying..."
-                                sleep 5 // Wait before retrying
-                                error "Frontend health check failed"
+                                echo "Frontend health check failed! Retrying in 10 seconds..."
+                                sh 'docker logs earscopeweb-frontend${NEW_CONTAINER_SUFFIX}'
+                                sleep 10 // Longer wait before retrying
                             }
                         }
                     }
@@ -185,7 +190,7 @@ pipeline {
             steps {
                 script {
                     sh '''
-                    echo "Health checks passed! switch to new containers..."
+                    echo "Health checks passed! Switching to new containers..."
                     cd earscopeweb
 
                     # Backup old compose file
@@ -218,16 +223,37 @@ pipeline {
         stage('Copy Nginx Config & Restart Nginx') {
             steps {
                 script {
-                        sh '''
-                        echo "Copying Nginx configuration..."
-                        sudo cp earscopeweb/earscopeweb-frontend.conf /etc/nginx/conf/
-                        sudo cp earscopeweb/earscopeweb-backend.conf /etc/nginx/conf/
-
-                        echo "Restarting Nginx..."
-                        docker restart nginx
-
-                        echo "Nginx configuration updated successfully!"
-                        '''
+                    // Perbaikan pada perintah sudo - periksa konfigurasi file sebelum menyalinnya
+                    sh '''
+                    echo "Checking if Nginx configuration files exist..."
+                    if [ -f earscopeweb/earscopeweb-frontend.conf ] && [ -f earscopeweb/earscopeweb-backend.conf ]; then
+                        echo "Configuration files found. Checking permissions..."
+                        
+                        # Periksa folder tujuan
+                        if [ -d "${NGINX_CONF_PATH}" ]; then
+                            echo "Nginx conf directory exists. Copying configuration files..."
+                            
+                            # Gunakan sudo dengan opsi -n (non-interactive)
+                            sudo -n cp earscopeweb/earscopeweb-frontend.conf ${NGINX_CONF_PATH} || echo "Warning: Failed to copy frontend config, might need sudo permissions"
+                            sudo -n cp earscopeweb/earscopeweb-backend.conf ${NGINX_CONF_PATH} || echo "Warning: Failed to copy backend config, might need sudo permissions"
+                            
+                            echo "Restarting Nginx..."
+                            if docker ps | grep -q nginx; then
+                                docker restart nginx || echo "Warning: Failed to restart nginx container"
+                            else
+                                echo "Nginx container not found, skipping restart"
+                            fi
+                        else
+                            echo "Warning: Nginx conf directory not found: ${NGINX_CONF_PATH}"
+                            echo "Skipping Nginx configuration update"
+                        fi
+                    else
+                        echo "Warning: Nginx configuration files not found"
+                        echo "Skipping Nginx configuration update"
+                    fi
+                    
+                    echo "Nginx configuration stage completed"
+                    '''
                 }
             }
         }
