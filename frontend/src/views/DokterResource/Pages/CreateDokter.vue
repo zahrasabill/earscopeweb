@@ -124,6 +124,7 @@
 <script>
 import { Modal } from 'bootstrap';
 import api from '@/api';
+import axios from 'axios';
 
 export default {
   name: 'CreateDokter',
@@ -168,8 +169,7 @@ async createDokter() {
     // Tambahkan logging untuk debugging
     console.log('Data yang dikirim ke API:', formattedData);
 
-    const response = await api.post(
-      'register/dokter',
+    const response = await axios.post(api.getEndpoint(`register/dokter`),
       formattedData,
       {
         headers: {
