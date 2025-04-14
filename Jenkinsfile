@@ -11,7 +11,6 @@ pipeline {
         NEW_CONTAINER_SUFFIX = "-new"
         NEW_COMPOSE_FILE = "docker-compose-new.yml"
         HEALTH_CHECK_TIMEOUT = 60 // seconds
-
     }
     stages {
         stage('Checkout Code') {
