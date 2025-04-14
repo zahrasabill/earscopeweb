@@ -24,7 +24,7 @@
           <router-link
             to="/dokter"
             class="nav-link text-white d-flex align-items-center"
-            :class="{ active: activePage === 'dokter' }"
+            :class="{ active: activePage === 'dokterresource' }"
           >
             <i class="bi bi-person-badge me-3"></i>
             <span>Dokter</span>
@@ -34,7 +34,7 @@
           <router-link
             to="/pasien"
             class="nav-link text-white d-flex align-items-center"
-            :class="{ active: activePage === 'pasien' }"
+            :class="{ active: activePage === 'pasienresource' }"
           >
             <i class="bi bi-people me-3"></i>
             <span>Pasien</span>
@@ -55,12 +55,6 @@
       <div class="mt-auto pt-4">
         <hr class="border-light" />
         <ul class="nav flex-column">
-          <li class="nav-item mb-2">
-            <router-link to="/pengaturan" class="nav-link text-white d-flex align-items-center">
-              <i class="bi bi-gear me-3"></i>
-              <span>Pengaturan</span>
-            </router-link>
-          </li>
           <li class="nav-item">
             <a
               href="#"
@@ -95,9 +89,6 @@
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
                 <li>
                   <a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Profil</a>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Pengaturan Akun</a>
                 </li>
                 <li><hr class="dropdown-divider" /></li>
                 <li>
@@ -163,10 +154,9 @@ export default {
     updatePageTitle(page) {
       const titles = {
         dashboard: "Dashboard",
-        dokter: "Kelola Dokter",
-        pasien: "Kelola Pasien",
+        dokterresource: "Kelola Dokter",
+        pasienresource: "Kelola Pasien",
         pemeriksaan: "Hasil Pemeriksaan",
-        pengaturan: "Pengaturan",
       };
       this.pageTitle = titles[page] || "Dashboard";
     },
