@@ -34,24 +34,6 @@
         </div>
       </div>
     </div>
-   
-    <div class="row mt-4">
-      <div class="col-md-8">
-        <div class="card shadow-sm">
-          <div class="card-header bg-white">
-            <h5 class="card-title mb-0">Statistik Pemeriksaan</h5>
-          </div>
-          <div class="card-body">
-            <div class="chart-container" style="height: 300px;">
-              <!-- Chart placeholder -->
-              <div class="d-flex justify-content-center align-items-center h-100 bg-light">
-                <span class="text-muted">Area Grafik Statistik Pemeriksaan</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   </app-layout>
 </template>
 <script>
