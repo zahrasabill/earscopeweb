@@ -16,15 +16,15 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 script {
-                    sh """
+                    sh '''
                     echo "Cleaning workspace..."
                     rm -rf earscopeweb || true
-                    """
+                    '''
                     withCredentials([usernamePassword(credentialsId: 'github-auth-to-jenkins', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
-                        sh """
+                        sh '''
                         echo "Cloning repository with authentication..."
                         git clone https://${GIT_USER}:${GIT_TOKEN}@github.com/zahrasabill/earscopeweb.git -b ${GIT_BRANCH}
-                        """
+                        '''
                     }
                 }
             }
@@ -33,18 +33,18 @@ pipeline {
             steps {
                 script {
                     withCredentials([file(credentialsId: 'earscopeweb-backend-env', variable: 'ENV_FILE')]) {
-                        sh """
+                        sh '''
                         echo "Copying .env file..."
-                        cp \${ENV_FILE} earscopeweb/backend/.env
-                        """
+                        cp ${ENV_FILE} earscopeweb/backend/.env
+                        '''
                     }
                 }
                 script {
                     withCredentials([file(credentialsId: 'earscopeweb-frontend-env', variable: 'ENV_FILE')]) {
-                        sh """
+                        sh '''
                         echo "Copying .env file..."
-                        cp \${ENV_FILE} earscopeweb/frontend/.env
-                        """
+                        cp ${ENV_FILE} earscopeweb/frontend/.env
+                        '''
                     }
                 }
             }
@@ -52,7 +52,7 @@ pipeline {
         stage('Prepare New Docker Compose File') {
             steps {
                 script {
-                    sh """
+                    sh '''
                     echo "Creating new docker-compose file for testing..."
 
                     cd earscopeweb
@@ -82,32 +82,32 @@ pipeline {
 
                     echo "Final new docker compose file..."
                     cat ${NEW_COMPOSE_FILE}
-                    """
+                    '''
                 }
             }
         }
         stage('Build Docker Images') {
             steps {
                 script {
-                    sh """
+                    sh '''
                     echo "Building Docker images..."
                     cd earscopeweb
                     docker compose -f ${NEW_COMPOSE_FILE} build --no-cache --pull
-                    """
+                    '''
                 }
             }
         }
         stage('Deploy Docker Images to Container for Testing') {
             steps {
                 script {
-                    sh """
+                    sh '''
                     echo "Deploying new containers for testing..."
                     cd earscopeweb
                     docker compose -f ${NEW_COMPOSE_FILE} up -d
 
                     echo "Checking running containers..."
                     docker ps -a | grep earscopeweb
-                    """
+                    '''
                 }
             }
         }
@@ -117,21 +117,21 @@ pipeline {
                     def backendHealth = false
                     def frontendHealth = false
 
-                    sh """
+                    sh '''
                     echo "Performing health check on new containers..."
                     cd earscopeweb
 
                     # Wait container to initialize
                     sleep 10
-                    """
+                    '''
 
                     // Health check for backend
                     timeout(time: "${HEALTH_CHECK_TIMEOUT}", unit: 'SECONDS') {
                         retry(5) {
                             try {
-                                sh """
+                                sh '''
                                 # Check if backend container is running
-                                if [ "\$(docker inspect -f '{{.State.Running}}' earscopeweb-backend${NEW_CONTAINER_SUFFIX})" = "true" ]; then
+                                if [ "$(docker inspect -f '{{.State.Running}}' earscopeweb-backend${NEW_CONTAINER_SUFFIX})" = "true" ]; then
                                     # Endpoint check
                                     curl -f http://localhost:8020 || exit 1
                                     echo "Backend health check passed!"
@@ -139,7 +139,7 @@ pipeline {
                                     echo "Backend container is not running!"
                                     exit 1
                                 fi
-                                """
+                                '''
                                 backendHealth = true
                             } catch (Exception e) {
                                 echo "Backend health check failed! Retrying..."
@@ -153,9 +153,9 @@ pipeline {
                     timeout(time: "${HEALTH_CHECK_TIMEOUT}", unit: 'SECONDS') {
                         retry(5) {
                             try {
-                                sh """
+                                sh '''
                                 # Check if frontend container is running
-                                if [ "\$(docker inspect -f '{{.State.Running}}' earscopeweb-frontend${NEW_CONTAINER_SUFFIX})" = "true" ]; then
+                                if [ "$(docker inspect -f '{{.State.Running}}' earscopeweb-frontend${NEW_CONTAINER_SUFFIX})" = "true" ]; then
                                     # Endpoint check
                                     curl -f http://localhost:8021 || exit 1
                                     echo "Frontend health check passed!"
@@ -163,7 +163,7 @@ pipeline {
                                     echo "Frontend container is not running!"
                                     exit 1
                                 fi
-                                """
+                                '''
                                 frontendHealth = true
                             } catch (Exception e) {
                                 echo "Frontend health check failed! Retrying..."
@@ -184,8 +184,8 @@ pipeline {
         stage('Switch to New Containers') {
             steps {
                 script {
-                    sh """
-                    echo "Health checks pased! switch to new containers..."
+                    sh '''
+                    echo "Health checks passed! switch to new containers..."
                     cd earscopeweb
 
                     # Backup old compose file
@@ -211,14 +211,14 @@ pipeline {
                     
                     echo "Successfully switched to new containers!"
                     docker ps -a | grep earscopeweb
-                    """
+                    '''
                 }
             }
         }
         stage('Copy Nginx Config & Restart Nginx') {
             steps {
                 script {
-                        sh """
+                        sh '''
                         echo "Copying Nginx configuration..."
                         sudo cp earscopeweb/earscopeweb-frontend.conf /etc/nginx/conf/
                         sudo cp earscopeweb/earscopeweb-backend.conf /etc/nginx/conf/
@@ -227,7 +227,7 @@ pipeline {
                         docker restart nginx
 
                         echo "Nginx configuration updated successfully!"
-                        """
+                        '''
                 }
             }
         }
@@ -236,14 +236,14 @@ pipeline {
         failure {
             script {
                 echo "Pipeline failed! Rolling back to previous version..."
-                sh """
+                sh '''
                 cd earscopeweb || true
                 
                 # Hentikan container pengujian jika masih berjalan
-                docker compose -f \${NEW_COMPOSE_FILE} down || true
+                docker compose -f ${NEW_COMPOSE_FILE} down || true
                 
                 # Periksa apakah container produksi sedang berjalan
-                if ! docker ps -q --filter "name=earscopeweb-backend\$" | grep -q . && ! docker ps -q --filter "name=earscopeweb-frontend$" | grep -q .; then
+                if ! docker ps -q --filter "name=earscopeweb-backend$" | grep -q . && ! docker ps -q --filter "name=earscopeweb-frontend$" | grep -q .; then
                     echo "No running production containers found. Restoring from backup..."
                     
                     # Kembalikan compose file dari backup jika ada
@@ -257,7 +257,7 @@ pipeline {
                 
                 echo "Rollback completed! Current running containers:"
                 docker ps -a | grep earscopeweb
-                """
+                '''
             }
         }
         success {
@@ -265,11 +265,11 @@ pipeline {
         }
         always {
             echo "Cleaning up any leftover test containers and temporary files..."
-            sh """
+            sh '''
             cd earscopeweb || true
-            docker compose -f \${NEW_COMPOSE_FILE} down || true
-            rm -f \${NEW_COMPOSE_FILE} || true
-            """
+            docker compose -f ${NEW_COMPOSE_FILE} down || true
+            rm -f ${NEW_COMPOSE_FILE} || true
+            '''
         }
     }
 }
