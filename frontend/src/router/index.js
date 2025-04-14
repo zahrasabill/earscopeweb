@@ -11,63 +11,62 @@ import ForbiddenView from "@/views/errors/ForbiddenView.vue";
 import NotFoundView from "@/views/errors/NotFoundView.vue";
 import ServerErrorView from "@/views/errors/ServerErrorView.vue";
 
-const routes = [
-  {
-    path: "/",
-    name: "home",
-    component: HomeView,
-  },
-  {
-    path: "/login",
-    name: "login",
-    component: LoginView,
-  },
-  {
-    path: "/dashboard",
-    name: "dashboard",
-    component: DashboardView,
-    meta: { requiresAuth: true },
-  },
-  // {
-  //   path: "/dokter",
-  //   name: "dokter",
-  //   component: DokterView,
-  //   meta: { requiresAuth: true },
-  // },
-  {
-    path: "/pasien",
-    name: "pasien",
-    component: PasienView,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: "/pemeriksaan",
-    name: "pemeriksaan",
-    component: PemeriksaanView,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: "/detail-pemeriksaan",
-    name: "detail-pemeriksaan",
-    component: DetailPemeriksaanView,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: "/forbidden",
-    name: "forbidden",
-    component: ForbiddenView,
-  },
-  {
-    path: "/server-error",
-    name: "server-error",
-    component: ServerErrorView,
-  },
-  {
-    path: "/:pathMatch(.*)*",
-    name: "notfound",
-    component: NotFoundView,
-  },
-];
+// const routes = [
+//   {
+//     path: "/",
+//     name: "home",
+//     component: HomeView,
+//   },
+//   {
+//     path: "/login",
+//     name: "login",
+//     component: LoginView,
+//   },
+//   {
+//     path: "/dashboard",
+//     name: "dashboard",
+//     component: DashboardView,
+//     meta: { requiresAuth: true },
+//   },  // {
+//   path: "/dokter",
+//   name: "dokter",
+//   component: DokterView,
+//   meta: { requiresAuth: true },
+// },
+// {
+//   path: "/pasien",
+//   name: "pasien",
+//   component: PasienView,
+//   meta: { requiresAuth: true },
+// },
+//   {
+//     path: "/pemeriksaan",
+//     name: "pemeriksaan",
+//     component: PemeriksaanView,
+//     meta: { requiresAuth: true },
+//   },
+//   {
+//     path: "/detail-pemeriksaan",
+//     name: "detail-pemeriksaan",
+//     component: DetailPemeriksaanView,
+//     meta: { requiresAuth: true },
+//   },
+//   {
+//     path: "/forbidden",
+//     name: "forbidden",
+//     component: ForbiddenView,
+//   },
+//   {
+//     path: "/server-error",
+//     name: "server-error",
+//     component: ServerErrorView,
+//   },
+//   {
+//     path: "/:pathMatch(.*)*",
+//     name: "notfound",
+//     component: NotFoundView,
+//   },
+// ];
 
 import DokterResource from '@/views/DokterResource.vue'
 import ListDokter from '@/views/DokterResource/Pages/ListDokter.vue'
@@ -97,10 +96,12 @@ const router = createRouter({
       path: '/dashboard',
       name: 'dashboard',
       component: DashboardView,
+      meta: { requiresAuth: true },
     },
   {
     path: '/dokter',
     component: DokterResource,
+    meta: { requiresAuth: true },
     children: [
       {
         path: '',
@@ -127,6 +128,7 @@ const router = createRouter({
   {
     path: '/pasien',
     component: PasienResource,
+    meta: { requiresAuth: true },
     children: [
       {
         path: '',
@@ -149,6 +151,33 @@ const router = createRouter({
         component: ViewPasien
       },
     ],
+  },
+  {
+    path: "/pemeriksaan",
+    name: "pemeriksaan",
+    component: PemeriksaanView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/detail-pemeriksaan",
+    name: "detail-pemeriksaan",
+    component: DetailPemeriksaanView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/forbidden",
+    name: "forbidden",
+    component: ForbiddenView,
+  },
+  {
+    path: "/server-error",
+    name: "server-error",
+    component: ServerErrorView,
+  },
+  {
+    path: "/:pathMatch(.*)*",
+    name: "notfound",
+    component: NotFoundView,
   },
   ],
 });
