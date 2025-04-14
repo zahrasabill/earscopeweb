@@ -206,8 +206,12 @@ pipeline {
                     # Jalankan container produksi baru
                     docker compose up -d
                     
+                    sleep 15
+
+                    echo "Checking if new containers are running..."
+                    docker ps | grep earscopeweb || (echo "Error: New containers are not running!" && docker compose logs && exit 1)
+
                     echo "Successfully switched to new containers!"
-                    docker ps -a | grep earscopeweb
                     '''
                 }
             }
