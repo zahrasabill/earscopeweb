@@ -123,6 +123,7 @@
 <script>
 import { Modal } from 'bootstrap';
 import axios from 'axios';
+import { useAuthStore } from '@/stores/auth';
 
 export default {
   name: 'CreateDokter',
@@ -147,24 +148,22 @@ export default {
     async createDokter() {
       this.loading = true;
       this.error = null;
-      
+
       try {
-        // Format tanggal sesuai kebutuhan API (YYYY-MM-DD)
+        const authStore = useAuthStore();
+        const token = authStore.token;
+
+        if (!token) {
+          throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
+        }
+
         const formattedData = {
           ...this.dokter,
           tanggalLahir: this.formatDate(this.dokter.tanggalLahir)
         };
-        
-        // Dapatkan token dari localStorage atau dari state management (Vuex/Pinia)
-        const token = localStorage.getItem('accessToken') || this.$store?.state?.auth?.token;
-        
-        if (!token) {
-          throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
-        }
-        
-        // Panggil API untuk membuat dokter baru dengan header Authorization
+
         const response = await axios.post(
-          'https://api.earscope.adrfstwn.cloud/v1/register/dokter', 
+          'https://api.earscope.adrfstwn.cloud/v1/register/dokter',
           formattedData,
           {
             headers: {
