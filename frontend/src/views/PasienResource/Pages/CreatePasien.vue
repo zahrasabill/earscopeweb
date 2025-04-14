@@ -134,6 +134,7 @@
 <script>
 import { Modal } from 'bootstrap';
 import axios from 'axios';
+import api from '@/api';
 
 export default {
   name: 'CreatePasien',

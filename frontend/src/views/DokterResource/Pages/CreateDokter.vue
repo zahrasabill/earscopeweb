@@ -123,7 +123,7 @@
 <script>
 import { Modal } from 'bootstrap';
 import axios from 'axios';
-import { useAuthStore } from '@/stores/auth';
+import api from '@/api';
 
 export default {
   name: 'CreateDokter',
@@ -141,7 +141,7 @@ export default {
       },
       modal: null,
       loading: false,
-      error: null
+      error: null,
     };
   },
   methods: {
@@ -150,8 +150,7 @@ export default {
       this.error = null;
 
       try {
-        const authStore = useAuthStore();
-        const token = authStore.token;
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
 
         if (!token) {
           throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
@@ -163,7 +162,7 @@ export default {
         };
 
         const response = await axios.post(
-          'https://api.earscope.adrfstwn.cloud/v1/register/dokter',
+          this.getEndpoint('register/dokter'),
           formattedData,
           {
             headers: {

@@ -5,7 +5,15 @@
         <h4>Edit Dokter</h4>
       </div>
       <div class="card-body">
-        <form @submit.prevent="updateDokter">
+        <div v-if="loading" class="text-center my-3">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+        <div v-if="error" class="alert alert-danger">
+          {{ error }}
+        </div>
+        <form @submit.prevent="updateDokter" v-if="!loading">
           <div class="mb-3">
             <label for="kodeAkses" class="form-label">Kode Akses</label>
             <input
@@ -89,7 +97,7 @@
               <div class="alert alert-warning">
                 <strong>Perhatian!</strong> Tindakan ini akan mereset password dokter.
               </div>
-              <button type="button" class="btn btn-danger" @click="resetPassword">
+              <button type="button" class="btn btn-danger" @click="resetPassword" :disabled="loading">
                 Reset Password
               </button>
             </div>
@@ -99,7 +107,7 @@
             <button type="button" class="btn btn-secondary" @click="$router.push('/dokter')">
               Kembali
             </button>
-            <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+            <button type="submit" class="btn btn-primary" :disabled="loading">Simpan Perubahan</button>
           </div>
         </form>
       </div>
@@ -128,7 +136,7 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="redirectToList">OK</button>
           </div>
         </div>
       </div>
@@ -138,7 +146,7 @@
 
 <script>
 import { Modal } from 'bootstrap';
-import axios from 'axios';
+import api from '@/api';
 
 export default {
   name: 'EditDokter',
@@ -154,7 +162,9 @@ export default {
       },
       showResetPasswordForm: false,
       newPassword: '',
-      modal: null
+      modal: null,
+      loading: false,
+      error: null
     };
   },
   created() {
@@ -166,21 +176,24 @@ export default {
   },
   methods: {
     async loadDokterData() {
+      this.loading = true;
+      this.error = null;
+      
       try {
-        // Dapatkan token dari localStorage atau dari state management (Vuex/Pinia)
-        const token = localStorage.getItem('accessToken') || this.$store?.state?.auth?.token;
+        // Dapatkan token dari localStorage atau sessionStorage
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
         
         if (!token) {
           throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
         }
         
-        // Panggil API untuk mengambil data dokter berdasarkan ID
-        const response = await axios.get(
-          `https://api.earscope.adrfstwn.cloud/v1/dokter/${this.dokterId}`,
+        // Panggil API untuk mengambil data dokter berdasarkan ID menggunakan api.js
+        // Perhatikan bahwa kita tidak perlu menambahkan '/v1' karena sudah ada di baseURL
+        const response = await api.get(
+          `dokter/${this.dokterId}`,
           {
             headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
+              'Authorization': `Bearer ${token}`
             }
           }
         );
@@ -199,15 +212,29 @@ export default {
         }
       } catch (err) {
         console.error('Error saat mengambil data dokter:', err);
-        alert('Gagal memuat data dokter. Silakan coba lagi.');
-        this.$router.push('/dokter');
+        
+        if (err.response?.status === 401) {
+          this.error = 'Tidak memiliki akses. Silakan login kembali untuk mendapatkan token yang valid.';
+        } else {
+          this.error = err.response?.data?.message || err.message || 'Gagal memuat data dokter. Silakan coba lagi.';
+        }
+        
+        // Jika error, tunggu beberapa saat lalu kembali ke halaman list
+        setTimeout(() => {
+          this.$router.push('/dokter');
+        }, 3000);
+      } finally {
+        this.loading = false;
       }
     },
     
     async updateDokter() {
+      this.loading = true;
+      this.error = null;
+      
       try {
-        // Dapatkan token dari localStorage atau dari state management (Vuex/Pinia)
-        const token = localStorage.getItem('accessToken') || this.$store?.state?.auth?.token;
+        // Dapatkan token dari localStorage atau sessionStorage
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
         
         if (!token) {
           throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
@@ -221,28 +248,31 @@ export default {
           gender: this.dokter.gender
         };
         
-        // Panggil API untuk memperbarui data dokter
-        const response = await axios.put(
-          `https://api.earscope.adrfstwn.cloud/v1/dokter/${this.dokterId}`,
+        // Panggil API untuk memperbarui data dokter menggunakan api.js
+        const response = await api.put(
+          `dokter/${this.dokterId}`,
           formattedData,
           {
             headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
+              'Authorization': `Bearer ${token}`
             }
           }
         );
         
         console.log('Dokter diperbarui:', response.data);
         
-        // Tampilkan notifikasi sukses
-        alert('Data dokter berhasil diperbarui!');
-        
-        // Kembali ke halaman list dokter
+        // Redirect ke halaman list dokter
         this.$router.push('/dokter');
       } catch (err) {
         console.error('Error saat memperbarui dokter:', err);
-        alert('Gagal memperbarui data dokter. Silakan coba lagi.');
+        
+        if (err.response?.status === 401) {
+          this.error = 'Tidak memiliki akses. Silakan login kembali untuk mendapatkan token yang valid.';
+        } else {
+          this.error = err.response?.data?.message || err.message || 'Gagal memperbarui data dokter. Silakan coba lagi.';
+        }
+      } finally {
+        this.loading = false;
       }
     },
     
@@ -251,19 +281,55 @@ export default {
       return dateString; // Asumsi format tanggal dari input sudah YYYY-MM-DD
     },
     
-    resetPassword() {
-      // Generate password baru
-      this.newPassword = this.generatePassword();
+    async resetPassword() {
+      this.loading = true;
+      this.error = null;
       
-      // Simulasi reset password
-      console.log('Password direset untuk dokter:', this.dokter.kodeAkses);
-      console.log('Password baru:', this.newPassword);
-      
-      // Tampilkan modal dengan password baru
-      this.showPasswordResetModal();
-      
-      // Sembunyikan form reset password
-      this.showResetPasswordForm = false;
+      try {
+        // Dapatkan token dari localStorage atau sessionStorage
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+        
+        if (!token) {
+          throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
+        }
+        
+        // Panggil API untuk reset password dokter menggunakan api.js
+        const response = await api.post(
+          `dokter/${this.dokterId}/reset-password`,
+          {},
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          }
+        );
+        
+        // Simpan password baru dari respons API
+        if (response.data && response.data.data && response.data.data.password) {
+          this.newPassword = response.data.data.password;
+        } else {
+          // Jika API tidak mengembalikan password, buat sendiri sebagai fallback
+          this.newPassword = this.generatePassword();
+        }
+        
+        console.log('Password direset untuk dokter:', this.dokter.kodeAkses);
+        
+        // Tampilkan modal dengan password baru
+        this.showPasswordResetModal();
+        
+        // Sembunyikan form reset password
+        this.showResetPasswordForm = false;
+      } catch (err) {
+        console.error('Error saat reset password:', err);
+        
+        if (err.response?.status === 401) {
+          this.error = 'Tidak memiliki akses. Silakan login kembali untuk mendapatkan token yang valid.';
+        } else {
+          this.error = err.response?.data?.message || err.message || 'Gagal reset password dokter. Silakan coba lagi.';
+        }
+      } finally {
+        this.loading = false;
+      }
     },
     
     generatePassword() {
@@ -291,6 +357,11 @@ export default {
         .catch(err => {
           console.error('Gagal menyalin teks: ', err);
         });
+    },
+    
+    redirectToList() {
+      // Redirect ke halaman list dokter setelah modal ditutup
+      this.$router.push('/dokter');
     }
   }
 };
