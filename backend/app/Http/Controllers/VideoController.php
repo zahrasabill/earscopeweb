@@ -34,6 +34,11 @@ class VideoController extends Controller
      *                     type="string",
      *                     format="binary",
      *                     description="Processed video file with bounding box"
+     *                 ),
+     *                @OA\Property(
+     *                     property="hasil_diagnosis",
+     *                     type="string",
+     *                     description="Diagnosis result of the video (optional)"
      *                 )
      *             )
      *         )
@@ -48,7 +53,8 @@ class VideoController extends Controller
      *                 @OA\Property(property="id", type="integer"),
      *                 @OA\Property(property="raw_video_path", type="string"),
      *                 @OA\Property(property="processed_video_path", type="string"),
-     *                 @OA\Property(property="status", type="string")
+     *                 @OA\Property(property="status", type="string"),
+     *                 @OA\Property(property="hasil_diagnosis", type="string", description="Diagnosis result of the video")
      *             )
      *         )
      *     ),
@@ -60,6 +66,7 @@ class VideoController extends Controller
         $request->validate([
             'raw_video' => 'required|file|mimetypes:video/mp4,video/quicktime',
             'processed_video' => 'required|file|mimetypes:video/mp4,video/quicktime',
+            'hasil_diagnosis' => 'nullable|string',
         ]);
 
         $timestamp = now()->format('Ymd_His');
@@ -111,6 +118,7 @@ class VideoController extends Controller
         $video = Video::create([
             'raw_video_path' => $storedRawVideoPath,
             'processed_video_path' => $storedProcessedVideoPath,
+            'hasil_diagnosis' => $request->input('hasil_diagnosis'),
             'status' => 'unassigned',
         ]);
 

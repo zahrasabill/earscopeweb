@@ -719,6 +719,10 @@
                                         "description": "Processed video file with bounding box",
                                         "type": "string",
                                         "format": "binary"
+                                    },
+                                    "hasil_diagnosis": {
+                                        "description": "Diagnosis result of the video (optional)",
+                                        "type": "string"
                                     }
                                 },
                                 "type": "object"
@@ -748,6 +752,10 @@
                                                     "type": "string"
                                                 },
                                                 "status": {
+                                                    "type": "string"
+                                                },
+                                                "hasil_diagnosis": {
+                                                    "description": "Diagnosis result of the video",
                                                     "type": "string"
                                                 }
                                             },
