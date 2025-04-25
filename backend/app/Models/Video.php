@@ -13,6 +13,7 @@ class Video extends Model
         'user_id',
         'raw_video_path',
         'processed_video_path',
+        'hasil_diagnosis',
         'status',
     ];
 
