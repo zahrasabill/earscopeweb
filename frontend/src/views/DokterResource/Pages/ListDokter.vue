@@ -2,152 +2,142 @@
   <div class="container mt-4">
     <div class="card">
       <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-        <h4>Daftar Dokter</h4>
-        <button class="btn btn-light" @click="$router.push('/dokter/create')">
+        <h4 class="mb-0">Daftar Dokter</h4>
+        <router-link to="/dokter/create" class="btn btn-sm btn-light">
           <i class="bi bi-plus-lg me-1"></i> Tambah Dokter
-        </button>
+        </router-link>
       </div>
       <div class="card-body">
-        <!-- Loading indicator -->
-        <div v-if="loading" class="text-center my-3">
+        <div v-if="loading" class="text-center my-5">
           <div class="spinner-border text-primary" role="status">
             <span class="visually-hidden">Loading...</span>
           </div>
+          <p class="mt-2">Memuat data dokter...</p>
         </div>
-
-        <!-- Error alert -->
-        <div v-if="error" class="alert alert-danger">
+        
+        <div v-else-if="error" class="alert alert-danger">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
           {{ error }}
-          <button type="button" class="btn-close float-end" @click="error = null"></button>
         </div>
-
-        <!-- Search and filter -->
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <div class="input-group">
-              <span class="input-group-text">
-                <i class="bi bi-search"></i>
-              </span>
-              <input
-                type="text"
-                class="form-control"
-                placeholder="Cari dokter..."
-                v-model="search"
-                @input="searchDokter"
-              />
+        
+        <div v-else-if="dokters.length === 0" class="text-center my-5">
+          <i class="bi bi-inbox-fill text-muted" style="font-size: 3rem;"></i>
+          <p class="mt-3 text-muted">Belum ada data dokter tersimpan</p>
+          <router-link to="/dokter/create" class="btn btn-primary mt-2">
+            <i class="bi bi-plus-lg me-1"></i> Tambah Dokter Baru
+          </router-link>
+        </div>
+        
+        <div v-else>
+          <!-- Search and filter section -->
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input
+                  type="text"
+                  class="form-control"
+                  placeholder="Cari nama dokter..."
+                  v-model="searchQuery"
+                  @input="handleSearch"
+                />
+                <button class="btn btn-outline-secondary" type="button" @click="resetFilter">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
             </div>
-          </div>
-          <div class="col-md-6">
-            <div class="d-flex justify-content-md-end">
-              <select class="form-select w-50" v-model="filter" @change="searchDokter">
-                <option value="all">Semua Gender</option>
+            <div class="col-md-6 text-md-end mt-2 mt-md-0">
+              <select class="form-select w-auto d-inline-block ms-md-auto" v-model="genderFilter" @change="handleFilter">
+                <option value="">Semua Gender</option>
                 <option value="laki-laki">Laki-laki</option>
                 <option value="perempuan">Perempuan</option>
               </select>
             </div>
           </div>
-        </div>
-
-        <!-- Data table -->
-        <div class="table-responsive">
-          <table class="table table-striped table-hover">
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>Nama</th>
-                <th>Kode Akses</th>
-                <th>Tanggal Lahir</th>
-                <th>Nomor Telepon</th>
-                <th>Gender</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
-            <tbody v-if="dokterList.length > 0">
-              <tr v-for="(dokter, index) in dokterList" :key="dokter.id">
-                <td>{{ startIndex + index + 1 }}</td>
-                <td>{{ dokter.nama }}</td>
-                <td>
-                  <div class="d-flex align-items-center">
-                    <span class="me-2">{{ dokter.kodeAkses || '-' }}</span>
-                    <button 
-                      v-if="dokter.kodeAkses"
-                      class="btn btn-sm btn-outline-secondary border-0" 
-                      @click="copyKodeAkses(dokter.kodeAkses)"
-                      title="Salin kode akses"
+          
+          <!-- Table section -->
+          <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th width="5%">No</th>
+                  <th width="25%">Nama</th>
+                  <th width="15%">Tanggal Lahir</th>
+                  <th width="20%">Nomor Telepon</th>
+                  <th width="15%">Gender</th>
+                  <th width="20%" class="text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(dokter, index) in paginatedDokters" :key="dokter.id">
+                  <td>{{ startIndex + index + 1 }}</td>
+                  <td>{{ dokter.name }}</td>
+                  <td>{{ formatDate(dokter.tanggal_lahir) }}</td>
+                  <td>+62{{ dokter.no_telp }}</td>
+                  <td>
+                    <span 
+                      :class="[
+                        'badge', 
+                        dokter.gender === 'laki-laki' ? 'bg-primary' : 'bg-info'
+                      ]"
                     >
-                      <i class="bi bi-clipboard"></i>
-                    </button>
-                  </div>
-                </td>
-                <td>{{ formatDate(dokter.tanggalLahir) }}</td>
-                <td>+62{{ dokter.phone }}</td>
-                <td>
-                  <span 
-                    :class="dokter.gender === 'laki-laki' ? 'badge bg-primary' : 'badge bg-info'"
-                  >
-                    {{ capitalizeFirst(dokter.gender) }}
-                  </span>
-                </td>
-                <td>
-                  <div class="btn-group">
-                    <button class="btn btn-sm btn-info me-1" @click="viewDokter(dokter.id)">
-                      <i class="bi bi-eye"></i>
-                    </button>
-                    <button class="btn btn-sm btn-warning me-1" @click="editDokter(dokter.id)">
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn btn-sm btn-danger" @click="confirmDelete(dokter.id, dokter.nama)">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-            <tbody v-else>
-              <tr>
-                <td colspan="7" class="text-center py-3">
-                  <div class="alert alert-info mb-0">
-                    <i class="bi bi-info-circle me-2"></i>
-                    Tidak ada data dokter yang tersedia.
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Pagination -->
-        <div class="d-flex justify-content-between align-items-center mt-3">
-          <div>
-            <span class="text-muted">Menampilkan {{ dokterList.length }} dari {{ totalDokter }} data</span>
+                      {{ capitalizeFirst(dokter.gender) }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="d-flex justify-content-center gap-2">
+                      <router-link :to="`/dokter/view/${dokters.id}`" class="btn btn-sm btn-info text-white">
+                        <i class="bi bi-eye"></i>
+                      </router-link>
+                      <router-link :to="`/dokter/edit/${dokters.id}`" class="btn btn-sm btn-warning text-white">
+                        <i class="bi bi-pencil"></i>
+                      </router-link>
+                      <button 
+                        @click="confirmDelete(dokter)" 
+                        class="btn btn-sm btn-danger"
+                      >
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <nav v-if="totalPages > 1">
-            <ul class="pagination mb-0">
-              <li class="page-item" :class="{ disabled: currentPage === 1 }">
-                <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">
-                  <i class="bi bi-chevron-left"></i>
-                </a>
-              </li>
-              <li 
-                v-for="page in displayedPages" 
-                :key="page" 
-                class="page-item"
-                :class="{ active: currentPage === page }"
-              >
-                <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
-              </li>
-              <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-                <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">
-                  <i class="bi bi-chevron-right"></i>
-                </a>
-              </li>
-            </ul>
-          </nav>
+          
+          <!-- Pagination -->
+          <div class="d-flex justify-content-between align-items-center mt-3">
+            <div>
+              <span class="text-muted">Menampilkan {{ Math.min(dokters.length, startIndex + 1) }}-{{ Math.min(dokters.length, startIndex + itemsPerPage) }} dari {{ dokters.length }} dokter</span>
+            </div>
+            <nav aria-label="Page navigation">
+              <ul class="pagination mb-0">
+                <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                  <a class="page-link" href="#" @click.prevent="goToPage(currentPage - 1)">
+                    <i class="bi bi-chevron-left"></i>
+                  </a>
+                </li>
+                <li 
+                  v-for="page in totalPages" 
+                  :key="page" 
+                  class="page-item"
+                  :class="{ active: page === currentPage }"
+                >
+                  <a class="page-link" href="#" @click.prevent="goToPage(page)">{{ page }}</a>
+                </li>
+                <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                  <a class="page-link" href="#" @click.prevent="goToPage(currentPage + 1)">
+                    <i class="bi bi-chevron-right"></i>
+                  </a>
+                </li>
+              </ul>
+            </nav>
+          </div>
         </div>
       </div>
     </div>
-
-    <!-- Delete Confirmation Modal -->
+    
+    <!-- Modal Konfirmasi Hapus -->
     <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
@@ -156,36 +146,16 @@
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <p>Apakah Anda yakin ingin menghapus dokter <strong>{{ selectedDokterName }}</strong>?</p>
+            <p>Apakah Anda yakin ingin menghapus dokter <strong>{{ selectedDokter?.name }}</strong>?</p>
             <p class="text-danger"><small>Tindakan ini tidak dapat dibatalkan.</small></p>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-              <i class="bi bi-x-lg me-1"></i> Batal
-            </button>
-            <button type="button" class="btn btn-danger" @click="deleteDokter" :disabled="deletingDokter">
-              <span v-if="deletingDokter" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-              <i v-else class="bi bi-trash me-1"></i> Hapus
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="button" class="btn btn-danger" @click="deleteDokter" :disabled="deleteLoading">
+              <span v-if="deleteLoading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+              Hapus
             </button>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Toast notification for copy -->
-    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
-      <div 
-        id="copyToast" 
-        class="toast align-items-center text-white bg-success border-0" 
-        role="alert" 
-        aria-live="assertive" 
-        aria-atomic="true"
-      >
-        <div class="d-flex">
-          <div class="toast-body">
-            <i class="bi bi-check-circle me-2"></i> Kode akses berhasil disalin!
-          </div>
-          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
       </div>
     </div>
@@ -193,373 +163,208 @@
 </template>
 
 <script>
-import { Modal, Toast } from 'bootstrap';
+import { Modal } from 'bootstrap';
 import api from '@/api';
 
 export default {
   name: 'ListDokter',
   data() {
     return {
-      dokterList: [],
-      loading: false,
+      dokters: [],
+      filteredDokters: [],
+      searchQuery: '',
+      genderFilter: '',
+      loading: true,
       error: null,
-      search: '',
-      filter: 'all',
       currentPage: 1,
-      perPage: 10,
-      totalDokter: 0,
-      totalPages: 0,
-      selectedDokterId: null,
-      selectedDokterName: '',
+      itemsPerPage: 10,
+      selectedDokter: null,
       deleteModal: null,
-      copyToast: null,
-      deletingDokter: false,
-      searchTimeout: null
+      deleteLoading: false
     };
   },
   computed: {
     startIndex() {
-      return (this.currentPage - 1) * this.perPage;
+      return (this.currentPage - 1) * this.itemsPerPage;
     },
-    displayedPages() {
-      const pages = [];
-      const maxDisplayed = 5;
-      
-      if (this.totalPages <= maxDisplayed) {
-        for (let i = 1; i <= this.totalPages; i++) {
-          pages.push(i);
-        }
-      } else {
-        // Always show first page
-        pages.push(1);
-        
-        let startPage = Math.max(2, this.currentPage - 1);
-        let endPage = Math.min(this.totalPages - 1, this.currentPage + 1);
-        
-        // Adjust if at beginning or end
-        if (this.currentPage <= 2) {
-          endPage = 3;
-        } else if (this.currentPage >= this.totalPages - 1) {
-          startPage = this.totalPages - 2;
-        }
-        
-        // Add ellipsis if needed
-        if (startPage > 2) {
-          pages.push('...');
-        }
-        
-        // Add middle pages
-        for (let i = startPage; i <= endPage; i++) {
-          pages.push(i);
-        }
-        
-        // Add ellipsis if needed
-        if (endPage < this.totalPages - 1) {
-          pages.push('...');
-        }
-        
-        // Always show last page
-        pages.push(this.totalPages);
-      }
-      
-      return pages;
+    paginatedDokters() {
+      return this.filteredDokters.slice(this.startIndex, this.startIndex + this.itemsPerPage);
+    },
+    totalPages() {
+      return Math.ceil(this.filteredDokters.length / this.itemsPerPage);
     }
   },
   created() {
-    this.fetchDokterList();
+    this.fetchDokters();
+    
+    // Listen for updates from other components
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'dokterDataUpdated') {
+        this.fetchDokters();
+      }
+    });
   },
   mounted() {
-    // Initialize bootstrap components
-    this.initializeBootstrapComponents();
-    
-    // Menambahkan event listener untuk route change
-    this.$watch(
-      () => this.$route.fullPath,
-      () => {
-        // Jika kembali ke halaman list dokter, refresh data
-        if (this.$route.name === 'list-dokter') {
-          this.fetchDokterList();
-        }
-      }
-    );
-    
-    // Menambahkan event listener untuk storage changes (untuk deteksi perubahan antar tab)
-    window.addEventListener('storage', this.handleStorageChange);
-  },
-  beforeUnmount() {
-    // Remove event listener when component is destroyed
-    window.removeEventListener('storage', this.handleStorageChange);
+    // Check if data was updated from another component
+    const updated = localStorage.getItem('dokterDataUpdated');
+    if (updated) {
+      localStorage.removeItem('dokterDataUpdated');
+      this.fetchDokters();
+    }
   },
   methods: {
-    initializeBootstrapComponents() {
-      // Initialize modal
-      const modalElement = document.getElementById('deleteModal');
-      if (modalElement) {
-        this.deleteModal = new Modal(modalElement);
-      }
-      
-      // Initialize toast
-      const toastEl = document.getElementById('copyToast');
-      if (toastEl) {
-        this.copyToast = new Toast(toastEl, {
-          delay: 2000
-        });
-      }
-    },
-    
-    handleStorageChange(event) {
-      // Jika ada perubahan pada dokter data di localStorage
-      if (event.key === 'dokterDataUpdated') {
-        this.fetchDokterList();
-      }
-    },
-    
-    async fetchDokterList() {
+    async fetchDokters() {
       this.loading = true;
       this.error = null;
-
+      
       try {
         const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-
+        
         if (!token) {
           throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
         }
-
-        const params = {
-          page: this.currentPage,
-          limit: this.perPage
-        };
-
-        if (this.search) {
-          params.search = this.search;
-        }
-
-        if (this.filter !== 'all') {
-          params.gender = this.filter;
-        }
-
+        
         const response = await api.get('dokter', {
           headers: {
             'Authorization': `Bearer ${token}`
-          },
-          params
+          }
         });
-
-        // Standarisasi format response
-        this.processApiResponse(response);
+        
+        if (Array.isArray(response.data)) {
+          this.dokters = response.data;
+          this.filteredDokters = [...this.dokters];
+          console.log('Data dokter berhasil dimuat:', this.dokters.length);
+        } else {
+          throw new Error('Format response tidak sesuai');
+        }
       } catch (err) {
-        console.error('Error saat mengambil data dokter:', err);
-        this.handleApiError(err);
+        console.error('Error saat memuat data dokter:', err);
+        
+        if (err.response) {
+          if (err.response.status === 401) {
+            this.error = 'Sesi login Anda telah berakhir. Silakan login kembali.';
+            setTimeout(() => {
+              this.$router.push('/login');
+            }, 2000);
+          } else {
+            this.error = `Error: ${err.response.data.message || 'Terjadi kesalahan saat memuat data dokter'}`;
+          }
+        } else {
+          this.error = err.message || 'Terjadi kesalahan saat memuat data dokter. Silakan coba lagi.';
+        }
       } finally {
         this.loading = false;
       }
     },
-
-    processApiResponse(response) {
+    
+    formatDate(dateString) {
+      if (!dateString) return '-';
+      
       try {
-        // Fungsi untuk standarisasi format response
-        if (!response || !response.data) {
-          throw new Error('Response tidak valid');
-        }
-        
-        let data = response.data;
-        let dokterData = [];
-        let totalCount = 0;
-        
-        // Cek format response dan ekstrak data yang sesuai
-        if (data.data && data.data.dokter) {
-          // Format 1: { data: { dokter: [...], total: 100 } }
-          dokterData = data.data.dokter;
-          totalCount = data.data.total || dokterData.length;
-        } else if (data.dokter) {
-          // Format 2: { dokter: [...], total: 100 }
-          dokterData = data.dokter;
-          totalCount = data.total || dokterData.length;
-        } else if (Array.isArray(data.data)) {
-          // Format 3: { data: [...] }
-          dokterData = data.data;
-          totalCount = data.total || dokterData.length;
-        } else if (Array.isArray(data)) {
-          // Format 4: [...]
-          dokterData = data;
-          totalCount = dokterData.length;
-        } else {
-          throw new Error('Format response tidak dikenal');
-        }
-        
-        // Update state
-        this.dokterList = dokterData;
-        this.totalDokter = totalCount;
-        this.totalPages = Math.ceil(this.totalDokter / this.perPage);
-        
+        const date = new Date(dateString);
+        return date.toLocaleDateString('id-ID', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        });
       } catch (error) {
-        console.error('Error saat memproses response:', error);
-        this.error = 'Gagal memproses data dari server: ' + error.message;
+        return dateString;
       }
     },
-
-    handleApiError(err) {
-      let errorMessage = 'Gagal mengambil data dokter.';
+    
+    capitalizeFirst(string) {
+      if (!string) return '';
+      return string.charAt(0).toUpperCase() + string.slice(1);
+    },
+    
+    handleSearch() {
+      this.applyFilters();
+      this.currentPage = 1;
+    },
+    
+    handleFilter() {
+      this.applyFilters();
+      this.currentPage = 1;
+    },
+    
+    applyFilters() {
+      let filtered = [...this.dokters];
       
-      if (err.response) {
-        // Error dari response API
-        if (err.response.data && err.response.data.message) {
-          errorMessage = err.response.data.message;
-        } else {
-          const status = err.response.status;
-          if (status === 401) {
-            errorMessage = 'Sesi Anda telah berakhir. Silakan login kembali.';
-            // Redirect ke login
-            setTimeout(() => {
-              localStorage.removeItem('token');
-              sessionStorage.removeItem('token');
-              this.$router.push('/login');
-            }, 2000);
-          } else if (status === 403) {
-            errorMessage = 'Anda tidak memiliki akses untuk melihat data dokter.';
-          } else if (status === 404) {
-            errorMessage = 'Data dokter tidak ditemukan.';
-          } else if (status >= 500) {
-            errorMessage = 'Terjadi kesalahan pada server. Silakan coba lagi nanti.';
-          }
-        }
-      } else if (err.request) {
-        // Error karena tidak ada response
-        errorMessage = 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
+      // Apply search filter
+      if (this.searchQuery) {
+        const query = this.searchQuery.toLowerCase();
+        filtered = filtered.filter(dokter => 
+          dokter.name.toLowerCase().includes(query)
+        );
       }
       
-      this.error = errorMessage;
-    },
-
-    searchDokter() {
-      // Debounce search to avoid too many requests
-      clearTimeout(this.searchTimeout);
-      this.searchTimeout = setTimeout(() => {
-        this.currentPage = 1; // Reset to first page when searching
-        this.fetchDokterList();
-      }, 500);
-    },
-
-    changePage(page) {
-      if (page >= 1 && page <= this.totalPages && page !== this.currentPage) {
-        this.currentPage = page;
-        this.fetchDokterList();
+      // Apply gender filter
+      if (this.genderFilter) {
+        filtered = filtered.filter(dokter => 
+          dokter.gender === this.genderFilter
+        );
       }
-    },
-
-    viewDokter(id) {
-      this.$router.push(`/dokter/${id}`);
-    },
-
-    editDokter(id) {
-      this.$router.push(`/dokter/edit/${id}`);
-    },
-
-    confirmDelete(id, name) {
-      this.selectedDokterId = id;
-      this.selectedDokterName = name;
       
+      this.filteredDokters = filtered;
+    },
+    
+    resetFilter() {
+      this.searchQuery = '';
+      this.genderFilter = '';
+      this.filteredDokters = [...this.dokters];
+      this.currentPage = 1;
+    },
+    
+    goToPage(page) {
+      if (page < 1 || page > this.totalPages) return;
+      this.currentPage = page;
+    },
+    
+    confirmDelete(dokter) {
+      this.selectedDokter = dokter;
+      
+      // Initialize modal if needed
       if (!this.deleteModal) {
-        this.initializeBootstrapComponents();
+        const modalElement = document.getElementById('deleteModal');
+        this.deleteModal = new Modal(modalElement);
       }
       
       this.deleteModal.show();
     },
-
+    
     async deleteDokter() {
-      if (!this.selectedDokterId) return;
+      if (!this.selectedDokter) return;
       
-      this.deletingDokter = true;
+      this.deleteLoading = true;
       
       try {
         const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-
+        
         if (!token) {
           throw new Error('Token autentikasi tidak ditemukan');
         }
-
-        await api.delete(`dokter/${this.selectedDokterId}`, {
+        
+        await api.delete(`dokter/${this.selectedUsers.id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
         
-        // Hide modal after successful deletion
+        // Remove from local array
+        this.dokters = this.dokters.filter(d => d.id !== this.selectedUsers.id);
+        this.applyFilters();
+        
+        // Update UI
         this.deleteModal.hide();
         
-        // Notify other components/tabs about the change
-        localStorage.setItem('dokterDataUpdated', Date.now().toString());
-        
-        // Show success alert
-        this.error = null;
-        
-        // Refresh data
-        this.fetchDokterList();
+        // Show success message (optional - you could add a toast notification here)
+        console.log('Dokter berhasil dihapus');
       } catch (err) {
         console.error('Error saat menghapus dokter:', err);
-        this.handleApiError(err);
-        
-        // Hide modal
-        this.deleteModal.hide();
+        alert(`Gagal menghapus dokter: ${err.response?.data?.message || err.message}`);
       } finally {
-        this.deletingDokter = false;
+        this.deleteLoading = false;
       }
-    },
-
-    copyKodeAkses(kodeAkses) {
-      if (!kodeAkses) return;
-      
-      try {
-        navigator.clipboard.writeText(kodeAkses).then(() => {
-          // Show toast notification
-          if (this.copyToast) {
-            this.copyToast.show();
-          }
-        });
-      } catch (err) {
-        console.error('Gagal menyalin kode akses:', err);
-        
-        // Fallback untuk browser yang tidak mendukung Clipboard API
-        const textArea = document.createElement('textarea');
-        textArea.value = kodeAkses;
-        textArea.style.position = 'fixed';  // Agar tidak mengubah layout
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        
-        try {
-          const successful = document.execCommand('copy');
-          if (successful && this.copyToast) {
-            this.copyToast.show();
-          }
-        } catch (err) {
-          console.error('Fallback: Gagal menyalin kode akses', err);
-        }
-        
-        document.body.removeChild(textArea);
-      }
-    },
-
-    formatDate(dateString) {
-      if (!dateString) return '-';
-      
-      const date = new Date(dateString);
-      
-      if (isNaN(date.getTime())) {
-        return dateString; // Return original if parsing failed
-      }
-      
-      // Format as dd-MM-yyyy
-      const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const year = date.getFullYear();
-      
-      return `${day}-${month}-${year}`;
-    },
-
-    capitalizeFirst(string) {
-      if (!string) return '';
-      return string.charAt(0).toUpperCase() + string.slice(1);
     }
   }
 };
@@ -576,40 +381,35 @@ export default {
   border-radius: 8px 8px 0 0;
 }
 
-.table th {
-  font-weight: 600;
-  background-color: #f8f9fa;
-}
-
-.btn-group .btn {
-  padding: 0.25rem 0.5rem;
-}
-
-.pagination {
+.table {
   margin-bottom: 0;
 }
 
-.page-item.active .page-link {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
+.table th {
+  font-weight: 600;
 }
 
 .badge {
-  padding: 0.35em 0.65em;
+  font-weight: 500;
+  padding: 0.5em 0.75em;
+}
+
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+}
+
+.pagination .page-link {
+  color: #0d6efd;
+}
+
+.pagination .page-item.active .page-link {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  color: white;
 }
 
 .modal-content {
   border-radius: 8px;
-  border: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.modal-header {
-  border-radius: 8px 8px 0 0;
-}
-
-/* Styling for toast notification */
-.toast {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
 }
 </style>

@@ -1,7 +1,7 @@
 <template>
   <div class="container mt-4">
     <div class="card">
-      <div class="card-header bg-primary text-white">
+      <div class="card-header bg-warning text-white">
         <h4>Edit Pasien</h4>
       </div>
       <div class="card-body">
@@ -13,17 +13,7 @@
         <div v-if="error" class="alert alert-danger">
           {{ error }}
         </div>
-        <form @submit.prevent="updatePasien" v-if="!loading">
-          <div class="mb-3">
-            <label for="kodeAkses" class="form-label">Kode Akses</label>
-            <input
-              type="text"
-              class="form-control"
-              id="kodeAkses"
-              v-model="pasien.kodeAkses"
-              disabled
-            />
-          </div>
+        <form @submit.prevent="updatePasien" v-if="!loading && pasien">
           <div class="mb-3">
             <label for="nama" class="form-label">Nama Lengkap</label>
             <input
@@ -73,7 +63,7 @@
                 type="radio"
                 name="gender"
                 id="laki"
-                value="L"
+                value="laki-laki"
                 v-model="pasien.gender"
                 required
               />
@@ -85,59 +75,61 @@
                 type="radio"
                 name="gender"
                 id="perempuan"
-                value="P"
+                value="perempuan"
                 v-model="pasien.gender"
               />
               <label class="form-check-label" for="perempuan">Perempuan</label>
             </div>
           </div>
-          
-          <div class="mb-3 border p-3 bg-light">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <h5 class="mb-0">Reset Password</h5>
-              <button 
-                type="button" 
-                class="btn btn-sm btn-warning" 
-                @click="showResetPasswordForm = !showResetPasswordForm"
-              >
-                {{ showResetPasswordForm ? 'Batal' : 'Lupa Password' }}
-              </button>
-            </div>
-            
-            <div v-if="showResetPasswordForm">
-              <div class="alert alert-warning">
-                <strong>Perhatian!</strong> Tindakan ini akan mereset password pasien.
-              </div>
-              <button type="button" class="btn btn-danger" @click="resetPassword">
-                Reset Password
-              </button>
-            </div>
+          <div class="mb-3">
+            <label for="kodeAkses" class="form-label">Kode Akses</label>
+            <input
+              type="text"
+              class="form-control"
+              id="kodeAkses"
+              v-model="pasien.kodeAkses"
+              readonly
+              disabled
+            />
+            <small class="text-muted">Kode akses tidak dapat diubah</small>
           </div>
-          
+          <div class="mb-3">
+            <label for="resetPassword" class="form-label">Reset Password</label>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="resetPassword" v-model="resetPassword">
+              <label class="form-check-label" for="resetPassword">
+                Reset password pasien
+              </label>
+            </div>
+            <small class="text-muted">Password baru akan ditampilkan setelah pasien disimpan</small>
+          </div>
           <div class="d-flex justify-content-between">
-            <button type="button" class="btn btn-secondary" @click="$router.push('/pasien')">
+            <button type="button" class="btn btn-secondary" @click="$router.push(`/pasien/view/${pasienId}`)">
               Kembali
             </button>
-            <button type="submit" class="btn btn-primary" :disabled="loading">Simpan Perubahan</button>
+            <button type="submit" class="btn btn-primary" :disabled="updateLoading">
+              <span v-if="updateLoading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+              Simpan
+            </button>
           </div>
         </form>
       </div>
     </div>
 
     <!-- Modal untuk menampilkan password baru -->
-    <div class="modal fade" id="passwordResetModal" tabindex="-1" aria-labelledby="passwordResetModalLabel" aria-hidden="true">
+    <div class="modal fade" id="passwordModal" tabindex="-1" aria-labelledby="passwordModalLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
-          <div class="modal-header bg-warning text-dark">
-            <h5 class="modal-title" id="passwordResetModalLabel">Password Baru</h5>
+          <div class="modal-header bg-success text-white">
+            <h5 class="modal-title" id="passwordModalLabel">Password Baru</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <div class="alert alert-info">
-              <strong>Penting!</strong> Silahkan catat password baru pasien. Password ini hanya ditampilkan sekali.
+            <div class="alert alert-warning">
+              <strong>Penting!</strong> Silahkan catat password baru ini. Password ini hanya ditampilkan sekali.
             </div>
             <div class="mb-3">
-              <label class="form-label fw-bold">Password Baru:</label>
+              <label class="form-label fw-bold">Password:</label>
               <div class="input-group">
                 <input type="text" class="form-control" readonly :value="newPassword" />
                 <button class="btn btn-outline-secondary" type="button" @click="copyToClipboard">
@@ -157,7 +149,7 @@
 
 <script>
 import { Modal } from 'bootstrap';
-import axios from 'axios';
+import api from '@/api';
 
 export default {
   name: 'EditPasien',
@@ -165,180 +157,126 @@ export default {
     return {
       pasienId: null,
       pasien: {
-        kodeAkses: '',
         nama: '',
         tanggalLahir: '',
         usia: '',
         phone: '',
-        gender: ''
+        gender: '',
+        kodeAkses: ''
       },
-      showResetPasswordForm: false,
-      newPassword: '',
-      modal: null,
       loading: false,
-      error: null
+      updateLoading: false,
+      error: null,
+      resetPassword: false,
+      newPassword: '',
+      passwordModal: null
     };
   },
   created() {
-    // Ambil ID dari parameter rute
     this.pasienId = this.$route.params.id;
-    
-    // Muat data pasien berdasarkan ID
-    this.loadPasienData();
+    this.fetchPasienDetail();
   },
   methods: {
-    async loadPasienData() {
+    async fetchPasienDetail() {
       this.loading = true;
       this.error = null;
-      
+
       try {
-        // Dapatkan token dari localStorage atau dari state management (Vuex/Pinia)
-        const token = localStorage.getItem('accessToken') || this.$store?.state?.auth?.token;
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
         
         if (!token) {
-          throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
+          throw new Error('Sesi login telah berakhir. Silakan login kembali.');
         }
-        
-        // Panggil API untuk mengambil data pasien berdasarkan ID
-        const response = await axios.get(
-          `https://api.earscope.adrfstwn.cloud/v1/pasien/${this.pasienId}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
+
+        const response = await api.get(`pasien/${this.pasienId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
           }
-        );
-        
+        });
+
         if (response.data && response.data.data) {
-          // Perbarui data pasien
+          const pasienData = response.data.data;
           this.pasien = {
-            kodeAkses: response.data.data.kodeAkses || '',
-            nama: response.data.data.nama || '',
-            tanggalLahir: response.data.data.tanggalLahir || '',
-            usia: response.data.data.usia || '',
-            phone: response.data.data.phone || '',
-            gender: response.data.data.gender || ''
+            nama: pasienData.name,
+            tanggalLahir: pasienData.tanggal_lahir,
+            usia: pasienData.usia,
+            phone: pasienData.no_telp,
+            gender: pasienData.gender,
+            kodeAkses: pasienData.kode_akses
           };
         } else {
           throw new Error('Format response tidak sesuai');
         }
       } catch (err) {
-        console.error('Error saat mengambil data pasien:', err);
-        this.error = err.response?.data?.message || err.message || 'Gagal memuat data pasien. Silakan coba lagi.';
+        console.error('Error fetching pasien detail:', err);
+        this.error = err.response?.data?.message || err.message || 'Gagal memuat data pasien';
       } finally {
         this.loading = false;
       }
     },
     
     async updatePasien() {
-      this.loading = true;
+      this.updateLoading = true;
       this.error = null;
       
       try {
-        // Dapatkan token dari localStorage atau dari state management (Vuex/Pinia)
-        const token = localStorage.getItem('accessToken') || this.$store?.state?.auth?.token;
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
         
         if (!token) {
-          throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
+          throw new Error('Sesi login telah berakhir. Silakan login kembali.');
         }
         
-        // Format data sesuai kebutuhan API
+        // Prepare data for API
         const formattedData = {
-          nama: this.pasien.nama,
-          tanggal_lahir: this.formatDate(this.pasien.tanggalLahir),
+          name: this.pasien.nama,
+          tanggal_lahir: this.pasien.tanggalLahir,
           usia: parseInt(this.pasien.usia),
-          phone: this.pasien.phone,
-          gender: this.pasien.gender
+          no_telp: this.pasien.phone,
+          gender: this.pasien.gender,
+          reset_password: this.resetPassword
         };
         
-        // Panggil API untuk memperbarui data pasien
-        const response = await axios.put(
-          `https://api.earscope.adrfstwn.cloud/v1/pasien/${this.pasienId}`,
-          formattedData,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
+        // Call API to update patient
+        const response = await api.put(`pasien/${this.pasienId}`, formattedData, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
-        );
+        });
         
-        console.log('Pasien diperbarui:', response.data);
-        
-        // Tampilkan notifikasi sukses
-        alert('Data pasien berhasil diperbarui!');
-        
-        // Kembali ke halaman list pasien
-        this.$router.push('/pasien');
-      } catch (err) {
-        console.error('Error saat memperbarui pasien:', err);
-        this.error = err.response?.data?.message || err.message || 'Gagal memperbarui data pasien. Silakan coba lagi.';
-      } finally {
-        this.loading = false;
-      }
-    },
-    
-    formatDate(dateString) {
-      // Pastikan format tanggal sesuai dengan yang diharapkan API
-      return dateString; // Asumsi format tanggal dari input sudah YYYY-MM-DD
-    },
-    
-    async resetPassword() {
-      this.loading = true;
-      this.error = null;
-      
-      try {
-        // Dapatkan token dari localStorage atau dari state management (Vuex/Pinia)
-        const token = localStorage.getItem('accessToken') || this.$store?.state?.auth?.token;
-        
-        if (!token) {
-          throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
-        }
-        
-        // Panggil API untuk reset password
-        const response = await axios.post(
-          `https://api.earscope.adrfstwn.cloud/v1/pasien/reset-password/${this.pasienId}`,
-          {},
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-        
-        if (response.data && response.data.data && response.data.data.password) {
-          // Mendapatkan password baru dari respons API
-          this.newPassword = response.data.data.password;
-          
-          // Tampilkan modal dengan password baru
-          this.showPasswordResetModal();
+        // If password was reset, show the new password
+        if (this.resetPassword && response.data && response.data.data && response.data.data.new_password) {
+          this.newPassword = response.data.data.new_password;
+          this.showPasswordModal();
         } else {
-          throw new Error('Format response tidak sesuai');
+          // Show success message and redirect
+          alert('Data pasien berhasil diperbarui');
+          this.$router.push(`/pasien/view/${this.pasienId}`);
         }
-        
-        // Sembunyikan form reset password
-        this.showResetPasswordForm = false;
       } catch (err) {
-        console.error('Error saat mereset password:', err);
-        this.error = err.response?.data?.message || err.message || 'Gagal mereset password. Silakan coba lagi.';
+        console.error('Error updating pasien:', err);
+        this.error = err.response?.data?.message || err.message || 'Terjadi kesalahan saat memperbarui data pasien. Silakan coba lagi.';
       } finally {
-        this.loading = false;
+        this.updateLoading = false;
       }
     },
     
-    showPasswordResetModal() {
-      // Tampilkan modal Bootstrap
-      this.modal = new Modal(document.getElementById('passwordResetModal'));
-      this.modal.show();
+    showPasswordModal() {
+      // Show Bootstrap modal
+      this.passwordModal = new Modal(document.getElementById('passwordModal'));
+      this.passwordModal.show();
+      
+      // Add event listener for when modal is hidden
+      const modalEl = document.getElementById('passwordModal');
+      modalEl.addEventListener('hidden.bs.modal', () => {
+        this.$router.push(`/pasien/view/${this.pasienId}`);
+      });
     },
     
     copyToClipboard() {
-      // Copy password baru ke clipboard
       navigator.clipboard.writeText(this.newPassword)
         .then(() => {
-          alert('Password baru berhasil disalin!');
+          alert('Password berhasil disalin!');
         })
         .catch(err => {
           console.error('Gagal menyalin teks: ', err);

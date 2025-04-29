@@ -1,109 +1,163 @@
 <template>
-  <div class="d-flex justify-content-between mb-4">
-    <router-link to="/pasien/create" class="btn btn-primary">
-      <i class="bi bi-plus-circle me-1"></i> Tambah Pasien
-    </router-link>
-  </div>
-  <div class="card-body">
-    <div class="mb-3">
-      <div class="input-group">
-        <input 
-          type="text" 
-          class="form-control" 
-          placeholder="Cari pasien..." 
-          v-model="searchQuery"
-          @input="filterPasien"
-        />
-        <button class="btn btn-outline-secondary" type="button">
-          <i class="bi bi-search"></i>
-        </button>
+  <div class="container mt-4">
+    <div class="card">
+      <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Daftar Pasien</h4>
+        <router-link to="/pasien/create" class="btn btn-sm btn-light">
+          <i class="bi bi-plus-lg me-1"></i> Tambah Pasien
+        </router-link>
+      </div>
+      <div class="card-body">
+        <div v-if="loading" class="text-center my-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2">Memuat data pasien...</p>
+        </div>
+        
+        <div v-else-if="error" class="alert alert-danger">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          {{ error }}
+        </div>
+        
+        <div v-else-if="pasienList.length === 0" class="text-center my-5">
+          <i class="bi bi-inbox-fill text-muted" style="font-size: 3rem;"></i>
+          <p class="mt-3 text-muted">Belum ada data pasien tersimpan</p>
+          <router-link to="/pasien/create" class="btn btn-primary mt-2">
+            <i class="bi bi-plus-lg me-1"></i> Tambah Pasien Baru
+          </router-link>
+        </div>
+        
+        <div v-else>
+          <!-- Search and filter section -->
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input
+                  type="text"
+                  class="form-control"
+                  placeholder="Cari nama pasien..."
+                  v-model="searchQuery"
+                  @input="handleSearch"
+                />
+                <button class="btn btn-outline-secondary" type="button" @click="resetFilter">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
+            </div>
+            <div class="col-md-6 text-md-end mt-2 mt-md-0">
+              <select class="form-select w-auto d-inline-block ms-md-auto" v-model="genderFilter" @change="handleFilter">
+                <option value="">Semua Gender</option>
+                <option value="laki-laki">Laki-laki</option>
+                <option value="perempuan">Perempuan</option>
+              </select>
+            </div>
+          </div>
+          
+          <!-- Table section -->
+          <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th width="5%">No</th>
+                  <th width="20%">Nama</th>
+                  <th width="15%">Tanggal Lahir</th>
+                  <th width="10%">Umur</th>
+                  <th width="15%">Nomor Telepon</th>
+                  <th width="10%">Gender</th>
+                  <th width="25%" class="text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(pasien, index) in paginatedPasiens" :key="pasien.id">
+                  <td>{{ startIndex + index + 1 }}</td>
+                  <td>{{ pasien.name }}</td>
+                  <td>{{ formatDate(pasien.tanggal_lahir) }}</td>
+                  <td>{{ pasien.usia }} tahun</td>
+                  <td>+62{{ pasien.no_telp }}</td>
+                  <td>
+                    <span 
+                      :class="[
+                        'badge', 
+                        pasien.gender === 'laki-laki' ? 'bg-primary' : 'bg-info'
+                      ]"
+                    >
+                      {{ capitalizeFirst(pasien.gender) }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="d-flex justify-content-center gap-2">
+                      <router-link :to="`/pasien/${pasien.id}`" class="btn btn-sm btn-info text-white">
+                        <i class="bi bi-eye"></i>
+                      </router-link>
+                      <router-link :to="`/pasien/${pasien.id}/edit`" class="btn btn-sm btn-warning text-white">
+                        <i class="bi bi-pencil"></i>
+                      </router-link>
+                      <button 
+                        @click="confirmDelete(pasien)" 
+                        class="btn btn-sm btn-danger"
+                      >
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- Pagination -->
+          <div class="d-flex justify-content-between align-items-center mt-3">
+            <div>
+              <span class="text-muted">Menampilkan {{ Math.min(totalItems, startIndex + 1) }}-{{ Math.min(totalItems, startIndex + itemsPerPage) }} dari {{ totalItems }} pasien</span>
+            </div>
+            <nav aria-label="Page navigation">
+              <ul class="pagination mb-0">
+                <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                  <a class="page-link" href="#" @click.prevent="goToPage(currentPage - 1)">
+                    <i class="bi bi-chevron-left"></i>
+                  </a>
+                </li>
+                <li 
+                  v-for="page in totalPages" 
+                  :key="page" 
+                  class="page-item"
+                  :class="{ active: page === currentPage }"
+                >
+                  <a class="page-link" href="#" @click.prevent="goToPage(page)">{{ page }}</a>
+                </li>
+                <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                  <a class="page-link" href="#" @click.prevent="goToPage(currentPage + 1)">
+                    <i class="bi bi-chevron-right"></i>
+                  </a>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
       </div>
     </div>
     
-    <div class="table-responsive">
-      <table class="table table-striped table-hover">
-        <thead class="table-light">
-          <tr>
-            <th scope="col">#</th>
-            <th scope="col">Kode Akses</th>
-            <th scope="col">Nama</th>
-            <th scope="col">Tanggal Lahir</th>
-            <th scope="col">Usia</th>
-            <th scope="col">Gender</th>
-            <th scope="col">Phone</th>
-            <th scope="col">Aksi</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(pasien, index) in paginatedPasien" :key="pasien.id">
-            <th scope="row">{{ index + 1 + (currentPage - 1) * itemsPerPage }}</th>
-            <td>{{ pasien.kodeAkses }}</td>
-            <td>{{ pasien.nama }}</td>
-            <td>{{ formatDate(pasien.tanggalLahir) }}</td>
-            <td>{{ pasien.usia }}</td>
-            <td>{{ pasien.gender === 'L' ? 'Laki-laki' : 'Perempuan' }}</td>
-            <td>{{ pasien.phone }}</td>
-            <td>
-              <div class="btn-group" role="group">
-                <router-link :to="`/pasien/view/${pasien.id}`" class="btn btn-sm btn-info text-white">
-                  <i class="bi bi-eye"></i>
-                </router-link>
-                <router-link :to="`/pasien/edit/${pasien.id}`" class="btn btn-sm btn-warning text-white">
-                  <i class="bi bi-pencil"></i>
-                </router-link>
-                <button @click="confirmDelete(pasien)" class="btn btn-sm btn-danger">
-                  <i class="bi bi-trash"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-          <tr v-if="filteredPasien.length === 0">
-            <td colspan="8" class="text-center py-3">
-              <div class="alert alert-info mb-0">
-                Tidak ada data pasien yang ditemukan.
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    
-    <!-- Pagination -->
-    <nav aria-label="Page navigation" v-if="filteredPasien.length > 0">
-      <ul class="pagination justify-content-center">
-        <li class="page-item" :class="{ disabled: currentPage === 1 }">
-          <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Previous</a>
-        </li>
-        <li 
-          v-for="page in totalPages" 
-          :key="page" 
-          class="page-item"
-          :class="{ active: page === currentPage }"
-        >
-          <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
-        </li>
-        <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-          <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Next</a>
-        </li>
-      </ul>
-    </nav>
-  </div>
-
-  <!-- Modal Konfirmasi Hapus -->
-  <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header bg-danger text-white">
-          <h5 class="modal-title" id="deleteModalLabel">Konfirmasi Hapus</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body" v-if="selectedPasien">
-          <p>Apakah Anda yakin ingin menghapus pasien <strong>{{ selectedPasien.nama }}</strong>?</p>
-          <p class="text-danger"><strong>Perhatian:</strong> Tindakan ini tidak dapat dibatalkan.</p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-          <button type="button" class="btn btn-danger" @click="deletePasien">Hapus</button>
+    <!-- Modal Konfirmasi Hapus -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title" id="deleteModalLabel">Konfirmasi Hapus</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p>Apakah Anda yakin ingin menghapus pasien <strong>{{ selectedPasien?.name }}</strong>?</p>
+            <p class="text-danger"><small>Tindakan ini tidak dapat dibatalkan.</small></p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="button" class="btn btn-danger" @click="deletePasien" :disabled="deleteLoading">
+              <span v-if="deleteLoading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+              Hapus
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -112,138 +166,262 @@
 
 <script>
 import { Modal } from 'bootstrap';
-import axios from 'axios';
+import api from '@/api';
+import { debounce } from 'lodash';
 
 export default {
   name: 'ListPasien',
   data() {
     return {
       pasienList: [],
-      filteredPasien: [],
+      filteredPasiens: [],
       searchQuery: '',
+      genderFilter: '',
       currentPage: 1,
       itemsPerPage: 10,
+      totalItems: 0,
+      totalPages: 0,
+      loading: true,
+      error: null,
       selectedPasien: null,
-      deleteModal: null
+      deleteModal: null,
+      deleteLoading: false,
+      debouncedSearch: null
     };
   },
   computed: {
-    totalPages() {
-      return Math.ceil(this.filteredPasien.length / this.itemsPerPage);
+    startIndex() {
+      return (this.currentPage - 1) * this.itemsPerPage;
     },
-    paginatedPasien() {
-      const start = (this.currentPage - 1) * this.itemsPerPage;
-      const end = start + this.itemsPerPage;
-      return this.filteredPasien.slice(start, end);
+    paginatedPasiens() {
+      return this.filteredPasiens.slice(this.startIndex, this.startIndex + this.itemsPerPage);
     }
   },
   created() {
-    this.loadPasienData();
+    // Initialize debounced search
+    this.debouncedSearch = debounce(() => {
+      this.applyFilters();
+    }, 300);
+    
+    this.fetchPasienData();
+    
+    // Listen for updates from other components
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'pasienDataUpdated') {
+        this.fetchPasienData();
+      }
+    });
   },
   mounted() {
-    this.deleteModal = new Modal(document.getElementById('deleteModal'));
+    // Check if data was updated from another component
+    const updated = localStorage.getItem('pasienDataUpdated');
+    if (updated) {
+      localStorage.removeItem('pasienDataUpdated');
+      this.fetchPasienData();
+    }
   },
   methods: {
-    async loadPasienData() {
-      try {
-        // Dapatkan token dari localStorage atau dari state management (Vuex/Pinia)
-        const token = localStorage.getItem('accessToken') || this.$store?.state?.auth?.token;
-        
-        if (!token) {
-          throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
-        }
-        
-        // Panggil API untuk mengambil daftar pasien
-        const response = await axios.get(
-          'https://api.earscope.adrfstwn.cloud/v1/pasien',
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-        
-        if (response.data && response.data.data) {
-          this.pasienList = response.data.data;
-          this.filteredPasien = [...this.pasienList];
-        } else {
-          throw new Error('Format response tidak sesuai');
-        }
-      } catch (err) {
-        console.error('Error saat mengambil daftar pasien:', err);
-        alert('Gagal memuat daftar pasien. Silakan coba lagi.');
+async fetchPasienData() {
+  this.loading = true;
+  this.error = null;
+  
+  try {
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    
+    if (!token) {
+      throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
+    }
+    
+    // Build query parameters
+    const params = {
+      page: this.currentPage,
+      limit: this.itemsPerPage
+    };
+    
+    // Add search term if exists
+    if (this.searchQuery.trim()) {
+      params.search = this.searchQuery.trim();
+    }
+    
+    const response = await api.get('pasien', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      params: params
+    });
+    
+    // Periksa apakah response memiliki data
+    if (response.data) {
+      // Periksa format respons dan tangani kedua kemungkinan format
+      if (Array.isArray(response.data)) {
+        // Jika response.data langsung array, berarti format adalah API lama
+        console.log('Menggunakan format respons array');
+        this.pasienList = response.data;
+        this.filteredPasiens = [...this.pasienList];
+        this.totalItems = response.data.length;
+        this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
+      } 
+      else if (response.data.data && Array.isArray(response.data.data)) {
+        // Format respons adalah { data: [...] }
+        console.log('Menggunakan format respons data array');
+        this.pasienList = response.data.data;
+        this.filteredPasiens = [...this.pasienList];
+        this.totalItems = response.data.data.length;
+        this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
       }
-    },
-    
-    formatDate(dateString) {
-      const options = { day: 'numeric', month: 'long', year: 'numeric' };
-      return new Date(dateString).toLocaleDateString('id-ID', options);
-    },
-    
-    filterPasien() {
-      if (!this.searchQuery.trim()) {
-        this.filteredPasien = [...this.pasienList];
-      } else {
-        const query = this.searchQuery.toLowerCase();
-        this.filteredPasien = this.pasienList.filter(pasien => 
-          pasien.nama.toLowerCase().includes(query) ||
-          pasien.kodeAkses.toLowerCase().includes(query) ||
-          pasien.phone.includes(query)
-        );
+      else if (response.data.data && response.data.data.items) {
+        // Format respons adalah { data: { items: [...], total: X, pages: Y } }
+        console.log('Menggunakan format respons pagination');
+        this.pasienList = response.data.data.items || [];
+        this.filteredPasiens = [...this.pasienList];
+        this.totalItems = response.data.data.total || 0;
+        this.totalPages = response.data.data.pages || 1;
+      } 
+      else {
+        throw new Error('Format response tidak dikenali');
       }
       
-      // Reset ke halaman pertama setelah pencarian
+      console.log('Data pasien berhasil dimuat:', this.pasienList.length);
+    } else {
+      throw new Error('Tidak ada data dari server');
+    }
+  } catch (err) {
+    console.error('Error saat memuat data pasien:', err);
+    
+    if (err.response) {
+      if (err.response.status === 401) {
+        this.error = 'Sesi login Anda telah berakhir. Silakan login kembali.';
+        setTimeout(() => {
+          this.$router.push('/login');
+        }, 2000);
+      } else {
+        this.error = `Error: ${err.response.data?.message || 'Terjadi kesalahan saat memuat data pasien'}`;
+      }
+    } else {
+      this.error = err.message || 'Terjadi kesalahan saat memuat data pasien. Silakan coba lagi.';
+    }
+  } finally {
+    this.loading = false;
+  }
+},
+    
+    formatDate(dateString) {
+      if (!dateString) return '-';
+      
+      try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('id-ID', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        });
+      } catch (error) {
+        return dateString;
+      }
+    },
+    
+    capitalizeFirst(string) {
+      if (!string) return '';
+      return string.charAt(0).toUpperCase() + string.slice(1);
+    },
+    
+    handleSearch() {
+      this.debouncedSearch();
+    },
+    
+    handleFilter() {
+      this.applyFilters();
       this.currentPage = 1;
     },
     
-    changePage(page) {
-      if (page >= 1 && page <= this.totalPages) {
-        this.currentPage = page;
+    applyFilters() {
+      let filtered = [...this.pasienList];
+      
+      // Apply search filter
+      if (this.searchQuery) {
+        const query = this.searchQuery.toLowerCase();
+        filtered = filtered.filter(pasien => 
+          pasien.name.toLowerCase().includes(query)
+        );
       }
+      
+      // Apply gender filter
+      if (this.genderFilter) {
+        filtered = filtered.filter(pasien => 
+          pasien.gender === this.genderFilter
+        );
+      }
+      
+      this.filteredPasiens = filtered;
+      this.currentPage = 1;
+      
+      // Recalculate total pages based on filtered results
+      this.totalPages = Math.ceil(this.filteredPasiens.length / this.itemsPerPage);
+    },
+    
+    resetFilter() {
+      this.searchQuery = '';
+      this.genderFilter = '';
+      this.filteredPasiens = [...this.pasienList];
+      this.currentPage = 1;
+      this.totalPages = Math.ceil(this.filteredPasiens.length / this.itemsPerPage);
+    },
+    
+    goToPage(page) {
+      if (page < 1 || page > this.totalPages) return;
+      this.currentPage = page;
     },
     
     confirmDelete(pasien) {
       this.selectedPasien = pasien;
+      
+      // Initialize modal if needed
+      if (!this.deleteModal) {
+        const modalElement = document.getElementById('deleteModal');
+        this.deleteModal = new Modal(modalElement);
+      }
+      
       this.deleteModal.show();
     },
     
     async deletePasien() {
+      if (!this.selectedPasien) return;
+      
+      this.deleteLoading = true;
+      
       try {
-        // Dapatkan token dari localStorage atau dari state management (Vuex/Pinia)
-        const token = localStorage.getItem('accessToken') || this.$store?.state?.auth?.token;
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
         
         if (!token) {
-          throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
+          throw new Error('Token autentikasi tidak ditemukan');
         }
         
-        // Panggil API untuk menghapus pasien
-        await axios.delete(
-          `https://api.earscope.adrfstwn.cloud/v1/pasien/${this.selectedPasien.id}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
+        await api.delete(`pasien/${this.selectedPasien.id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
           }
-        );
+        });
         
-        console.log('Menghapus pasien:', this.selectedPasien.kodeAkses);
+        // Remove from local array
+        this.pasienList = this.pasienList.filter(p => p.id !== this.selectedPasien.id);
+        this.applyFilters();
         
-        // Tutup modal
+        // Update UI
         this.deleteModal.hide();
         
-        // Tampilkan notifikasi
-        alert('Pasien berhasil dihapus!');
-        
-        // Refresh data pasien
-        this.loadPasienData();
+        // Show success message (optional)
+        this.$toast?.success('Pasien berhasil dihapus', {
+          position: 'top-right',
+          duration: 3000
+        });
       } catch (err) {
         console.error('Error saat menghapus pasien:', err);
-        alert('Gagal menghapus pasien. Silakan coba lagi.');
-        
-        // Tutup modal
-        this.deleteModal.hide();
+        this.$toast?.error(
+          err.response?.data?.message || 'Gagal menghapus pasien', 
+          { position: 'top-right', duration: 5000 }
+        );
+      } finally {
+        this.deleteLoading = false;
       }
     }
   }
@@ -253,13 +431,43 @@ export default {
 <style scoped>
 .card {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  border: none;
 }
 
-.table th, .table td {
-  vertical-align: middle;
+.card-header {
+  border-radius: 8px 8px 0 0;
 }
 
-.btn-group .btn {
-  margin-right: 3px;
+.table {
+  margin-bottom: 0;
+}
+
+.table th {
+  font-weight: 600;
+}
+
+.badge {
+  font-weight: 500;
+  padding: 0.5em 0.75em;
+}
+
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+}
+
+.pagination .page-link {
+  color: #0d6efd;
+}
+
+.pagination .page-item.active .page-link {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  color: white;
+}
+
+.modal-content {
+  border-radius: 8px;
+  overflow: hidden;
 }
 </style>

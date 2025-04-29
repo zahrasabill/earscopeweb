@@ -92,7 +92,7 @@
     </div>
 
     <!-- Modal untuk menampilkan kode akses dan password -->
-    <div class="modal fade" id="credentialsModal" tabindex="-1" aria-labelledby="credentialsModalLabel" aria-hidden="true">
+    <div class="modal fade" id="credentialsModal" tabindex="-1" aria-labelledby="credentialsModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header bg-success text-white">
@@ -111,7 +111,7 @@
                   type="text" 
                   class="form-control" 
                   readonly 
-                  :value="generatedCredentials.kodeAkses"
+                  :value="generatedCredentials.kodeAkses" 
                   ref="kodeAksesInput" 
                 />
                 <button class="btn btn-outline-secondary" type="button" @click="copyToClipboard('kodeAkses')">
@@ -126,7 +126,7 @@
                   type="text" 
                   class="form-control" 
                   readonly 
-                  :value="generatedCredentials.password"
+                  :value="generatedCredentials.password" 
                   ref="passwordInput"
                 />
                 <button class="btn btn-outline-secondary" type="button" @click="copyToClipboard('password')">
@@ -134,12 +134,38 @@
                 </button>
               </div>
             </div>
+            <div class="d-grid gap-2 mt-4">
+              <button class="btn btn-primary" @click="printCredentials">
+                <i class="bi bi-printer me-1"></i> Cetak Informasi
+              </button>
+            </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="redirectToList">
-              <i class="bi bi-check-lg me-1"></i> OK
+            <button type="button" class="btn btn-success" data-bs-dismiss="modal" @click="redirectToList">
+              <i class="bi bi-check-lg me-1"></i> Selesai
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden div for printing -->
+    <div id="printArea" class="d-none">
+      <div style="padding: 20px; font-family: Arial, sans-serif;">
+        <h2 style="text-align: center; margin-bottom: 20px;">Informasi Akun Dokter</h2>
+        <div style="border: 1px solid #ccc; padding: 15px; margin-bottom: 20px;">
+          <h4>Dokter: {{ dokter.nama }}</h4>
+          <p><strong>Tanggal Lahir:</strong> {{ formatDateForDisplay(dokter.tanggalLahir) }}</p>
+          <p><strong>Nomor Telepon:</strong> +62{{ dokter.phone }}</p>
+          <p><strong>Gender:</strong> {{ dokter.gender }}</p>
+        </div>
+        <div style="border: 2px dashed #dc3545; padding: 15px; background-color: #f8f9fa;">
+          <h4 style="color: #dc3545;">Kredensial Login</h4>
+          <p><strong>Kode Akses:</strong> {{ generatedCredentials.kodeAkses }}</p>
+          <p><strong>Password:</strong> {{ generatedCredentials.password }}</p>
+          <p style="font-style: italic; color: #dc3545; margin-top: 15px;">
+            Penting: Informasi ini hanya ditampilkan sekali. Harap simpan dengan aman.
+          </p>
         </div>
       </div>
     </div>
@@ -208,6 +234,8 @@ export default {
           this.generatedCredentials.password = response.data.data.password || '';
           
           console.log('Dokter berhasil dibuat');
+          
+          // Refresh list data
           localStorage.setItem('dokterDataUpdated', Date.now().toString());
           
           // Tampilkan modal dengan credentials
@@ -255,12 +283,26 @@ export default {
 
       return dateString;
     },
+    
+    formatDateForDisplay(dateString) {
+      if (!dateString) return '';
+      
+      const date = new Date(dateString);
+      return date.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    },
 
     showCredentialsModal() {
       // Inisialisasi atau perbarui modal
       if (!this.modal) {
         const modalElement = document.getElementById('credentialsModal');
-        this.modal = new Modal(modalElement);
+        this.modal = new Modal(modalElement, {
+          backdrop: 'static',
+          keyboard: false
+        });
       }
       this.modal.show();
     },
@@ -287,6 +329,23 @@ export default {
       } catch (err) {
         console.error('Error saat menyalin ke clipboard:', err);
       }
+    },
+    
+    printCredentials() {
+      const printContent = document.getElementById('printArea').innerHTML;
+      const originalContent = document.body.innerHTML;
+      
+      document.body.innerHTML = printContent;
+      window.print();
+      document.body.innerHTML = originalContent;
+      
+      // Reinisialisasi modal karena DOM telah berubah
+      const modalElement = document.getElementById('credentialsModal');
+      this.modal = new Modal(modalElement, {
+        backdrop: 'static',
+        keyboard: false
+      });
+      this.modal.show();
     },
 
     redirectToList() {
@@ -335,5 +394,20 @@ export default {
 
 .modal-header {
   border-radius: 8px 8px 0 0;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printArea, #printArea * {
+    visibility: visible;
+  }
+  #printArea {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
 }
 </style>

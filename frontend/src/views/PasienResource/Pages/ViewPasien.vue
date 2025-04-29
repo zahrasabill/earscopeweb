@@ -1,75 +1,105 @@
 <template>
   <div class="container mt-4">
     <div class="card">
-      <div class="card-header bg-primary text-white">
+      <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
         <h4>Detail Pasien</h4>
+        <div>
+          <router-link :to="`/pasien/edit/${pasienId}`" class="btn btn-warning text-white me-2">
+            <i class="bi bi-pencil"></i> Edit
+          </router-link>
+          <button class="btn btn-danger" @click="confirmDelete">
+            <i class="bi bi-trash"></i> Hapus
+          </button>
+        </div>
       </div>
-      <div class="card-body" v-if="loading">
-        <div class="d-flex justify-content-center align-items-center p-5">
+      <div class="card-body">
+        <div v-if="loading" class="text-center my-5">
           <div class="spinner-border text-primary" role="status">
             <span class="visually-hidden">Loading...</span>
           </div>
+          <p class="mt-2">Memuat data...</p>
         </div>
-      </div>
-      <div class="card-body" v-else>
-        <div class="row mb-4">
-          <div class="col-md-4 text-center mb-3 mb-md-0">
-            <div class="avatar-container bg-light p-3 rounded-circle mx-auto mb-2" style="width: 150px; height: 150px;">
-              <i class="bi bi-person-circle" style="font-size: 120px;"></i>
+
+        <div v-if="error" class="alert alert-danger">
+          {{ error }}
+          <button class="btn btn-sm btn-outline-danger ms-2" @click="fetchPasienDetail">Coba Lagi</button>
+        </div>
+
+        <div v-if="!loading && !error && pasien">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-4">
+                <h5 class="border-bottom pb-2">Informasi Pasien</h5>
+                <table class="table table-bordered">
+                  <tbody>
+                    <tr>
+                      <th width="40%">Nama Lengkap</th>
+                      <td>{{ pasien.name }}</td>
+                    </tr>
+                    <tr>
+                      <th>Tanggal Lahir</th>
+                      <td>{{ formatDate(pasien.tanggal_lahir) }}</td>
+                    </tr>
+                    <tr>
+                      <th>Usia</th>
+                      <td>{{ pasien.usia }} tahun</td>
+                    </tr>
+                    <tr>
+                      <th>Gender</th>
+                      <td>{{ capitalizeFirstLetter(pasien.gender) }}</td>
+                    </tr>
+                    <tr>
+                      <th>Nomor Telepon</th>
+                      <td>{{ pasien.no_telp }}</td>
+                    </tr>
+                    <tr>
+                      <th>Kode Akses</th>
+                      <td>{{ pasien.kode_akses }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <h5 class="mt-2">{{ pasien.nama }}</h5>
-            <span class="badge bg-success">{{ pasien.kodeAkses }}</span>
-          </div>
-          <div class="col-md-8">
-            <div class="table-responsive">
-              <table class="table">
-                <tbody>
-                  <tr>
-                    <th width="30%" class="bg-light">Nama Lengkap</th>
-                    <td>{{ pasien.nama }}</td>
-                  </tr>
-                  <tr>
-                    <th class="bg-light">Kode Akses</th>
-                    <td>{{ pasien.kodeAkses }}</td>
-                  </tr>
-                  <tr>
-                    <th class="bg-light">Tanggal Lahir</th>
-                    <td>{{ formatDate(pasien.tanggalLahir) }}</td>
-                  </tr>
-                  <tr>
-                    <th class="bg-light">Usia</th>
-                    <td>{{ pasien.usia }} tahun</td>
-                  </tr>
-                  <tr>
-                    <th class="bg-light">Gender</th>
-                    <td>{{ pasien.gender === 'L' ? 'Laki-laki' : 'Perempuan' }}</td>
-                  </tr>
-                  <tr>
-                    <th class="bg-light">Nomor Telepon</th>
-                    <td>{{ pasien.phone }}</td>
-                  </tr>
-                </tbody>
-              </table>
+            <div class="col-md-6">
+              <div class="mb-4">
+                <h5 class="border-bottom pb-2">Riwayat Pemeriksaan</h5>
+                <div v-if="loadingRiwayat" class="text-center p-4">
+                  <div class="spinner-border spinner-border-sm text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+                <div v-else-if="riwayatPemeriksaan.length === 0" class="alert alert-info">
+                  Pasien belum memiliki riwayat pemeriksaan
+                </div>
+                <div v-else class="list-group">
+                  <a 
+                    href="#" 
+                    class="list-group-item list-group-item-action"
+                    v-for="riwayat in riwayatPemeriksaan"
+                    :key="riwayat.id"
+                    @click.prevent="viewPemeriksaan(riwayat.id)"
+                  >
+                    <div class="d-flex w-100 justify-content-between">
+                      <h6 class="mb-1">{{ formatDate(riwayat.tanggal) }}</h6>
+                      <small>{{ formatTime(riwayat.created_at) }}</small>
+                    </div>
+                    <p class="mb-1">{{ riwayat.diagnosa || 'Tidak ada diagnosa' }}</p>
+                    <small>Dokter: {{ riwayat.dokter?.name || 'Tidak tercatat' }}</small>
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-        
-        <div class="d-flex justify-content-between">
-          <button type="button" class="btn btn-secondary" @click="$router.push('/pasien')">
+
+        <div class="mt-4">
+          <button class="btn btn-secondary" @click="$router.push('/pasien')">
             <i class="bi bi-arrow-left"></i> Kembali
           </button>
-          <div>
-            <router-link :to="`/pasien/edit/${pasienId}`" class="btn btn-warning me-2">
-              <i class="bi bi-pencil"></i> Edit
-            </router-link>
-            <button type="button" class="btn btn-danger" @click="confirmDelete">
-              <i class="bi bi-trash"></i> Hapus
-            </button>
-          </div>
         </div>
       </div>
     </div>
-    
+
     <!-- Modal Konfirmasi Hapus -->
     <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
       <div class="modal-dialog">
@@ -79,12 +109,15 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <p>Apakah Anda yakin ingin menghapus pasien <strong>{{ pasien.nama }}</strong>?</p>
-            <p class="text-danger"><strong>Perhatian:</strong> Tindakan ini tidak dapat dibatalkan.</p>
+            <p>Anda yakin ingin menghapus pasien <strong>{{ pasien?.name }}</strong>?</p>
+            <p class="text-danger"><small>Tindakan ini tidak dapat dibatalkan.</small></p>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-            <button type="button" class="btn btn-danger" @click="deletePasien">Hapus</button>
+            <button type="button" class="btn btn-danger" @click="deletePasien" :disabled="deleteLoading">
+              <span v-if="deleteLoading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+              Hapus
+            </button>
           </div>
         </div>
       </div>
@@ -94,108 +127,150 @@
 
 <script>
 import { Modal } from 'bootstrap';
-import axios from 'axios';
+import api from '@/api';
 
 export default {
   name: 'ViewPasien',
   data() {
     return {
       pasienId: null,
-      pasien: {},
-      loading: true,
-      deleteModal: null
+      pasien: null,
+      loading: false,
+      error: null,
+      riwayatPemeriksaan: [],
+      loadingRiwayat: false,
+      deleteModal: null,
+      deleteLoading: false
     };
   },
   created() {
-    // Ambil ID dari parameter rute
     this.pasienId = this.$route.params.id;
-    
-    // Muat data pasien berdasarkan ID
-    this.loadPasienData();
-  },
-  mounted() {
-    this.deleteModal = new Modal(document.getElementById('deleteModal'));
+    this.fetchPasienDetail();
+    this.fetchRiwayatPemeriksaan();
   },
   methods: {
-    async loadPasienData() {
+    async fetchPasienDetail() {
+      this.loading = true;
+      this.error = null;
+
       try {
-        // Dapatkan token dari localStorage atau dari state management (Vuex/Pinia)
-        const token = localStorage.getItem('accessToken') || this.$store?.state?.auth?.token;
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
         
         if (!token) {
-          throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
+          throw new Error('Sesi login telah berakhir. Silakan login kembali.');
         }
-        
-        // Panggil API untuk mengambil data pasien berdasarkan ID
-        const response = await axios.get(
-          `https://api.earscope.adrfstwn.cloud/v1/pasien/${this.pasienId}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
+
+        const response = await api.get(`pasien/${this.pasienId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
           }
-        );
-        
+        });
+
         if (response.data && response.data.data) {
-          // Perbarui data pasien
           this.pasien = response.data.data;
-          this.loading = false;
         } else {
           throw new Error('Format response tidak sesuai');
         }
       } catch (err) {
-        console.error('Error saat mengambil data pasien:', err);
-        alert('Gagal memuat data pasien. Silakan coba lagi.');
-        this.$router.push('/pasien');
+        console.error('Error fetching pasien detail:', err);
+        this.error = err.response?.data?.message || err.message || 'Gagal memuat data pasien';
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    async fetchRiwayatPemeriksaan() {
+      this.loadingRiwayat = true;
+      
+      try {
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        
+        if (!token) {
+          throw new Error('Sesi login telah berakhir. Silakan login kembali.');
+        }
+
+        const response = await api.get(`pemeriksaan/pasien/${this.pasienId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.data && response.data.data) {
+          this.riwayatPemeriksaan = response.data.data;
+        } else {
+          this.riwayatPemeriksaan = [];
+        }
+      } catch (err) {
+        console.error('Error fetching riwayat pemeriksaan:', err);
+        this.riwayatPemeriksaan = [];
+      } finally {
+        this.loadingRiwayat = false;
       }
     },
     
     formatDate(dateString) {
-      const options = { day: 'numeric', month: 'long', year: 'numeric' };
-      return new Date(dateString).toLocaleDateString('id-ID', options);
+      if (!dateString) return '-';
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('id-ID', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric' 
+      }).format(date);
+    },
+    
+    formatTime(datetimeString) {
+      if (!datetimeString) return '-';
+      const date = new Date(datetimeString);
+      return new Intl.DateTimeFormat('id-ID', { 
+        hour: '2-digit', 
+        minute: '2-digit'
+      }).format(date);
+    },
+    
+    capitalizeFirstLetter(string) {
+      if (!string) return '-';
+      return string.charAt(0).toUpperCase() + string.slice(1);
+    },
+    
+    viewPemeriksaan(pemeriksaanId) {
+      this.$router.push({
+        path: '/detail-pemeriksaan',
+        query: { id: pemeriksaanId }
+      });
     },
     
     confirmDelete() {
+      this.deleteModal = new Modal(document.getElementById('deleteModal'));
       this.deleteModal.show();
     },
     
     async deletePasien() {
+      this.deleteLoading = true;
+      
       try {
-        // Dapatkan token dari localStorage atau dari state management (Vuex/Pinia)
-        const token = localStorage.getItem('accessToken') || this.$store?.state?.auth?.token;
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
         
         if (!token) {
-          throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
+          throw new Error('Sesi login telah berakhir. Silakan login kembali.');
         }
         
-        // Panggil API untuk menghapus pasien
-        await axios.delete(
-          `https://api.earscope.adrfstwn.cloud/v1/pasien/${this.pasienId}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
+        await api.delete(`pasien/${this.pasienId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
           }
-        );
+        });
         
-        console.log('Menghapus pasien:', this.pasien.kodeAkses);
-        
-        // Tutup modal
+        // Close modal and redirect to list
         this.deleteModal.hide();
         
-        // Tampilkan notifikasi
-        alert('Pasien berhasil dihapus!');
-        
-        // Redirect ke halaman list pasien
+        // Show success message and redirect
+        alert('Pasien berhasil dihapus');
         this.$router.push('/pasien');
       } catch (err) {
-        console.error('Error saat menghapus pasien:', err);
-        alert('Gagal menghapus pasien. Silakan coba lagi.');
-        
-        // Tutup modal
-        this.deleteModal.hide();
+        console.error('Error deleting pasien:', err);
+        alert(err.response?.data?.message || err.message || 'Gagal menghapus pasien');
+      } finally {
+        this.deleteLoading = false;
       }
     }
   }

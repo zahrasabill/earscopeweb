@@ -1,39 +1,35 @@
 <template>
   <div class="container mt-4">
     <div class="card">
-      <div class="card-header bg-primary text-white">
+      <div class="card-header bg-warning text-dark">
         <h4>Edit Dokter</h4>
       </div>
       <div class="card-body">
-        <div v-if="loading" class="text-center my-3">
-          <div class="spinner-border text-primary" role="status">
+        <div v-if="loading" class="text-center my-5">
+          <div class="spinner-border text-warning" role="status">
             <span class="visually-hidden">Loading...</span>
           </div>
+          <p class="mt-2">Memuat data dokter...</p>
         </div>
-        <div v-if="error" class="alert alert-danger">
+        
+        <div v-else-if="error" class="alert alert-danger">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
           {{ error }}
         </div>
-        <form @submit.prevent="updateDokter" v-if="!loading">
-          <div class="mb-3">
-            <label for="kodeAkses" class="form-label">Kode Akses</label>
-            <input
-              type="text"
-              class="form-control"
-              id="kodeAkses"
-              v-model="dokter.kodeAkses"
-              disabled
-            />
-          </div>
+        
+        <form @submit.prevent="updateDokter" v-else>
           <div class="mb-3">
             <label for="nama" class="form-label">Nama</label>
             <input
               type="text"
               class="form-control"
               id="nama"
-              v-model="dokter.nama"
+              v-model.trim="dokter.nama"
               required
+              placeholder="Masukkan nama dokter"
             />
           </div>
+          
           <div class="mb-3">
             <label for="tanggalLahir" class="form-label">Tanggal Lahir</label>
             <input
@@ -44,99 +40,102 @@
               required
             />
           </div>
+          
           <div class="mb-3">
             <label for="phone" class="form-label">Nomor Telepon</label>
-            <input
-              type="tel"
-              class="form-control"
-              id="phone"
-              v-model="dokter.phone"
-              required
-            />
+            <div class="input-group">
+              <span class="input-group-text">+62</span>
+              <input
+                type="tel"
+                class="form-control"
+                id="phone"
+                v-model.trim="dokter.phone"
+                required
+                placeholder="8xxxxxxxxxx"
+                pattern="[0-9]+"
+              />
+            </div>
+            <small class="text-muted">Format: 8xxxxxxxxxx (tanpa kode negara)</small>
           </div>
+          
           <div class="mb-3">
             <label class="form-label">Gender</label>
-            <div class="form-check">
-              <input
-                class="form-check-input"
-                type="radio"
-                name="gender"
-                id="laki"
-                value="Laki-laki"
-                v-model="dokter.gender"
-                required
-              />
-              <label class="form-check-label" for="laki">laki-laki</label>
-            </div>
-            <div class="form-check">
-              <input
-                class="form-check-input"
-                type="radio"
-                name="gender"
-                id="perempuan"
-                value="Perempuan"
-                v-model="dokter.gender"
-              />
-              <label class="form-check-label" for="perempuan">perempuan</label>
-            </div>
-          </div>
-          
-          <div class="mb-3 border p-3 bg-light">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <h5 class="mb-0">Reset Password</h5>
-              <button 
-                type="button" 
-                class="btn btn-sm btn-warning" 
-                @click="showResetPasswordForm = !showResetPasswordForm"
-              >
-                {{ showResetPasswordForm ? 'Batal' : 'Lupa Password' }}
-              </button>
-            </div>
-            
-            <div v-if="showResetPasswordForm">
-              <div class="alert alert-warning">
-                <strong>Perhatian!</strong> Tindakan ini akan mereset password dokter.
+            <div class="d-flex gap-4">
+              <div class="form-check">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="gender"
+                  id="laki"
+                  value="laki-laki"
+                  v-model="dokter.gender"
+                  required
+                />
+                <label class="form-check-label" for="laki">Laki-laki</label>
               </div>
-              <button type="button" class="btn btn-danger" @click="resetPassword" :disabled="loading">
-                Reset Password
-              </button>
+              <div class="form-check">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="gender"
+                  id="perempuan"
+                  value="perempuan"
+                  v-model="dokter.gender"
+                />
+                <label class="form-check-label" for="perempuan">Perempuan</label>
+              </div>
             </div>
           </div>
           
-          <div class="d-flex justify-content-between">
-            <button type="button" class="btn btn-secondary" @click="$router.push('/dokter')">
-              Kembali
+          <div class="mb-3">
+            <label class="form-label">Status</label>
+            <div class="form-check form-switch">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="isActive"
+                v-model="dokter.isActive"
+              />
+              <label class="form-check-label" for="isActive">
+                {{ dokter.isActive ? 'Aktif' : 'Tidak Aktif' }}
+              </label>
+            </div>
+            <small class="text-muted">Dokter tidak aktif tidak dapat login ke sistem</small>
+          </div>
+          
+          <div class="d-flex justify-content-between mt-4">
+            <button type="button" class="btn btn-secondary" @click="$router.push(`/dokter/view/${$route.params.id}`)">
+              <i class="bi bi-arrow-left me-1"></i> Kembali
             </button>
-            <button type="submit" class="btn btn-primary" :disabled="loading">Simpan Perubahan</button>
+            <div>
+              <button type="submit" class="btn btn-warning" :disabled="updateLoading">
+                <span v-if="updateLoading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                <i v-else class="bi bi-save me-1"></i> Simpan Perubahan
+              </button>
+            </div>
           </div>
         </form>
       </div>
     </div>
-
-    <!-- Modal untuk menampilkan password baru -->
-    <div class="modal fade" id="passwordResetModal" tabindex="-1" aria-labelledby="passwordResetModalLabel" aria-hidden="true">
+    
+    <!-- Modal Sukses -->
+    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
-          <div class="modal-header bg-warning text-dark">
-            <h5 class="modal-title" id="passwordResetModalLabel">Password Baru</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <div class="modal-header bg-success text-white">
+            <h5 class="modal-title" id="successModalLabel">Berhasil</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <div class="alert alert-info">
-              <strong>Penting!</strong> Silahkan catat password baru dokter. Password ini hanya ditampilkan sekali.
+            <div class="text-center mb-3">
+              <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
             </div>
-            <div class="mb-3">
-              <label class="form-label fw-bold">Password Baru:</label>
-              <div class="input-group">
-                <input type="text" class="form-control" readonly :value="newPassword" />
-                <button class="btn btn-outline-secondary" type="button" @click="copyToClipboard">
-                  <i class="bi bi-clipboard"></i>
-                </button>
-              </div>
-            </div>
+            <p class="text-center">Data dokter berhasil diperbarui.</p>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="redirectToList">OK</button>
+            <button type="button" class="btn btn-success" data-bs-dismiss="modal" @click="redirectToDetail">
+              <i class="bi bi-check-lg me-1"></i> OK
+            </button>
           </div>
         </div>
       </div>
@@ -152,215 +151,168 @@ export default {
   name: 'EditDokter',
   data() {
     return {
-      dokterId: null,
       dokter: {
-        kodeAkses: '',
         nama: '',
         tanggalLahir: '',
         phone: '',
-        gender: ''
+        gender: '',
+        isActive: true
       },
-      showResetPasswordForm: false,
-      newPassword: '',
-      modal: null,
-      loading: false,
-      error: null
+      originalData: {},
+      loading: true,
+      error: null,
+      updateLoading: false,
+      successModal: null
     };
   },
   created() {
-    // Ambil ID dari parameter rute
-    this.dokterId = this.$route.params.id;
-    
-    // Muat data dokter berdasarkan ID
-    this.loadDokterData();
+    this.fetchDokter();
   },
   methods: {
-    async loadDokterData() {
+    async fetchDokter() {
       this.loading = true;
-      this.error = null;
       
       try {
-        // Dapatkan token dari localStorage atau sessionStorage
+        const dokterId = this.$route.params.id;
         const token = localStorage.getItem("token") || sessionStorage.getItem("token");
         
         if (!token) {
-          throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
+          throw new Error('Token autentikasi tidak ditemukan');
         }
         
-        // Panggil API untuk mengambil data dokter berdasarkan ID menggunakan api.js
-        const response = await api.get(
-          `dokter/${this.dokterId}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
+        const response = await api.get(`dokter/${dokterId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
           }
-        );
+        });
         
         if (response.data && response.data.data) {
-          // Perbarui data dokter
+          const apiData = response.data.data;
+          
+          // Mapping API data to form data
           this.dokter = {
-            kodeAkses: response.data.data.kodeAkses || '',
-            nama: response.data.data.nama || '',
-            tanggalLahir: response.data.data.tanggalLahir || '',
-            no_telp: response.data.data.phone || '',
-            gender: response.data.data.gender || ''
+            nama: apiData.name || '',
+            tanggalLahir: apiData.tanggal_lahir || '',
+            phone: apiData.no_telp || '',
+            gender: apiData.gender || '',
+            isActive: apiData.is_active === undefined ? true : Boolean(apiData.is_active)
           };
+          
+          // Store original data for comparison
+          this.originalData = { ...this.dokter };
         } else {
           throw new Error('Format response tidak sesuai');
         }
       } catch (err) {
-        console.error('Error saat mengambil data dokter:', err);
+        console.error('Error saat memuat detail dokter:', err);
         
-        if (err.response?.status === 401) {
-          this.error = 'Tidak memiliki akses. Silakan login kembali untuk mendapatkan token yang valid.';
+        if (err.response) {
+          if (err.response.status === 401) {
+            this.error = 'Sesi login Anda telah berakhir. Silakan login kembali.';
+            setTimeout(() => {
+              this.$router.push('/login');
+            }, 2000);
+          } else if (err.response.status === 404) {
+            this.error = 'Dokter tidak ditemukan';
+          } else {
+            this.error = err.response.data.message || 'Terjadi kesalahan saat memuat data dokter';
+          }
         } else {
-          this.error = err.response?.data?.message || err.message || 'Gagal memuat data dokter. Silakan coba lagi.';
+          this.error = err.message || 'Terjadi kesalahan saat memuat data dokter';
         }
-        
-        // Jika error, tunggu beberapa saat lalu kembali ke halaman list
-        setTimeout(() => {
-          this.$router.push('/dokter');
-        }, 3000);
       } finally {
         this.loading = false;
       }
     },
     
     async updateDokter() {
-      this.loading = true;
-      this.error = null;
+      this.updateLoading = true;
       
       try {
-        // Dapatkan token dari localStorage atau sessionStorage
         const token = localStorage.getItem("token") || sessionStorage.getItem("token");
         
         if (!token) {
-          throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
+          throw new Error('Token autentikasi tidak ditemukan');
         }
         
-        // Format tanggal sesuai kebutuhan API (YYYY-MM-DD)
+        // Format phone number
+        const phoneNumber = this.dokter.phone.startsWith('0') 
+          ? this.dokter.phone.substring(1) 
+          : this.dokter.phone;
+          
+        // Prepare API data format
         const formattedData = {
-          nama: this.dokter.nama,
-          tanggalLahir: this.formatDate(this.dokter.tanggalLahir),
-          no_telp: this.dokter.phone,
-          gender: this.dokter.gender
+          name: this.dokter.nama,
+          tanggal_lahir: this.dokter.tanggalLahir,
+          no_telp: phoneNumber,
+          gender: this.dokter.gender,
+          is_active: this.dokter.isActive
         };
         
-        // Panggil API untuk memperbarui data dokter menggunakan api.js
-        const response = await api.put(
-          `dokter/${this.dokterId}`,
-          formattedData,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
+        console.log('Data yang dikirim ke API:', formattedData);
+        
+        const dokterId = this.$route.params.id;
+        const response = await api.put(`dokter/${dokterId}`, formattedData, {
+          headers: {
+            'Authorization': `Bearer ${token}`
           }
-        );
+        });
         
-        console.log('Dokter diperbarui:', response.data);
-        
-        // Redirect ke halaman list dokter
-        this.$router.push('/dokter');
+        if (response.data) {
+          console.log('Dokter berhasil diperbarui');
+          
+          // Notify other components that data has been updated
+          localStorage.setItem('dokterDataUpdated', Date.now().toString());
+          
+          // Show success modal
+          this.showSuccessModal();
+        } else {
+          throw new Error('Format response tidak sesuai');
+        }
       } catch (err) {
         console.error('Error saat memperbarui dokter:', err);
         
-        if (err.response?.status === 401) {
-          this.error = 'Tidak memiliki akses. Silakan login kembali untuk mendapatkan token yang valid.';
-        } else {
-          this.error = err.response?.data?.message || err.message || 'Gagal memperbarui data dokter. Silakan coba lagi.';
-        }
-      } finally {
-        this.loading = false;
-      }
-    },
-    
-    formatDate(dateString) {
-      // Pastikan format tanggal sesuai dengan yang diharapkan API
-      return dateString; // Asumsi format tanggal dari input sudah YYYY-MM-DD
-    },
-    
-    async resetPassword() {
-      this.loading = true;
-      this.error = null;
-      
-      try {
-        // Dapatkan token dari localStorage atau sessionStorage
-        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+        let errorMessage = 'Terjadi kesalahan saat memperbarui data dokter';
         
-        if (!token) {
-          throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
-        }
-        
-        // Panggil API untuk reset password dokter menggunakan api.js
-        const response = await api.post(
-          `dokter/${this.dokterId}/reset-password`,
-          {},
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
+        if (err.response) {
+          if (err.response.status === 400) {
+            errorMessage = `Format data tidak valid: ${err.response.data.message || ''}`;
+          } else if (err.response.status === 401) {
+            errorMessage = 'Sesi login Anda telah berakhir. Silakan login kembali.';
+            setTimeout(() => {
+              this.$router.push('/login');
+            }, 2000);
+          } else {
+            errorMessage = err.response.data.message || errorMessage;
           }
-        );
-        
-        // Simpan password baru dari respons API
-        if (response.data && response.data.data && response.data.data.password) {
-          this.newPassword = response.data.data.password;
-        } else {
-          // Jika API tidak mengembalikan password, buat sendiri sebagai fallback
-          this.newPassword = this.generatePassword();
+        } else if (err.message) {
+          errorMessage = err.message;
         }
         
-        console.log('Password direset untuk dokter:', this.dokter.kodeAkses);
-        
-        // Tampilkan modal dengan password baru
-        this.showPasswordResetModal();
-        
-        // Sembunyikan form reset password
-        this.showResetPasswordForm = false;
-      } catch (err) {
-        console.error('Error saat reset password:', err);
-        
-        if (err.response?.status === 401) {
-          this.error = 'Tidak memiliki akses. Silakan login kembali untuk mendapatkan token yang valid.';
-        } else {
-          this.error = err.response?.data?.message || err.message || 'Gagal reset password dokter. Silakan coba lagi.';
-        }
+        alert(errorMessage);
       } finally {
-        this.loading = false;
+        this.updateLoading = false;
       }
     },
     
-    generatePassword() {
-      // Generate password acak dengan panjang 8 karakter
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-      let password = '';
-      for (let i = 0; i < 8; i++) {
-        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    showSuccessModal() {
+      if (!this.successModal) {
+        const modalElement = document.getElementById('successModal');
+        this.successModal = new Modal(modalElement);
       }
-      return password;
+      
+      this.successModal.show();
     },
     
-    showPasswordResetModal() {
-      // Tampilkan modal Bootstrap
-      this.modal = new Modal(document.getElementById('passwordResetModal'));
-      this.modal.show();
-    },
-    
-    copyToClipboard() {
-      // Copy password baru ke clipboard
-      navigator.clipboard.writeText(this.newPassword)
-        .then(() => {
-          alert('Password baru berhasil disalin!');
-        })
-        .catch(err => {
-          console.error('Gagal menyalin teks: ', err);
-        });
-    },
-    
-    redirectToList() {
-      // Redirect ke halaman list dokter setelah modal ditutup
-      this.$router.push('/dokter');
+    redirectToDetail() {
+      this.$router.push(`/dokter/view/${this.$route.params.id}`);
+    }
+  },
+  mounted() {
+    // Initialize modals
+    const modalElement = document.getElementById('successModal');
+    if (modalElement) {
+      this.successModal = new Modal(modalElement);
     }
   }
 };
@@ -369,5 +321,41 @@ export default {
 <style scoped>
 .card {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  border: none;
+}
+
+.card-header {
+  border-radius: 8px 8px 0 0;
+}
+
+.form-control:focus, .input-group-text {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.btn {
+  border-radius: 5px;
+  padding: 8px 16px;
+}
+
+.form-check-input:checked {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.form-switch .form-check-input {
+  width: 2.5em;
+  height: 1.25em;
+}
+
+.modal-content {
+  border-radius: 8px;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  border-radius: 8px 8px 0 0;
 }
 </style>
