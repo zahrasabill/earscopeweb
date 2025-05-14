@@ -7,7 +7,7 @@ Ini adalah repositori pusat untuk proyek **EarScope**, sebuah platform untuk man
 ### 🚀 Frontend
 - **Deskripsi**: Antarmuka pengguna berbasis web untuk admin, dokter, dan pasien.
 - **Teknologi**: HTML, CSS, JavaScript Vue JS
-- **Repo**: [Frontend Repository](https://github.com/username/sahabatbk-frontend)
+- **Repo**: [Frontend Link](https://earscope.adrfstwn.cloud)
 
 ### 🛠️ Backend
 - **Deskripsi**: API dan logika bisnis untuk manajemen data, autentikasi, dan lainnya.
