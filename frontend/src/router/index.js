@@ -2,10 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import HomeView from "../views/HomeView.vue";
 import LoginView from "../views/LoginView.vue";
 import DashboardView from "@/views/DashboardView.vue";
-import DokterView from "@/views/DokterView.vue";
-import PasienView from "@/views/PasienView.vue";
 import PemeriksaanView from "@/views/PemeriksaanView.vue";
-import DetailPemeriksaanView from "@/views/DetailPemeriksaanView.vue";
 
 import ForbiddenView from "@/views/errors/ForbiddenView.vue";
 import NotFoundView from "@/views/errors/NotFoundView.vue";
@@ -156,12 +153,6 @@ const router = createRouter({
     path: "/pemeriksaan",
     name: "pemeriksaan",
     component: PemeriksaanView,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: "/detail-pemeriksaan",
-    name: "detail-pemeriksaan",
-    component: DetailPemeriksaanView,
     meta: { requiresAuth: true },
   },
   {

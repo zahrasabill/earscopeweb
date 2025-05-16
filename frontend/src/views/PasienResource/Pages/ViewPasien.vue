@@ -234,7 +234,7 @@ export default {
     
     viewPemeriksaan(pemeriksaanId) {
       this.$router.push({
-        path: '/detail-pemeriksaan',
+        path: '/pemeriksaan',
         query: { id: pemeriksaanId }
       });
     },

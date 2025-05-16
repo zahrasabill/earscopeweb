@@ -26,6 +26,18 @@
             />
           </div>
           <div class="mb-3">
+            <label for="noStr" class="form-label">Nomor STR</label>
+            <input
+              type="text"
+              class="form-control"
+              id="noStr"
+              v-model.trim="dokter.noStr"
+              required
+              placeholder="Masukkan nomor STR dokter"
+            />
+            <small class="text-muted">Format: Nomor Surat Tanda Registrasi dokter</small>
+          </div>
+          <div class="mb-3">
             <label for="tanggalLahir" class="form-label">Tanggal Lahir</label>
             <input
               type="date"
@@ -155,6 +167,7 @@
         <h2 style="text-align: center; margin-bottom: 20px;">Informasi Akun Dokter</h2>
         <div style="border: 1px solid #ccc; padding: 15px; margin-bottom: 20px;">
           <h4>Dokter: {{ dokter.nama }}</h4>
+          <p><strong>No. STR:</strong> {{ dokter.noStr }}</p>
           <p><strong>Tanggal Lahir:</strong> {{ formatDateForDisplay(dokter.tanggalLahir) }}</p>
           <p><strong>Nomor Telepon:</strong> +62{{ dokter.phone }}</p>
           <p><strong>Gender:</strong> {{ dokter.gender }}</p>
@@ -182,6 +195,7 @@ export default {
     return {
       dokter: {
         nama: '',
+        noStr: '',
         tanggalLahir: '',
         phone: '',
         gender: ''
@@ -215,6 +229,7 @@ export default {
         // Pastikan format data sesuai yang diharapkan API
         const formattedData = {
           name: this.dokter.nama,
+          no_str: this.dokter.noStr,
           tanggal_lahir: this.formatDate(this.dokter.tanggalLahir),
           no_telp: phoneNumber,
           gender: this.dokter.gender

@@ -63,9 +63,10 @@
                   <th width="5%">No</th>
                   <th width="25%">Nama</th>
                   <th width="15%">Tanggal Lahir</th>
-                  <th width="20%">Nomor Telepon</th>
-                  <th width="15%">Gender</th>
-                  <th width="20%" class="text-center">Aksi</th>
+                  <th width="15%">Nomor Telepon</th>
+                  <th width="10%">Gender</th>
+                  <th width="15%">No STR</th>
+                  <th width="15%" class="text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -84,12 +85,13 @@
                       {{ capitalizeFirst(dokter.gender) }}
                     </span>
                   </td>
+                  <td>{{ dokter.no_str || '-' }}</td>
                   <td>
                     <div class="d-flex justify-content-center gap-2">
-                      <router-link :to="`/dokter/view/${dokters.id}`" class="btn btn-sm btn-info text-white">
+                      <router-link :to="`/dokter/view/${dokter.id}`" class="btn btn-sm btn-info text-white">
                         <i class="bi bi-eye"></i>
                       </router-link>
-                      <router-link :to="`/dokter/edit/${dokters.id}`" class="btn btn-sm btn-warning text-white">
+                      <router-link :to="`/dokter/edit/${dokter.id}`" class="btn btn-sm btn-warning text-white">
                         <i class="bi bi-pencil"></i>
                       </router-link>
                       <button 
@@ -344,14 +346,14 @@ export default {
           throw new Error('Token autentikasi tidak ditemukan');
         }
         
-        await api.delete(`dokter/${this.selectedUsers.id}`, {
+        await api.delete(`dokter/${this.selectedDokter.id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
         
         // Remove from local array
-        this.dokters = this.dokters.filter(d => d.id !== this.selectedUsers.id);
+        this.dokters = this.dokters.filter(d => d.id !== this.selectedDokter.id);
         this.applyFilters();
         
         // Update UI

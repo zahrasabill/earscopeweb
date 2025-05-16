@@ -180,7 +180,7 @@ export default {
           throw new Error('Token autentikasi tidak ditemukan');
         }
         
-        const response = await api.get(`dokter/${dokterId}`, {
+        const response = await api.get(`users/${dokterId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -193,7 +193,7 @@ export default {
           this.dokter = {
             nama: apiData.name || '',
             tanggalLahir: apiData.tanggal_lahir || '',
-            phone: apiData.no_telp || '',
+            phone: apiData.no_telp ? apiData.no_telp.replace(/^(62|\+62)/, '') : '',
             gender: apiData.gender || '',
             isActive: apiData.is_active === undefined ? true : Boolean(apiData.is_active)
           };
@@ -252,7 +252,7 @@ export default {
         console.log('Data yang dikirim ke API:', formattedData);
         
         const dokterId = this.$route.params.id;
-        const response = await api.put(`dokter/${dokterId}`, formattedData, {
+        const response = await api.put(`users/${dokterId}`, formattedData, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
