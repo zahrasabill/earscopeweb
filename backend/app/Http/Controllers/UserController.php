@@ -212,7 +212,7 @@ class UserController extends Controller
                 'name' => 'required|string|max:255|unique:users,name',
                 'tanggal_lahir' => 'required|date|before:today',
                 'gender' => 'required|in:laki-laki,perempuan',
-                'no_str' => 'required|string',
+                'no_str' => 'nullable|string',
                 'no_telp' => 'required|digits_between:10,15|regex:/^[0-9]+$/', // Nomor telepon harus 10-15 digit
             ], [
                 'name.unique' => 'Nama sudah terdaftar, silakan gunakan nama lain.',
