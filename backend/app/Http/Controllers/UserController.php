@@ -113,7 +113,7 @@ class UserController extends Controller
                 'name' => $request->name,
                 'tanggal_lahir' => $request->tanggal_lahir,
                 'usia' => $usia,
-                'no_telp' => $request->no_telp, // Nomor KTP tidak wajib jika tidak digunakan
+                'no_telp' => $request->no_telp,
                 'gender' => $request->gender,
                 'email' => null, // Email tidak wajib jika tidak digunakan
                 'password' => Hash::make($password), // Hash password sebelum disimpan
@@ -212,6 +212,7 @@ class UserController extends Controller
                 'name' => 'required|string|max:255|unique:users,name',
                 'tanggal_lahir' => 'required|date|before:today',
                 'gender' => 'required|in:laki-laki,perempuan',
+                'no_str' => 'required|string',
                 'no_telp' => 'required|digits_between:10,15|regex:/^[0-9]+$/', // Nomor telepon harus 10-15 digit
             ], [
                 'name.unique' => 'Nama sudah terdaftar, silakan gunakan nama lain.',
@@ -238,7 +239,8 @@ class UserController extends Controller
                 'name' => $request->name,
                 'tanggal_lahir' => $request->tanggal_lahir,
                 'usia' => $usia,
-                'no_telp' => $request->no_telp, // Nomor KTP tidak wajib jika tidak digunakan
+                'no_telp' => $request->no_telp,
+                'no_str' => $request->no_str,
                 'gender' => $request->gender,
                 'email' => null, // Email tidak wajib jika tidak digunakan
                 'password' => Hash::make($password), // Hash password sebelum disimpan
@@ -283,7 +285,7 @@ class UserController extends Controller
      *         @OA\JsonContent(
      *             @OA\Property(property="name", type="string", example="John Doe Updated"),
      *             @OA\Property(property="email", type="string", format="email", example="new.email@example.com"),
-     *             @OA\Property(property="no_ktp", type="string", example="1234567890123456"),
+     *             @OA\Property(property="no_telp", type="string", example="08122751"),
      *             @OA\Property(property="tanggal_lahir", type="string", format="date", example="1995-05-15"),
      *             @OA\Property(property="role", type="string", enum={"user", "dokter", "admin"}, example="dokter"),
      *             @OA\Property(property="password", type="string", minLength=8, maxLength=8, example="newpassword")
@@ -298,16 +300,16 @@ class UserController extends Controller
     {
         // Validasi input
         $request->validate([
-            'name' => 'nullable|string|max:255|unique:users,name,' . $id, // Opsional
+            'name' => 'string|max:255|unique:users,name,' . $id, // Opsional
             'email' => 'nullable|email|unique:users,email,' . $id, // Email unik, kecuali untuk pengguna saat ini
-            'no_ktp' => 'nullable|numeric|digits:16', // No KTP numerik dan tepat 16 digit
-            'tanggal_lahir' => 'nullable|date|before:today', // Tanggal lahir opsional
-            'role' => 'nullable|string|in:user,dokter,admin', // Role opsional
-            'password' => 'nullable|string|min:8|max:8', // Password opsional, tetapi harus 8 karakter
+            'no_telp' => 'numeric', // No KTP numerik dan tepat 16 digit
+            'no_str' => 'nullable|string',
+            'tanggal_lahir' => 'date|before:today', // Tanggal lahir opsional
+            'role' => 'string|in:user,dokter,admin', // Role opsional
+            'password' => 'string|min:8|max:8', // Password opsional, tetapi harus 8 karakter
         ], [
             'email.unique' => 'Email sudah terdaftar, silakan gunakan email lain.',
-            'no_ktp.numeric' => 'Nomor KTP harus berupa angka.',
-            'no_ktp.digits' => 'Nomor KTP harus tepat 16 digit.',
+            'no_telp.numeric' => 'Nomor Telepon harus berupa angka.',
             'tanggal_lahir.before' => 'Tanggal lahir tidak boleh melebihi hari ini.',
             'tanggal_lahir.date' => 'Format tanggal lahir tidak valid. Gunakan format YYYY-MM-DD.',
             'role.in' => 'Role harus salah satu dari: user, dokter, admin.',
@@ -329,8 +331,11 @@ class UserController extends Controller
             $data['email'] = $request->email;
         }
 
-        if ($request->has('no_ktp')) {
-            $data['no_ktp'] = $request->no_ktp;
+        if ($request->has('no_telp')) {
+            $data['no_telp'] = $request->no_telp;
+        }
+        if ($request->has('no_str')) {
+            $data['no_str'] = $request->no_str;
         }
 
         if ($request->has('tanggal_lahir')) {
@@ -450,7 +455,7 @@ class UserController extends Controller
         return response()->json($users);
     }
 
-        /**
+    /**
      * @OA\Get(
      *     path="/v1/dokter",
      *     summary="Get all dokter",
@@ -490,6 +495,7 @@ class UserController extends Controller
                     'tanggal_lahir' => $user->tanggal_lahir,
                     'usia' => $user->usia,
                     'no_telp' => $user->no_telp,
+                    'no_str' => $user->no_str,
                     'gender' => $user->gender,
                     'roles' => $user->roles->pluck('name'), // Ambil nama role
                     'deleted_at' => $user->deleted_at,
@@ -531,11 +537,14 @@ class UserController extends Controller
         // Format respons
         $response = [
             'id' => $user->id,
+            'kode_akses' => $user->kode_akses,
             'name' => $user->name,
             'email' => $user->email,
             'tanggal_lahir' => $user->tanggal_lahir,
             'usia' => $user->usia,
-            'no_ktp' => $user->no_ktp,
+            'no_telp' => $user->no_telp,
+            'no_str' => $user->no_str,
+            'gender' => $user->gender,
             'roles' => $user->roles->pluck('name'), // Ambil nama role
             'deleted_at' => $user->deleted_at,
         ];
