@@ -15,51 +15,27 @@
         </div>
         <form @submit.prevent="createPasien" v-if="!loading">
           <div class="mb-3">
-            <label for="nama" class="form-label">Nama Lengkap</label>
-            <input
-              type="text"
-              class="form-control"
-              id="nama"
-              v-model.trim="pasien.nama"
-              required
-              placeholder="Masukkan nama pasien"
-            />
+            <label for="nama" class="form-label">Nama</label>
+            <input type="text" class="form-control" id="nama" v-model.trim="pasien.nama" required
+              placeholder="Masukkan nama pasien" />
           </div>
           <div class="mb-3">
             <label for="tanggalLahir" class="form-label">Tanggal Lahir</label>
-            <input
-              type="date"
-              class="form-control"
-              id="tanggalLahir"
-              v-model="pasien.tanggalLahir"
-              required
-            />
+            <input type="date" class="form-control" id="tanggalLahir" v-model="pasien.tanggalLahir" required 
+              @change="calculateAge" />
           </div>
           <div class="mb-3">
             <label for="usia" class="form-label">Usia</label>
-            <input
-              type="number"
-              class="form-control"
-              id="usia"
-              v-model="pasien.usia"
-              min="0"
-              required
-              placeholder="Masukkan usia pasien"
-            />
+            <input type="number" class="form-control" id="usia" v-model="pasien.usia" readonly
+              placeholder="Usia akan otomatis terisi" />
+            <small class="text-muted">Usia akan otomatis dihitung berdasarkan tanggal lahir</small>
           </div>
           <div class="mb-3">
             <label for="phone" class="form-label">Nomor Telepon</label>
             <div class="input-group">
               <span class="input-group-text">+62</span>
-              <input
-                type="tel"
-                class="form-control"
-                id="phone"
-                v-model.trim="pasien.phone"
-                required
-                placeholder="8xxxxxxxxxx"
-                pattern="[0-9]+"
-              />
+              <input type="tel" class="form-control" id="phone" v-model.trim="pasien.phone" required
+                placeholder="8xxxxxxxxxx" pattern="[0-9]+" />
             </div>
             <small class="text-muted">Format: 8xxxxxxxxxx (tanpa kode negara)</small>
           </div>
@@ -67,30 +43,18 @@
             <label class="form-label">Gender</label>
             <div class="d-flex gap-4">
               <div class="form-check">
-                <input
-                  class="form-check-input"
-                  type="radio"
-                  name="gender"
-                  id="laki"
-                  value="laki-laki"
-                  v-model="pasien.gender"
-                  required
-                />
+                <input class="form-check-input" type="radio" name="gender" id="laki" value="laki-laki"
+                  v-model="pasien.gender" required />
                 <label class="form-check-label" for="laki">Laki-laki</label>
               </div>
               <div class="form-check">
-                <input
-                  class="form-check-input"
-                  type="radio"
-                  name="gender"
-                  id="perempuan"
-                  value="perempuan"
-                  v-model="pasien.gender"
-                />
+                <input class="form-check-input" type="radio" name="gender" id="perempuan" value="perempuan"
+                  v-model="pasien.gender" />
                 <label class="form-check-label" for="perempuan">Perempuan</label>
               </div>
             </div>
           </div>
+
           <div class="d-flex justify-content-between mt-4">
             <button type="button" class="btn btn-secondary" @click="$router.push('/pasien')">
               <i class="bi bi-arrow-left me-1"></i> Kembali
@@ -104,7 +68,8 @@
     </div>
 
     <!-- Modal untuk menampilkan kode akses dan password -->
-    <div class="modal fade" id="credentialsModal" tabindex="-1" aria-labelledby="credentialsModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal fade" id="credentialsModal" tabindex="-1" aria-labelledby="credentialsModalLabel"
+      aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header bg-success text-white">
@@ -119,13 +84,8 @@
             <div class="mb-3">
               <label class="form-label fw-bold">Kode Akses:</label>
               <div class="input-group">
-                <input 
-                  type="text" 
-                  class="form-control" 
-                  readonly 
-                  :value="generatedCredentials.kodeAkses" 
-                  ref="kodeAksesInput" 
-                />
+                <input type="text" class="form-control" readonly :value="generatedCredentials.kodeAkses"
+                  ref="kodeAksesInput" />
                 <button class="btn btn-outline-secondary" type="button" @click="copyToClipboard('kodeAkses')">
                   <i class="bi bi-clipboard"></i>
                 </button>
@@ -134,13 +94,8 @@
             <div class="mb-3">
               <label class="form-label fw-bold">Password:</label>
               <div class="input-group">
-                <input 
-                  type="text" 
-                  class="form-control" 
-                  readonly 
-                  :value="generatedCredentials.password" 
-                  ref="passwordInput"
-                />
+                <input type="text" class="form-control" readonly :value="generatedCredentials.password"
+                  ref="passwordInput" />
                 <button class="btn btn-outline-secondary" type="button" @click="copyToClipboard('password')">
                   <i class="bi bi-clipboard"></i>
                 </button>
@@ -160,6 +115,9 @@
         </div>
       </div>
     </div>
+
+    <!-- Hidden iframe for printing in a new tab -->
+    <iframe id="printFrame" style="display:none;"></iframe>
 
     <!-- Hidden div for printing -->
     <div id="printArea" class="d-none">
@@ -206,66 +164,111 @@ export default {
       },
       modal: null,
       loading: false,
-      error: null
+      error: null,
     };
   },
+  mounted() {
+    // Component siap digunakan
+  },
   methods: {
+    calculateAge() {
+      if (!this.pasien.tanggalLahir) {
+        this.pasien.usia = '';
+        return;
+      }
+
+      const birthDate = new Date(this.pasien.tanggalLahir);
+      const today = new Date();
+      
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      
+      this.pasien.usia = age >= 0 ? age : 0;
+    },
+
+    generateKodeAkses() {
+      // Generate kode akses dengan format PRS- + 5 karakter random uppercase
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let randomStr = '';
+      for (let i = 0; i < 5; i++) {
+        randomStr += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return `PRS-${randomStr}`;
+    },
+
+    generatePassword() {
+      // Generate password dengan kombinasi huruf dan angka
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      let password = '';
+      for (let i = 0; i < 8; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return password;
+    },
+
+    togglePasswordVisibility() {
+      this.showPassword = !this.showPassword;
+    },
+
     async createPasien() {
       this.loading = true;
       this.error = null;
-      
+
       try {
-        // Format phone number if needed
-        const phoneNumber = this.pasien.phone.startsWith('0') 
-          ? this.pasien.phone.substring(1) 
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+
+        if (!token) {
+          throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
+        }
+
+        // Format phone number with prefix
+        const phoneNumber = this.pasien.phone.startsWith('0')
+          ? this.pasien.phone.substring(1)
           : this.pasien.phone;
-        
-        // Prepare data for API
+
+        // Pastikan format data sesuai yang diharapkan API
         const formattedData = {
           name: this.pasien.nama,
-          tanggal_lahir: this.pasien.tanggalLahir,
+          tanggal_lahir: this.formatDate(this.pasien.tanggalLahir),
           usia: parseInt(this.pasien.usia),
           no_telp: phoneNumber,
           gender: this.pasien.gender
         };
-        
-        // Get authentication token
-        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-        
-        if (!token) {
-          throw new Error('Sesi login telah berakhir. Silakan login kembali.');
-        }
-        
-        // Call API to create new patient
-        const response = await api.post('register/pasien', formattedData, {
+
+        console.log('Data yang dikirim ke API:', formattedData);
+
+        const response = await api.post(`register/pasien`, formattedData, {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            'Authorization': `Bearer ${token}`
           }
         });
-        
-        // Process response from API
+
+        // Simpan credentials dari response API
         if (response.data && response.data.data) {
-          this.generatedCredentials.kodeAkses = response.data.data.kodeAkses || '';
+          this.generatedCredentials.kodeAkses = response.data.data.kode_akses || '';
           this.generatedCredentials.password = response.data.data.password || '';
-          
-          console.log('Pasien berhasil dibuat:', response.data);
-          
+
+          console.log('Pasien berhasil dibuat');
+
           // Refresh list data
           localStorage.setItem('pasienDataUpdated', Date.now().toString());
-          
-          // Show credentials modal
+
+          // Tampilkan modal dengan credentials
           this.showCredentialsModal();
         } else {
           throw new Error('Format response tidak sesuai');
         }
       } catch (err) {
         console.error('Error saat membuat pasien:', err);
-        
+
         // Tampilkan detail error yang lebih spesifik
         if (err.response) {
           console.error('Response error data:', err.response.data);
-          
+
           // Pesan error yang lebih spesifik berdasarkan response
           if (err.response.status === 400) {
             this.error = `Bad Request: ${err.response.data.message || 'Format data tidak valid'}`;
@@ -287,10 +290,22 @@ export default {
         this.loading = false;
       }
     },
-    
+
+    formatDate(dateString) {
+      if (!dateString) return '';
+
+      // Validasi string dengan format YYYY-MM-DD
+      const regex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!regex.test(dateString)) {
+        throw new Error('Format tanggal tidak valid. Harus dalam format YYYY-MM-DD.');
+      }
+
+      return dateString;
+    },
+
     formatDateForDisplay(dateString) {
       if (!dateString) return '';
-      
+
       const date = new Date(dateString);
       return date.toLocaleDateString('id-ID', {
         day: 'numeric',
@@ -298,7 +313,7 @@ export default {
         year: 'numeric'
       });
     },
-    
+
     showCredentialsModal() {
       // Inisialisasi atau perbarui modal
       if (!this.modal) {
@@ -310,20 +325,20 @@ export default {
       }
       this.modal.show();
     },
-    
+
     copyToClipboard(type) {
       try {
         const input = type === 'kodeAkses' ? this.$refs.kodeAksesInput : this.$refs.passwordInput;
         input.select();
         document.execCommand('copy');
-        
+
         // Tampilkan indikator bahwa teks telah disalin
         const button = input.nextElementSibling;
         const originalHTML = button.innerHTML;
         button.innerHTML = '<i class="bi bi-check-lg"></i>';
         button.classList.add('btn-success');
         button.classList.remove('btn-outline-secondary');
-        
+
         // Kembalikan tampilan button setelah 1.5 detik
         setTimeout(() => {
           button.innerHTML = originalHTML;
@@ -334,25 +349,67 @@ export default {
         console.error('Error saat menyalin ke clipboard:', err);
       }
     },
-    
+
     printCredentials() {
-      const printContent = document.getElementById('printArea').innerHTML;
-      const originalContent = document.body.innerHTML;
-      
-      document.body.innerHTML = printContent;
-      window.print();
-      document.body.innerHTML = originalContent;
-      
-      // Reinisialisasi modal karena DOM telah berubah
-      const modalElement = document.getElementById('credentialsModal');
-      this.modal = new Modal(modalElement, {
-        backdrop: 'static',
-        keyboard: false
-      });
-      this.modal.show();
+      try {
+        // Ambil konten yang akan dicetak
+        const printContentHTML = document.getElementById('printArea').innerHTML;
+        
+        // Gunakan iframe yang sudah ada di DOM
+        const iframe = document.getElementById('printFrame');
+        const iframeDoc = iframe.contentWindow || iframe.contentDocument;
+        
+        // Buat dokumen HTML lengkap di dalam iframe
+        if (iframeDoc.document) {
+          const doc = iframeDoc.document;
+          doc.open();
+          doc.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <title>Informasi Akun Pasien - ${this.pasien.nama}</title>
+              <style>
+                @media print {
+                  body { font-family: Arial, sans-serif; }
+                  .print-button { display: none; }
+                }
+              </style>
+            </head>
+            <body>
+              ${printContentHTML}
+              <div class="print-button" style="text-align: center; margin-top: 20px;">
+                <button onclick="window.print(); window.close();" 
+                  style="padding: 10px 15px; background-color: #0d6efd; color: white; 
+                  border: none; border-radius: 5px; cursor: pointer;">
+                  Cetak
+                </button>
+              </div>
+            </body>
+            </html>
+          `);
+          doc.close();
+          
+          // Buka di tab baru
+          iframe.contentWindow.location.href = 'about:blank';
+          const printWindow = window.open('', '_blank');
+          if (printWindow) {
+            printWindow.document.write(doc.documentElement.outerHTML);
+            printWindow.document.close();
+            // Secara opsional, cetak otomatis
+            // printWindow.print();
+          } else {
+            console.error('Pop-up blocker mungkin aktif, tidak dapat membuka jendela baru');
+            alert('Pop-up blocker mungkin aktif. Silakan izinkan pop-up untuk mencetak.');
+          }
+        }
+      } catch (err) {
+        console.error('Error saat mencetak:', err);
+        alert('Terjadi kesalahan saat mencetak. Silahkan coba lagi.');
+      }
     },
-    
+
     redirectToList() {
+      // Langsung arahkan ke halaman list pasien
       this.$router.push('/pasien');
     }
   }
@@ -370,7 +427,8 @@ export default {
   border-radius: 8px 8px 0 0;
 }
 
-.form-control:focus, .input-group-text {
+.form-control:focus,
+.input-group-text {
   border-color: #86b7fe;
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
@@ -400,18 +458,7 @@ export default {
   border-radius: 8px 8px 0 0;
 }
 
-@media print {
-  body * {
-    visibility: hidden;
-  }
-  #printArea, #printArea * {
-    visibility: visible;
-  }
-  #printArea {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-  }
+.form-control[readonly] {
+  background-color: #f8f9fa;
 }
 </style>

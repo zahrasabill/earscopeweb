@@ -5,141 +5,237 @@
         <h4>Edit Pasien</h4>
       </div>
       <div class="card-body">
-        <div v-if="loading" class="text-center my-3">
-          <div class="spinner-border text-primary" role="status">
+        <div v-if="loading" class="text-center my-5">
+          <div class="spinner-border text-warning" role="status">
             <span class="visually-hidden">Loading...</span>
           </div>
+          <p class="mt-2">Memuat data pasien...</p>
         </div>
-        <div v-if="error" class="alert alert-danger">
+        
+        <div v-else-if="error" class="alert alert-danger">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
           {{ error }}
         </div>
-        <form @submit.prevent="updatePasien" v-if="!loading && pasien">
-          <div class="mb-3">
-            <label for="nama" class="form-label">Nama Lengkap</label>
-            <input
-              type="text"
-              class="form-control"
-              id="nama"
-              v-model="pasien.nama"
-              required
-            />
-          </div>
-          <div class="mb-3">
-            <label for="tanggalLahir" class="form-label">Tanggal Lahir</label>
-            <input
-              type="date"
-              class="form-control"
-              id="tanggalLahir"
-              v-model="pasien.tanggalLahir"
-              required
-            />
-          </div>
-          <div class="mb-3">
-            <label for="usia" class="form-label">Usia</label>
-            <input
-              type="number"
-              class="form-control"
-              id="usia"
-              v-model="pasien.usia"
-              min="0"
-              required
-            />
-          </div>
-          <div class="mb-3">
-            <label for="phone" class="form-label">Nomor Telepon</label>
-            <input
-              type="tel"
-              class="form-control"
-              id="phone"
-              v-model="pasien.phone"
-              required
-            />
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Gender</label>
-            <div class="form-check">
-              <input
-                class="form-check-input"
-                type="radio"
-                name="gender"
-                id="laki"
-                value="laki-laki"
-                v-model="pasien.gender"
-                required
-              />
-              <label class="form-check-label" for="laki">Laki-laki</label>
+        
+        <form v-else @submit.prevent="updatePasien">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="card mb-4">
+                <div class="card-header bg-light">
+                  <h5 class="mb-0">Informasi Pribadi</h5>
+                </div>
+                <div class="card-body">
+                  <div class="mb-3">
+                    <label for="name" class="form-label fw-bold">Nama Lengkap <span class="text-danger">*</span></label>
+                    <input 
+                      type="text" 
+                      class="form-control"
+                      :class="{ 'is-invalid': errors.name }"
+                      id="name"
+                      v-model="form.name"
+                      placeholder="Masukkan nama lengkap"
+                      required
+                    />
+                    <div v-if="errors.name" class="invalid-feedback">
+                      {{ errors.name[0] }}
+                    </div>
+                  </div>
+                  
+                  <div class="mb-3">
+                    <label for="tanggal_lahir" class="form-label fw-bold">Tanggal Lahir <span class="text-danger">*</span></label>
+                    <input 
+                      type="date" 
+                      class="form-control"
+                      :class="{ 'is-invalid': errors.tanggal_lahir }"
+                      id="tanggal_lahir"
+                      v-model="form.tanggal_lahir"
+                      required
+                    />
+                    <div v-if="errors.tanggal_lahir" class="invalid-feedback">
+                      {{ errors.tanggal_lahir[0] }}
+                    </div>
+                  </div>
+                  
+                  <div class="mb-3">
+                    <label for="usia" class="form-label fw-bold">Usia <span class="text-danger">*</span></label>
+                    <input 
+                      type="number" 
+                      class="form-control"
+                      :class="{ 'is-invalid': errors.usia }"
+                      id="usia"
+                      v-model="form.usia"
+                      placeholder="Masukkan usia"
+                      min="1"
+                      max="150"
+                      required
+                    />
+                    <div v-if="errors.usia" class="invalid-feedback">
+                      {{ errors.usia[0] }}
+                    </div>
+                  </div>
+                  
+                  <div class="mb-3">
+                    <label for="no_telp" class="form-label fw-bold">Nomor Telepon <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                      <span class="input-group-text">+62</span>
+                      <input 
+                        type="tel" 
+                        class="form-control"
+                        :class="{ 'is-invalid': errors.no_telp }"
+                        id="no_telp"
+                        v-model="form.no_telp"
+                        placeholder="8xxxxxxxxxx"
+                        pattern="[0-9]{8,15}"
+                        required
+                      />
+                      <div v-if="errors.no_telp" class="invalid-feedback">
+                        {{ errors.no_telp[0] }}
+                      </div>
+                    </div>
+                    <small class="text-muted">Contoh: 81234567890</small>
+                  </div>
+                  
+                  <div class="mb-3">
+                    <label for="gender" class="form-label fw-bold">Gender <span class="text-danger">*</span></label>
+                    <select 
+                      class="form-select"
+                      :class="{ 'is-invalid': errors.gender }"
+                      id="gender"
+                      v-model="form.gender"
+                      required
+                    >
+                      <option value="">Pilih Gender</option>
+                      <option value="laki-laki">Laki-laki</option>
+                      <option value="perempuan">Perempuan</option>
+                    </select>
+                    <div v-if="errors.gender" class="invalid-feedback">
+                      {{ errors.gender[0] }}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="form-check">
-              <input
-                class="form-check-input"
-                type="radio"
-                name="gender"
-                id="perempuan"
-                value="perempuan"
-                v-model="pasien.gender"
-              />
-              <label class="form-check-label" for="perempuan">Perempuan</label>
+            
+            <div class="col-md-6">
+              <div class="card mb-4">
+                <div class="card-header bg-light">
+                  <h5 class="mb-0">Informasi Medis</h5>
+                </div>
+                <div class="card-body">
+                  <div class="mb-3">
+                    <label class="form-label fw-bold">No Rekam Medis:</label>
+                    <div class="input-group">
+                      <input 
+                        type="text" 
+                        class="form-control bg-light" 
+                        :value="originalData.kode_akses || 'Tidak tersedia'" 
+                        readonly
+                      />
+                      <button 
+                        class="btn btn-outline-secondary" 
+                        type="button" 
+                        @click="copyToClipboard"
+                        v-if="originalData.kode_akses"
+                      >
+                        <i class="bi bi-clipboard"></i>
+                      </button>
+                    </div>
+                    <small class="text-muted">No Rekam Medis tidak dapat diubah</small>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="card mb-4">
+                <div class="card-header bg-light">
+                  <h5 class="mb-0">Ubah Password (Opsional)</h5>
+                </div>
+                <div class="card-body">
+                  <div class="mb-3">
+                    <label for="password" class="form-label fw-bold">Password Baru</label>
+                    <input 
+                      type="password" 
+                      class="form-control"
+                      :class="{ 'is-invalid': errors.password }"
+                      id="password"
+                      v-model="form.password"
+                      placeholder="Kosongkan jika tidak ingin mengubah password"
+                      minlength="6"
+                    />
+                    <div v-if="errors.password" class="invalid-feedback">
+                      {{ errors.password[0] }}
+                    </div>
+                    <small class="text-muted">Minimal 6 karakter. Kosongkan jika tidak ingin mengubah.</small>
+                  </div>
+                  
+                  <div class="mb-3">
+                    <label for="password_confirmation" class="form-label fw-bold">Konfirmasi Password Baru</label>
+                    <input 
+                      type="password" 
+                      class="form-control"
+                      :class="{ 'is-invalid': errors.password_confirmation || (form.password && form.password !== form.password_confirmation) }"
+                      id="password_confirmation"
+                      v-model="form.password_confirmation"
+                      placeholder="Ulangi password baru"
+                      minlength="6"
+                    />
+                    <div v-if="errors.password_confirmation" class="invalid-feedback">
+                      {{ errors.password_confirmation[0] }}
+                    </div>
+                    <div v-else-if="form.password && form.password !== form.password_confirmation" class="invalid-feedback d-block">
+                      Password konfirmasi tidak cocok
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="mb-3">
-            <label for="kodeAkses" class="form-label">Kode Akses</label>
-            <input
-              type="text"
-              class="form-control"
-              id="kodeAkses"
-              v-model="pasien.kodeAkses"
-              readonly
-              disabled
-            />
-            <small class="text-muted">Kode akses tidak dapat diubah</small>
-          </div>
-          <div class="mb-3">
-            <label for="resetPassword" class="form-label">Reset Password</label>
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" id="resetPassword" v-model="resetPassword">
-              <label class="form-check-label" for="resetPassword">
-                Reset password pasien
-              </label>
-            </div>
-            <small class="text-muted">Password baru akan ditampilkan setelah pasien disimpan</small>
-          </div>
-          <div class="d-flex justify-content-between">
-            <button type="button" class="btn btn-secondary" @click="$router.push(`/pasien/view/${pasienId}`)">
-              Kembali
+          
+          <div class="d-flex justify-content-between mt-4">
+            <button type="button" class="btn btn-secondary" @click="goBack">
+              <i class="bi bi-arrow-left me-1"></i> Kembali
             </button>
-            <button type="submit" class="btn btn-primary" :disabled="updateLoading">
-              <span v-if="updateLoading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-              Simpan
-            </button>
+            
+            <div class="d-flex gap-2">
+              <button 
+                type="button" 
+                class="btn btn-outline-secondary"
+                @click="resetForm"
+              >
+                <i class="bi bi-arrow-clockwise me-1"></i> Reset
+              </button>
+              
+              <button 
+                type="submit" 
+                class="btn btn-success"
+                :disabled="isSubmitting || !isFormValid"
+              >
+                <span v-if="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                <i v-else class="bi bi-check-lg me-1"></i>
+                {{ isSubmitting ? 'Menyimpan...' : 'Simpan Perubahan' }}
+              </button>
+            </div>
           </div>
         </form>
       </div>
     </div>
-
-    <!-- Modal untuk menampilkan password baru -->
-    <div class="modal fade" id="passwordModal" tabindex="-1" aria-labelledby="passwordModalLabel" aria-hidden="true">
+    
+    <!-- Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header bg-success text-white">
-            <h5 class="modal-title" id="passwordModalLabel">Password Baru</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <h5 class="modal-title">
+              <i class="bi bi-check-circle me-2"></i>
+              Berhasil
+            </h5>
           </div>
           <div class="modal-body">
-            <div class="alert alert-warning">
-              <strong>Penting!</strong> Silahkan catat password baru ini. Password ini hanya ditampilkan sekali.
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-bold">Password:</label>
-              <div class="input-group">
-                <input type="text" class="form-control" readonly :value="newPassword" />
-                <button class="btn btn-outline-secondary" type="button" @click="copyToClipboard">
-                  <i class="bi bi-clipboard"></i>
-                </button>
-              </div>
-            </div>
+            <p class="mb-0">Data pasien berhasil diperbarui!</p>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+            <button type="button" class="btn btn-success" data-bs-dismiss="modal" @click="goBack">
+              OK
+            </button>
           </div>
         </div>
       </div>
@@ -148,139 +244,238 @@
 </template>
 
 <script>
-import { Modal } from 'bootstrap';
 import api from '@/api';
 
 export default {
   name: 'EditPasien',
   data() {
     return {
-      pasienId: null,
-      pasien: {
-        nama: '',
-        tanggalLahir: '',
+      originalData: {},
+      form: {
+        name: '',
+        tanggal_lahir: '',
         usia: '',
-        phone: '',
+        no_telp: '',
         gender: '',
-        kodeAkses: ''
+        password: '',
+        password_confirmation: ''
       },
-      loading: false,
-      updateLoading: false,
+      loading: true,
       error: null,
-      resetPassword: false,
-      newPassword: '',
-      passwordModal: null
+      errors: {},
+      isSubmitting: false
     };
   },
+  computed: {
+    isFormValid() {
+      return this.form.name && 
+             this.form.tanggal_lahir && 
+             this.form.usia && 
+             this.form.no_telp && 
+             this.form.gender &&
+             (!this.form.password || (this.form.password === this.form.password_confirmation));
+    }
+  },
+  watch: {
+    '$route.params.id': function(newId) {
+      if (newId) {
+        this.fetchPasien();
+      } else {
+        this.error = 'ID pasien tidak ditemukan pada URL';
+        this.loading = false;
+      }
+    },
+    'form.password': function() {
+      if (!this.form.password) {
+        this.form.password_confirmation = '';
+      }
+    }
+  },
   created() {
-    this.pasienId = this.$route.params.id;
-    this.fetchPasienDetail();
+    if (this.$route.params.id) {
+      this.fetchPasien();
+    } else {
+      this.error = 'ID pasien tidak ditemukan pada URL';
+      this.loading = false;
+    }
   },
   methods: {
-    async fetchPasienDetail() {
+    getAuthToken() {
+      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+      if (!token) {
+        throw new Error('Token autentikasi tidak ditemukan');
+      }
+      return token;
+    },
+    
+    async fetchPasien() {
       this.loading = true;
       this.error = null;
-
+      
       try {
-        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-        
-        if (!token) {
-          throw new Error('Sesi login telah berakhir. Silakan login kembali.');
+        if (!this.$route.params.id) {
+          throw new Error('ID pasien tidak ditemukan pada URL');
         }
-
-        const response = await api.get(`pasien/${this.pasienId}`, {
+        
+        const pasienId = this.$route.params.id;
+        const token = this.getAuthToken();
+        
+        const response = await api.get(`users/${pasienId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
-
-        if (response.data && response.data.data) {
-          const pasienData = response.data.data;
-          this.pasien = {
-            nama: pasienData.name,
-            tanggalLahir: pasienData.tanggal_lahir,
-            usia: pasienData.usia,
-            phone: pasienData.no_telp,
-            gender: pasienData.gender,
-            kodeAkses: pasienData.kode_akses
-          };
+        
+        if (response.data) {
+          this.originalData = response.data;
+          this.populateForm(response.data);
         } else {
           throw new Error('Format response tidak sesuai');
         }
       } catch (err) {
-        console.error('Error fetching pasien detail:', err);
-        this.error = err.response?.data?.message || err.message || 'Gagal memuat data pasien';
+        console.error('Error saat memuat detail pasien:', err);
+        
+        if (err.response) {
+          if (err.response.status === 401) {
+            this.error = 'Sesi login Anda telah berakhir. Silakan login kembali.';
+            setTimeout(() => {
+              this.$router.push('/login');
+            }, 2000);
+          } else if (err.response.status === 404) {
+            this.error = 'Pasien tidak ditemukan. ID pasien mungkin tidak valid.';
+          } else {
+            this.error = err.response.data?.message || 
+                        'Terjadi kesalahan saat memuat data pasien';
+          }
+        } else {
+          this.error = err.message || 'Terjadi kesalahan saat memuat data pasien';
+        }
       } finally {
         this.loading = false;
       }
     },
     
+    populateForm(data) {
+      this.form = {
+        name: data.name || '',
+        tanggal_lahir: data.tanggal_lahir || '',
+        usia: data.usia || '',
+        no_telp: data.no_telp || '',
+        gender: data.gender || '',
+        password: '',
+        password_confirmation: ''
+      };
+    },
+    
+    resetForm() {
+      this.populateForm(this.originalData);
+      this.errors = {};
+    },
+    
     async updatePasien() {
-      this.updateLoading = true;
-      this.error = null;
+      if (!this.isFormValid) return;
+      
+      this.isSubmitting = true;
+      this.errors = {};
       
       try {
-        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+        const pasienId = this.$route.params.id;
+        const token = this.getAuthToken();
         
-        if (!token) {
-          throw new Error('Sesi login telah berakhir. Silakan login kembali.');
-        }
-        
-        // Prepare data for API
-        const formattedData = {
-          name: this.pasien.nama,
-          tanggal_lahir: this.pasien.tanggalLahir,
-          usia: parseInt(this.pasien.usia),
-          no_telp: this.pasien.phone,
-          gender: this.pasien.gender,
-          reset_password: this.resetPassword
+        // Prepare data to send
+        const updateData = {
+          name: this.form.name,
+          tanggal_lahir: this.form.tanggal_lahir,
+          usia: parseInt(this.form.usia),
+          no_telp: this.form.no_telp,
+          gender: this.form.gender
         };
         
-        // Call API to update patient
-        const response = await api.put(`pasien/${this.pasienId}`, formattedData, {
+        // Only include password if it's provided
+        if (this.form.password && this.form.password.trim() !== '') {
+          updateData.password = this.form.password;
+          updateData.password_confirmation = this.form.password_confirmation;
+        }
+        
+        const response = await api.put(`users/${pasienId}`, updateData, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
         
-        // If password was reset, show the new password
-        if (this.resetPassword && response.data && response.data.data && response.data.data.new_password) {
-          this.newPassword = response.data.data.new_password;
-          this.showPasswordModal();
-        } else {
-          // Show success message and redirect
-          alert('Data pasien berhasil diperbarui');
-          this.$router.push(`/pasien/view/${this.pasienId}`);
+        if (response.data) {
+          // Show success modal
+          const modal = new bootstrap.Modal(document.getElementById('successModal'));
+          modal.show();
         }
+        
       } catch (err) {
-        console.error('Error updating pasien:', err);
-        this.error = err.response?.data?.message || err.message || 'Terjadi kesalahan saat memperbarui data pasien. Silakan coba lagi.';
+        console.error('Error saat mengupdate pasien:', err);
+        
+        if (err.response) {
+          if (err.response.status === 401) {
+            this.error = 'Sesi login Anda telah berakhir. Silakan login kembali.';
+            setTimeout(() => {
+              this.$router.push('/login');
+            }, 2000);
+          } else if (err.response.status === 422) {
+            // Validation errors
+            this.errors = err.response.data.errors || {};
+          } else if (err.response.status === 404) {
+            this.error = 'Pasien tidak ditemukan. ID pasien mungkin tidak valid.';
+          } else {
+            this.error = err.response.data?.message || 
+                        'Terjadi kesalahan saat mengupdate data pasien';
+          }
+        } else {
+          this.error = err.message || 'Terjadi kesalahan saat mengupdate data pasien';
+        }
       } finally {
-        this.updateLoading = false;
+        this.isSubmitting = false;
       }
     },
     
-    showPasswordModal() {
-      // Show Bootstrap modal
-      this.passwordModal = new Modal(document.getElementById('passwordModal'));
-      this.passwordModal.show();
-      
-      // Add event listener for when modal is hidden
-      const modalEl = document.getElementById('passwordModal');
-      modalEl.addEventListener('hidden.bs.modal', () => {
-        this.$router.push(`/pasien/view/${this.pasienId}`);
-      });
+    copyToClipboard() {
+      try {
+        const textToCopy = this.originalData.kode_akses;
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(textToCopy);
+        } else {
+          // Fallback for older browsers
+          const textArea = document.createElement('textarea');
+          textArea.value = textToCopy;
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+        }
+        
+        // Visual feedback
+        const button = event.target.closest('button');
+        const originalHTML = button.innerHTML;
+        button.innerHTML = '<i class="bi bi-check-lg"></i>';
+        button.classList.add('btn-success');
+        button.classList.remove('btn-outline-secondary');
+        
+        setTimeout(() => {
+          button.innerHTML = originalHTML;
+          button.classList.remove('btn-success');
+          button.classList.add('btn-outline-secondary');
+        }, 1500);
+      } catch (err) {
+        console.error('Error saat menyalin ke clipboard:', err);
+      }
     },
     
-    copyToClipboard() {
-      navigator.clipboard.writeText(this.newPassword)
-        .then(() => {
-          alert('Password berhasil disalin!');
-        })
-        .catch(err => {
-          console.error('Gagal menyalin teks: ', err);
-        });
+    goBack() {
+      // Try to go to view page first, fallback to list page
+      const pasienId = this.$route.params.id;
+      if (pasienId) {
+        this.$router.push(`/pasien/view/${pasienId}`);
+      } else {
+        this.$router.push('/pasien');
+      }
     }
   }
 };
@@ -289,5 +484,73 @@ export default {
 <style scoped>
 .card {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  border: none;
+  margin-bottom: 16px;
+}
+
+.card-header {
+  border-radius: 8px 8px 0 0;
+}
+
+.form-control:focus, 
+.form-select:focus, 
+.input-group-text {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.form-control.is-invalid:focus,
+.form-select.is-invalid:focus {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+}
+
+.btn {
+  border-radius: 5px;
+  padding: 8px 16px;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.text-danger {
+  color: #dc3545 !important;
+}
+
+.text-muted {
+  color: #6c757d !important;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+}
+
+.modal-content {
+  border-radius: 8px;
+  border: none;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  border-radius: 8px 8px 0 0;
+}
+
+@media (max-width: 768px) {
+  .d-flex.gap-2 {
+    flex-direction: column;
+  }
+  
+  .d-flex.gap-2 .btn {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
 }
 </style>

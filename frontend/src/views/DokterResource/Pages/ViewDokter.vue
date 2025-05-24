@@ -39,7 +39,7 @@
                   </div>
                   <div class="mb-3">
                     <label class="form-label fw-bold">Nomor STR:</label>
-                    <p>{{ dokter.nomor_str || '-' }}</p>
+                    <p>{{ dokter.no_str !== null && dokter.no_str !== '' ? dokter.no_str: '-' }}</p>
                   </div>
                   <div class="mb-3">
                     <label class="form-label fw-bold">Gender:</label>

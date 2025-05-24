@@ -336,17 +336,12 @@ export default {
     
     async deleteDokter() {
       if (!this.selectedDokter) return;
-      
       this.deleteLoading = true;
-      
       try {
         const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-        
         if (!token) {
           throw new Error('Token autentikasi tidak ditemukan');
         }
-        
-        // Menggunakan API untuk menghapus dokter
         await api.delete(`users/${this.selectedDokter.id}/force-delete`, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -357,7 +352,6 @@ export default {
 
         await this.fetchDokters();
         
-        // Tampilkan pesan sukses (opsional - Anda bisa menambahkan notifikasi di sini)
         console.log('Dokter berhasil dihapus');
       } catch (err) {
         console.error('Error saat menghapus dokter:', err);
