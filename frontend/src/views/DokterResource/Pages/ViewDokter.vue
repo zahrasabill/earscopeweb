@@ -38,6 +38,10 @@
                     <p>+62{{ dokter.no_telp }}</p>
                   </div>
                   <div class="mb-3">
+                    <label class="form-label fw-bold">Nomor STR:</label>
+                    <p>{{ dokter.nomor_str || '-' }}</p>
+                  </div>
+                  <div class="mb-3">
                     <label class="form-label fw-bold">Gender:</label>
                     <p>
                       <span 
@@ -129,23 +133,14 @@
                   </div>
                 </div>
               </div>
-              
-              <div class="card mb-4" v-if="!showPassword && dokter && dokter.id">
-                <div class="card-header bg-danger text-white">
-                  <h5 class="mb-0">Reset Password</h5>
+
+              <!-- Informasi Tambahan -->
+              <div class="card mb-4">
+                <div class="card-header bg-light">
+                  <h5 class="mb-0">Informasi Tambahan</h5>
                 </div>
                 <div class="card-body">
-                  <p>Jika dokter lupa password, Anda dapat mereset password akun ini.</p>
-                  <div class="d-grid gap-2">
-                    <button 
-                      class="btn btn-danger" 
-                      @click="confirmResetPassword"
-                      :disabled="resetLoading"
-                    >
-                      <span v-if="resetLoading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                      <i v-else class="bi bi-key me-1"></i> Reset Password
-                    </button>
-                  </div>
+                  <p>Password tidak bisa diubah pada form ini.</p>
                 </div>
               </div>
             </div>
@@ -158,64 +153,12 @@
           </button>
           
           <div v-if="dokter && dokter.id">
-            <button 
-              @click="confirmDeleteDokter" 
-              class="btn btn-danger me-2"
-            >
-              <i class="bi bi-trash me-1"></i> Hapus
-            </button>
             <router-link 
               :to="`/dokter/edit/${dokter.id}`" 
               class="btn btn-warning"
             >
               <i class="bi bi-pencil me-1"></i> Edit
             </router-link>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Modal Konfirmasi Reset Password -->
-    <div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header bg-danger text-white">
-            <h5 class="modal-title" id="resetPasswordModalLabel">Konfirmasi Reset Password</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <p>Apakah Anda yakin ingin mereset password untuk dokter <strong>{{ dokter && dokter.name ? dokter.name : '' }}</strong>?</p>
-            <p class="text-danger"><small>Password lama akan dihapus dan tidak dapat dipulihkan.</small></p>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-            <button type="button" class="btn btn-danger" @click="resetPassword" :disabled="resetLoading">
-              <span v-if="resetLoading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-              Reset Password
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal Konfirmasi Delete Dokter -->
-    <div class="modal fade" id="deleteDokterModal" tabindex="-1" aria-labelledby="deleteDokterModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header bg-danger text-white">
-            <h5 class="modal-title" id="deleteDokterModalLabel">Konfirmasi Hapus Dokter</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <p>Apakah Anda yakin ingin menghapus data dokter <strong>{{ dokter && dokter.name ? dokter.name : '' }}</strong>?</p>
-            <p class="text-danger"><small>Tindakan ini tidak dapat dibatalkan.</small></p>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-            <button type="button" class="btn btn-danger" @click="deleteDokter" :disabled="deleteLoading">
-              <span v-if="deleteLoading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-              Hapus
-            </button>
           </div>
         </div>
       </div>
@@ -229,6 +172,7 @@
           <h4>Dokter: {{ dokter && dokter.name ? dokter.name : '' }}</h4>
           <p><strong>Tanggal Lahir:</strong> {{ dokter && dokter.tanggal_lahir ? formatDate(dokter.tanggal_lahir) : '-' }}</p>
           <p><strong>Nomor Telepon:</strong> {{ dokter && dokter.no_telp ? '+62' + dokter.no_telp : '-' }}</p>
+          <p><strong>Nomor STR:</strong> {{ dokter && dokter.nomor_str ? dokter.nomor_str : '-' }}</p>
           <p><strong>Gender:</strong> {{ dokter && dokter.gender ? capitalizeFirst(dokter.gender) : '-' }}</p>
         </div>
         <div style="border: 2px dashed #dc3545; padding: 15px; background-color: #f8f9fa;">
@@ -245,9 +189,7 @@
 </template>
 
 <script>
-import { Modal } from 'bootstrap';
 import api from '@/api';
-import axios from 'axios';
 
 export default {
   name: 'ViewDokter',
@@ -256,16 +198,11 @@ export default {
       dokter: {},
       loading: true,
       error: null,
-      resetModal: null,
-      deleteModal: null,
-      resetLoading: false,
-      deleteLoading: false,
       showPassword: false,
       password: '',
     };
   },
   watch: {
-    // Tambahkan watcher untuk memperbarui data saat ID pada route berubah
     '$route.params.id': function(newId) {
       if (newId) {
         this.fetchDokter();
@@ -276,7 +213,6 @@ export default {
     }
   },
   created() {
-    // Pastikan params.id tersedia sebelum memanggil fetchDokter
     if (this.$route.params.id) {
       this.fetchDokter();
     } else {
@@ -304,7 +240,6 @@ export default {
       this.error = null;
       
       try {
-        // Pastikan id tersedia sebelum melakukan request API
         if (!this.$route.params.id) {
           throw new Error('ID dokter tidak ditemukan pada URL');
         }
@@ -312,7 +247,6 @@ export default {
         const dokterId = this.$route.params.id;
         const token = this.getAuthToken();
         
-        // Menggunakan endpoint sesuai dengan Route::get('users/{id}')
         const response = await api.get(`users/${dokterId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -390,14 +324,12 @@ export default {
         input.select();
         document.execCommand('copy');
         
-        // Show visual feedback
         const button = input.nextElementSibling;
         const originalHTML = button.innerHTML;
         button.innerHTML = '<i class="bi bi-check-lg"></i>';
         button.classList.add('btn-success');
         button.classList.remove('btn-outline-secondary');
         
-        // Kembalikan tampilan button setelah 1.5 detik
         setTimeout(() => {
           button.innerHTML = originalHTML;
           button.classList.remove('btn-success');
@@ -415,121 +347,7 @@ export default {
       document.body.innerHTML = printContent;
       window.print();
       document.body.innerHTML = originalContent;
-      
-      // Re-attach event listeners after printing
-      this.$nextTick(() => {
-        this.initializeModals();
-      });
-    },
-    
-    initializeModals() {
-      // Initialize modals
-      const resetModalElement = document.getElementById('resetPasswordModal');
-      if (resetModalElement) {
-        this.resetModal = new Modal(resetModalElement);
-      }
-      
-      const deleteModalElement = document.getElementById('deleteDokterModal');
-      if (deleteModalElement) {
-        this.deleteModal = new Modal(deleteModalElement);
-      }
-    },
-    
-    confirmResetPassword() {
-      // Initialize modal if needed
-      if (!this.resetModal) {
-        this.initializeModals();
-      }
-      
-      this.resetModal.show();
-    },
-    
-    confirmDeleteDokter() {
-      // Initialize modal if needed
-      if (!this.deleteModal) {
-        this.initializeModals();
-      }
-      
-      this.deleteModal.show();
-    },
-    
-    async resetPassword() {
-      this.resetLoading = true;
-      
-      try {
-        const token = this.getAuthToken();
-        
-        // Pastikan dokter.id tersedia
-        if (!this.dokter.id) {
-          throw new Error('ID dokter tidak valid untuk reset password');
-        }
-        
-        // Endpoint untuk reset password
-        const response = await api.post(`reset-password/users/${this.dokter.id}`, {}, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (response.data && response.data.password) {
-          // Simpan password baru
-          this.password = response.data.password;
-          this.showPassword = true;
-          
-          // Tutup modal
-          this.resetModal.hide();
-        } else {
-          throw new Error('Format response tidak sesuai');
-        }
-      } catch (err) {
-        console.error('Error saat mereset password:', err);
-        
-        // Tampilkan error dalam alert yang lebih informatif
-        const errorMessage = err.response?.data?.message || err.message || 'Terjadi kesalahan';
-        alert(`Gagal mereset password: ${errorMessage}`);
-      } finally {
-        this.resetLoading = false;
-      }
-    },
-    
-    async deleteDokter() {
-      this.deleteLoading = true;
-      
-      try {
-        const token = this.getAuthToken();
-        
-        // Pastikan ID dokter tersedia
-        if (!this.dokter.id) {
-          throw new Error('ID dokter tidak valid untuk penghapusan');
-        }
-        
-        // Endpoint untuk delete dokter sesuai Route::delete('users/{id}')
-        await api.delete(`users/${this.dokter.id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        // Tutup modal dan navigasi kembali ke daftar dokter
-        this.deleteModal.hide();
-        
-        // Tampilkan notifikasi sukses (bisa diimplementasikan dengan library seperti vue-toastification)
-        alert('Data dokter berhasil dihapus');
-        
-        // Kembali ke halaman daftar dokter
-        this.$router.push('/dokter');
-      } catch (err) {
-        console.error('Error saat menghapus dokter:', err);
-        
-        const errorMessage = err.response?.data?.message || err.message || 'Terjadi kesalahan';
-        alert(`Gagal menghapus dokter: ${errorMessage}`);
-      } finally {
-        this.deleteLoading = false;
-      }
     }
-  },
-  mounted() {
-    this.initializeModals();
   }
 };
 </script>
@@ -559,16 +377,6 @@ export default {
 .badge {
   font-weight: 500;
   padding: 0.5em 0.75em;
-}
-
-.modal-content {
-  border-radius: 8px;
-  border: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.modal-header {
-  border-radius: 8px 8px 0 0;
 }
 
 @media print {

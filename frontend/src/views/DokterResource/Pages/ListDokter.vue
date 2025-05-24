@@ -346,20 +346,18 @@ export default {
           throw new Error('Token autentikasi tidak ditemukan');
         }
         
-        await api.delete(`dokter/${this.selectedDokter.id}`, {
+        // Menggunakan API untuk menghapus dokter
+        await api.delete(`users/${this.selectedDokter.id}/force-delete`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
         
-        // Remove from local array
-        this.dokters = this.dokters.filter(d => d.id !== this.selectedDokter.id);
-        this.applyFilters();
-        
-        // Update UI
         this.deleteModal.hide();
+
+        await this.fetchDokters();
         
-        // Show success message (optional - you could add a toast notification here)
+        // Tampilkan pesan sukses (opsional - Anda bisa menambahkan notifikasi di sini)
         console.log('Dokter berhasil dihapus');
       } catch (err) {
         console.error('Error saat menghapus dokter:', err);

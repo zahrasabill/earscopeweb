@@ -68,7 +68,7 @@
 </template>
 
 <script>
-import logoImage from "@/assets/logooido.png";
+import logoImage from "@/assets/earscope.png";
 import axios from "axios";
 import api from "@/api.js";
 

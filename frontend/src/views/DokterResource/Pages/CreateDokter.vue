@@ -114,6 +114,9 @@
       </div>
     </div>
 
+    <!-- Hidden iframe for printing in a new tab -->
+    <iframe id="printFrame" style="display:none;"></iframe>
+
     <!-- Hidden div for printing -->
     <div id="printArea" class="d-none">
       <div style="padding: 20px; font-family: Arial, sans-serif;">
@@ -300,23 +303,65 @@ export default {
     },
 
     printCredentials() {
-      const printContent = document.getElementById('printArea').innerHTML;
-      const originalContent = document.body.innerHTML;
-
-      document.body.innerHTML = printContent;
-      window.print();
-      document.body.innerHTML = originalContent;
-
-      // Reinisialisasi modal karena DOM telah berubah
-      const modalElement = document.getElementById('credentialsModal');
-      this.modal = new Modal(modalElement, {
-        backdrop: 'static',
-        keyboard: false
-      });
-      this.modal.show();
+      try {
+        // Ambil konten yang akan dicetak
+        const printContentHTML = document.getElementById('printArea').innerHTML;
+        
+        // Gunakan iframe yang sudah ada di DOM
+        const iframe = document.getElementById('printFrame');
+        const iframeDoc = iframe.contentWindow || iframe.contentDocument;
+        
+        // Buat dokumen HTML lengkap di dalam iframe
+        if (iframeDoc.document) {
+          const doc = iframeDoc.document;
+          doc.open();
+          doc.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <title>Informasi Akun Dokter - ${this.dokter.nama}</title>
+              <style>
+                @media print {
+                  body { font-family: Arial, sans-serif; }
+                  .print-button { display: none; }
+                }
+              </style>
+            </head>
+            <body>
+              ${printContentHTML}
+              <div class="print-button" style="text-align: center; margin-top: 20px;">
+                <button onclick="window.print(); window.close();" 
+                  style="padding: 10px 15px; background-color: #0d6efd; color: white; 
+                  border: none; border-radius: 5px; cursor: pointer;">
+                  Cetak
+                </button>
+              </div>
+            </body>
+            </html>
+          `);
+          doc.close();
+          
+          // Buka di tab baru
+          iframe.contentWindow.location.href = 'about:blank';
+          const printWindow = window.open('', '_blank');
+          if (printWindow) {
+            printWindow.document.write(doc.documentElement.outerHTML);
+            printWindow.document.close();
+            // Secara opsional, cetak otomatis
+            // printWindow.print();
+          } else {
+            console.error('Pop-up blocker mungkin aktif, tidak dapat membuka jendela baru');
+            alert('Pop-up blocker mungkin aktif. Silakan izinkan pop-up untuk mencetak.');
+          }
+        }
+      } catch (err) {
+        console.error('Error saat mencetak:', err);
+        alert('Terjadi kesalahan saat mencetak. Silahkan coba lagi.');
+      }
     },
 
     redirectToList() {
+      // Langsung arahkan ke halaman list dokter
       this.$router.push('/dokter');
     }
   }
@@ -363,23 +408,5 @@ export default {
 
 .modal-header {
   border-radius: 8px 8px 0 0;
-}
-
-@media print {
-  body * {
-    visibility: hidden;
-  }
-
-  #printArea,
-  #printArea * {
-    visibility: visible;
-  }
-
-  #printArea {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-  }
 }
 </style>
