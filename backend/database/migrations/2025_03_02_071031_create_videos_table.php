@@ -17,7 +17,7 @@ return new class extends Migration {
             $table->string('processed_video_path'); // Path ke video dengan bounding box
             $table->enum('status', ['assigned', 'unassigned'])->default('unassigned'); // Status video
             $table->string('hasil_diagnosis')->default('normal');
-            $table->string('keterangan')->nullable();
+            $table->longText('keterangan')->nullable();
             $table->timestamps();
         });
     }
