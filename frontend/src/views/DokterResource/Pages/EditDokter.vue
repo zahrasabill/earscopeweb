@@ -113,102 +113,8 @@
                 </div>
               </div>
             </div>
-            
-            <div class="col-md-6">
-              <div class="card mb-4">
-                <div class="card-header bg-light">
-                  <h5 class="mb-0">Informasi Akun</h5>
-                </div>
-                <div class="card-body">
-                  <div class="mb-3">
-                    <label class="form-label fw-bold">Kode Akses:</label>
-                    <div class="input-group">
-                      <input 
-                        type="text" 
-                        class="form-control bg-light" 
-                        :value="originalData.kode_akses || 'Tidak tersedia'" 
-                        readonly
-                      />
-                      <button 
-                        class="btn btn-outline-secondary" 
-                        type="button" 
-                        @click="copyToClipboard"
-                        v-if="originalData.kode_akses"
-                      >
-                        <i class="bi bi-clipboard"></i>
-                      </button>
-                    </div>
-                    <small class="text-muted">Kode akses tidak dapat diubah</small>
-                  </div>
-                  
-                  <div class="mb-3" v-if="originalData.role">
-                    <label class="form-label fw-bold">Role:</label>
-                    <input 
-                      type="text" 
-                      class="form-control bg-light" 
-                      :value="capitalizeFirst(originalData.role)" 
-                      readonly
-                    />
-                    <small class="text-muted">Role tidak dapat diubah</small>
-                  </div>
-                  
-                  <div class="mb-3" v-if="originalData.created_at">
-                    <label class="form-label fw-bold">Terdaftar Pada:</label>
-                    <input 
-                      type="text" 
-                      class="form-control bg-light" 
-                      :value="formatDateTime(originalData.created_at)" 
-                      readonly
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <div class="card mb-4">
-                <div class="card-header bg-light">
-                  <h5 class="mb-0">Ubah Password (Opsional)</h5>
-                </div>
-                <div class="card-body">
-                  <div class="mb-3">
-                    <label for="password" class="form-label fw-bold">Password Baru</label>
-                    <input 
-                      type="password" 
-                      class="form-control"
-                      :class="{ 'is-invalid': errors.password }"
-                      id="password"
-                      v-model="form.password"
-                      placeholder="Kosongkan jika tidak ingin mengubah password"
-                      minlength="6"
-                    />
-                    <div v-if="errors.password" class="invalid-feedback">
-                      {{ errors.password[0] }}
-                    </div>
-                    <small class="text-muted">Minimal 6 karakter. Kosongkan jika tidak ingin mengubah.</small>
-                  </div>
-                  
-                  <div class="mb-3">
-                    <label for="password_confirmation" class="form-label fw-bold">Konfirmasi Password Baru</label>
-                    <input 
-                      type="password" 
-                      class="form-control"
-                      :class="{ 'is-invalid': errors.password_confirmation || (form.password && form.password !== form.password_confirmation) }"
-                      id="password_confirmation"
-                      v-model="form.password_confirmation"
-                      placeholder="Ulangi password baru"
-                      minlength="6"
-                    />
-                    <div v-if="errors.password_confirmation" class="invalid-feedback">
-                      {{ errors.password_confirmation[0] }}
-                    </div>
-                    <div v-else-if="form.password && form.password !== form.password_confirmation" class="invalid-feedback d-block">
-                      Password konfirmasi tidak cocok
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
-          
+            
           <div class="d-flex justify-content-between mt-4">
             <button type="button" class="btn btn-secondary" @click="goBack">
               <i class="bi bi-arrow-left me-1"></i> Kembali
@@ -276,8 +182,6 @@ export default {
         no_telp: '',
         no_str: '',
         gender: '',
-        password: '',
-        password_confirmation: ''
       },
       loading: true,
       error: null,
@@ -290,9 +194,8 @@ export default {
       return this.form.name && 
              this.form.tanggal_lahir && 
              this.form.no_telp && 
-             this.form.gender &&
-             (!this.form.password || (this.form.password === this.form.password_confirmation));
-    }
+             this.form.gender;
+    },
   },
   watch: {
     '$route.params.id': function(newId) {
@@ -380,8 +283,6 @@ export default {
         no_telp: data.no_telp || '',
         no_str: data.no_str || '',
         gender: data.gender || '',
-        password: '',
-        password_confirmation: ''
       };
     },
     
@@ -408,12 +309,6 @@ export default {
           no_str: this.form.no_str,
           gender: this.form.gender
         };
-        
-        // Only include password if it's provided
-        if (this.form.password && this.form.password.trim() !== '') {
-          updateData.password = this.form.password;
-          updateData.password_confirmation = this.form.password_confirmation;
-        }
         
         const response = await api.put(`users/${dokterId}`, updateData, {
           headers: {
@@ -474,38 +369,6 @@ export default {
     capitalizeFirst(string) {
       if (!string) return '';
       return string.charAt(0).toUpperCase() + string.slice(1);
-    },
-    
-    copyToClipboard() {
-      try {
-        const textToCopy = this.originalData.kode_akses;
-        if (navigator.clipboard && window.isSecureContext) {
-          navigator.clipboard.writeText(textToCopy);
-        } else {
-          // Fallback for older browsers
-          const textArea = document.createElement('textarea');
-          textArea.value = textToCopy;
-          document.body.appendChild(textArea);
-          textArea.select();
-          document.execCommand('copy');
-          document.body.removeChild(textArea);
-        }
-        
-        // Visual feedback
-        const button = event.target.closest('button');
-        const originalHTML = button.innerHTML;
-        button.innerHTML = '<i class="bi bi-check-lg"></i>';
-        button.classList.add('btn-success');
-        button.classList.remove('btn-outline-secondary');
-        
-        setTimeout(() => {
-          button.innerHTML = originalHTML;
-          button.classList.remove('btn-success');
-          button.classList.add('btn-outline-secondary');
-        }, 1500);
-      } catch (err) {
-        console.error('Error saat menyalin ke clipboard:', err);
-      }
     },
     
     goBack() {

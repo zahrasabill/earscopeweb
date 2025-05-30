@@ -84,63 +84,14 @@
                       </button>
                     </div>
                   </div>
-                  <div class="mb-3" v-if="dokter.role">
-                    <label class="form-label fw-bold">Role:</label>
-                    <p>{{ capitalizeFirst(dokter.role) }}</p>
-                  </div>
-                  <div class="mb-3" v-if="dokter.created_at">
-                    <label class="form-label fw-bold">Terdaftar Pada:</label>
-                    <p>{{ formatDateTime(dokter.created_at) }}</p>
-                  </div>
                 </div>
               </div>
-              
-              <div class="card mb-4" v-if="showPassword">
-                <div class="card-header bg-warning text-dark">
-                  <h5 class="mb-0">Kredensial Login</h5>
-                </div>
-                <div class="card-body">
-                  <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                    <strong>Penting!</strong> Kredensial ini hanya ditampilkan sekali. Pastikan Anda mencatat atau menyalin password.
-                  </div>
-                  <div class="mb-3">
-                    <label class="form-label fw-bold">Password:</label>
-                    <div class="input-group">
-                      <input 
-                        type="text" 
-                        class="form-control" 
-                        :value="password" 
-                        readonly
-                        ref="passwordInput"
-                      />
-                      <button 
-                        class="btn btn-outline-secondary" 
-                        type="button" 
-                        @click="copyToClipboard('passwordInput')"
-                      >
-                        <i class="bi bi-clipboard"></i>
-                      </button>
-                    </div>
-                  </div>
-                  <div class="d-grid gap-2 mt-4">
-                    <button 
-                      class="btn btn-primary" 
-                      @click="printCredentials"
-                    >
-                      <i class="bi bi-printer me-1"></i> Cetak Informasi
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Informasi Tambahan -->
               <div class="card mb-4">
                 <div class="card-header bg-light">
-                  <h5 class="mb-0">Informasi Tambahan</h5>
+                  <h5 class="mb-0">Informasi Password</h5>
                 </div>
                 <div class="card-body">
-                  <p>Password tidak bisa diubah pada form ini.</p>
+                  <p>Password yang sudah dibuat tidak bisa diubah</p>
                 </div>
               </div>
             </div>
@@ -152,7 +103,14 @@
             <i class="bi bi-arrow-left me-1"></i> Kembali
           </button>
           
-          <div v-if="dokter && dokter.id">
+          <div v-if="dokter && dokter.id" class="d-flex gap-2">
+            <button 
+              class="btn btn-info text-white" 
+              @click="printDokterComplete"
+            >
+              <i class="bi bi-printer-fill me-1"></i> Print
+            </button>
+            
             <router-link 
               :to="`/dokter/edit/${dokter.id}`" 
               class="btn btn-warning"
@@ -164,24 +122,61 @@
       </div>
     </div>
     
-    <!-- Hidden div for printing -->
-    <div id="printArea" class="d-none">
-      <div style="padding: 20px; font-family: Arial, sans-serif;">
-        <h2 style="text-align: center; margin-bottom: 20px;">Informasi Akun Dokter</h2>
-        <div style="border: 1px solid #ccc; padding: 15px; margin-bottom: 20px;">
-          <h4>Dokter: {{ dokter && dokter.name ? dokter.name : '' }}</h4>
-          <p><strong>Tanggal Lahir:</strong> {{ dokter && dokter.tanggal_lahir ? formatDate(dokter.tanggal_lahir) : '-' }}</p>
-          <p><strong>Nomor Telepon:</strong> {{ dokter && dokter.no_telp ? '+62' + dokter.no_telp : '-' }}</p>
-          <p><strong>Nomor STR:</strong> {{ dokter && dokter.nomor_str ? dokter.nomor_str : '-' }}</p>
-          <p><strong>Gender:</strong> {{ dokter && dokter.gender ? capitalizeFirst(dokter.gender) : '-' }}</p>
+    <!-- Hidden div for printing - Doctor Info Only -->
+    <div id="printAreaDokter" class="d-none">
+      <div style="padding: 20px; font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
+        <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #0066cc; padding-bottom: 20px;">
+          <h1 style="color: #0066cc; margin-bottom: 5px;">INFORMASI DOKTER</h1>
+          <p style="color: #666; margin: 0; font-size: 14px;">Tanggal Cetak: {{ getCurrentDate() }}</p>
         </div>
-        <div style="border: 2px dashed #dc3545; padding: 15px; background-color: #f8f9fa;">
-          <h4 style="color: #dc3545;">Kredensial Login</h4>
-          <p><strong>Kode Akses:</strong> {{ dokter && dokter.kode_akses ? dokter.kode_akses : '-' }}</p>
-          <p><strong>Password:</strong> {{ password || '-' }}</p>
-          <p style="font-style: italic; color: #dc3545; margin-top: 15px;">
-            Penting: Informasi ini hanya ditampilkan sekali. Harap simpan dengan aman.
-          </p>
+        
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+          <h3 style="color: #333; margin-bottom: 15px; border-bottom: 1px solid #dee2e6; padding-bottom: 10px;">Data Pribadi</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr style="border-bottom: 1px solid #eee;">
+              <td style="padding: 8px 0; font-weight: bold; width: 30%;">Nama Lengkap</td>
+              <td style="padding: 8px 0;">: {{ dokter && dokter.name ? dokter.name : '-' }}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #eee;">
+              <td style="padding: 8px 0; font-weight: bold;">Tanggal Lahir</td>
+              <td style="padding: 8px 0;">: {{ dokter && dokter.tanggal_lahir ? formatDate(dokter.tanggal_lahir) : '-' }}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #eee;">
+              <td style="padding: 8px 0; font-weight: bold;">Nomor Telepon</td>
+              <td style="padding: 8px 0;">: {{ dokter && dokter.no_telp ? '+62' + dokter.no_telp : '-' }}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #eee;">
+              <td style="padding: 8px 0; font-weight: bold;">Nomor STR</td>
+              <td style="padding: 8px 0;">: {{ dokter && dokter.no_str ? dokter.no_str : '-' }}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold;">Gender</td>
+              <td style="padding: 8px 0;">: {{ dokter && dokter.gender ? capitalizeFirst(dokter.gender) : '-' }}</td>
+            </tr>
+          </table>
+        </div>
+        
+        <div style="background-color: #e7f3ff; padding: 20px; border-radius: 8px;">
+          <h3 style="color: #333; margin-bottom: 15px; border-bottom: 1px solid #b3d9ff; padding-bottom: 10px;">Informasi Akun</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr style="border-bottom: 1px solid #b3d9ff;">
+              <td style="padding: 8px 0; font-weight: bold; width: 30%;">Kode Akses</td>
+              <td style="padding: 8px 0;">: {{ dokter && dokter.kode_akses ? dokter.kode_akses : '-' }}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #b3d9ff;" v-if="dokter.role">
+              <td style="padding: 8px 0; font-weight: bold;">Role</td>
+              <td style="padding: 8px 0;">: {{ capitalizeFirst(dokter.role) }}</td>
+            </tr>
+            <tr v-if="dokter.created_at">
+              <td style="padding: 8px 0; font-weight: bold;">Terdaftar Pada</td>
+              <td style="padding: 8px 0;">: {{ formatDateTime(dokter.created_at) }}</td>
+            </tr>
+          </table>
+        </div>
+        
+        <!-- Footer for print -->
+        <div style="position: fixed; bottom: 20px; left: 20px; font-size: 12px; color: #666;">
+          EarScope@2025
         </div>
       </div>
     </div>
@@ -313,6 +308,17 @@ export default {
       }
     },
     
+    getCurrentDate() {
+      const now = new Date();
+      return now.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    },
+    
     capitalizeFirst(string) {
       if (!string) return '';
       return string.charAt(0).toUpperCase() + string.slice(1);
@@ -340,13 +346,39 @@ export default {
       }
     },
     
-    printCredentials() {
-      const printContent = document.getElementById('printArea').innerHTML;
+    // Method untuk print dengan nama file custom
+    printWithCustomFilename(elementId, filename) {
+      // Set document title untuk nama file saat print/save as PDF
+      const originalTitle = document.title;
+      document.title = filename;
+      
+      // Dapatkan konten yang akan dicetak
+      const printContent = document.getElementById(elementId).innerHTML;
       const originalContent = document.body.innerHTML;
       
+      // Ganti seluruh konten halaman dengan konten print
       document.body.innerHTML = printContent;
+      
+      // Trigger print dialog
       window.print();
+      
+      // Restore konten asli dan title
       document.body.innerHTML = originalContent;
+      document.title = originalTitle;
+      
+      // Re-initialize Vue setelah restore
+      this.$nextTick(() => {
+        window.location.reload();
+      });
+    },
+    
+    // Method untuk button print utama (sebelah kiri edit)
+    printDokterComplete() {
+      const filename = `Informasi Akun Dokter - ${this.dokter.name || 'Unknown'}`;
+      
+      // Pilih area print yang sesuai berdasarkan ada tidaknya password
+      const printAreaId = this.showPassword ? 'printAreaComplete' : 'printAreaDokter';
+      this.printWithCustomFilename(printAreaId, filename);
     }
   }
 };
@@ -379,18 +411,29 @@ export default {
   padding: 0.5em 0.75em;
 }
 
+.gap-2 {
+  gap: 0.5rem;
+}
+
 @media print {
   body * {
     visibility: hidden;
   }
-  #printArea, #printArea * {
+  #printAreaDokter, #printAreaDokter *,
+  #printAreaComplete, #printAreaComplete * {
     visibility: visible;
   }
-  #printArea {
+  #printAreaDokter, #printAreaComplete {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
+  }
+  
+  /* Print specific styles */
+  @page {
+    margin: 1cm;
+    size: A4;
   }
 }
 </style>

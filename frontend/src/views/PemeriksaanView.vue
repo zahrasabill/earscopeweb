@@ -20,26 +20,24 @@
         </div>
       </div>
 
-      <!-- Modal Assign - Clean White Design -->
+      <!-- Modal Assign - Simple Design -->
       <transition name="fade">
         <div v-if="showAssignModal" class="modal-overlay" @click.self="closeAssignModal">
-          <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
+          <div class="modal-dialog">
+            <div class="modal-content simple-modal">
               <div class="modal-header">
                 <h5 class="modal-title">Assign Video ke Pasien</h5>
                 <button type="button" class="btn-close" @click="closeAssignModal"></button>
               </div>
-              <div class="modal-body p-4">
-                <div v-if="assignSuccess" class="success-animation text-center py-4">
-                  <div class="checkmark-circle">
-                    <div class="checkmark draw"></div>
-                  </div>
-                  <h4 class="mt-4 text-success">Berhasil!</h4>
+              <div class="modal-body">
+                <div v-if="assignSuccess" class="text-center py-3">
+                  <i class="fas fa-check-circle text-success" style="font-size: 48px;"></i>
+                  <h5 class="mt-3 text-success">Berhasil!</h5>
                   <p>Video telah berhasil di-assign ke pasien</p>
                 </div>
-                <div v-else class="form-group">
-                  <label for="assignUser" class="form-label fw-bold mb-3">Pilih Pasien:</label>
-                  <select v-model="selectedUserId" id="assignUser" class="form-select form-select-lg">
+                <div v-else>
+                  <label for="assignUser" class="form-label">Pilih Pasien:</label>
+                  <select v-model="selectedUserId" id="assignUser" class="form-select">
                     <option value="" disabled selected>-- Pilih Pasien --</option>
                     <option v-for="user in users" :key="user.id" :value="user.id">
                       {{ user.name }}
@@ -48,18 +46,13 @@
                 </div>
               </div>
               <div class="modal-footer">
-                <button v-if="assignSuccess" class="btn btn-primary w-100" @click="closeAssignModal">
-                  <i class="fas fa-check-circle me-2"></i> Selesai
+                <button v-if="assignSuccess" class="btn btn-primary" @click="closeAssignModal">
+                  Selesai
                 </button>
                 <template v-else>
-                  <button class="btn btn-outline-secondary" @click="closeAssignModal">
-                    <i class="fas fa-times"></i> Batal
-                  </button>
+                  <button class="btn btn-secondary" @click="closeAssignModal">Batal</button>
                   <button class="btn btn-primary" :disabled="!selectedUserId || assignLoading" @click="assignToUser">
-                    <div v-if="assignLoading" class="spinner-border spinner-border-sm me-2" role="status">
-                      <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <i v-else class="fas fa-check me-1"></i>
+                    <span v-if="assignLoading" class="spinner-border spinner-border-sm me-2"></span>
                     Assign
                   </button>
                 </template>
@@ -69,46 +62,90 @@
         </div>
       </transition>
 
-      <!-- Modal Unassign - Clean White Design -->
+      <!-- Modal Unassign - Simple Design -->
       <transition name="fade">
         <div v-if="showUnassignModal" class="modal-overlay" @click.self="closeUnassignModal">
-          <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
+          <div class="modal-dialog">
+            <div class="modal-content simple-modal">
               <div class="modal-header">
                 <h5 class="modal-title">Konfirmasi Unassign</h5>
                 <button type="button" class="btn-close" @click="closeUnassignModal"></button>
               </div>
-              <div class="modal-body p-4">
-                <div v-if="unassignSuccess" class="success-animation text-center py-4">
-                  <div class="checkmark-circle">
-                    <div class="checkmark draw"></div>
-                  </div>
-                  <h4 class="mt-4 text-success">Berhasil!</h4>
+              <div class="modal-body">
+                <div v-if="unassignSuccess" class="text-center py-3">
+                  <i class="fas fa-check-circle text-success" style="font-size: 48px;"></i>
+                  <h5 class="mt-3 text-success">Berhasil!</h5>
                   <p>Video telah berhasil di-unassign</p>
                 </div>
-                <div v-else>
-                  <div class="text-center mb-4">
-                    <i class="fas fa-question-circle text-warning fa-4x"></i>
-                  </div>
-                  <h5 class="text-center mb-3">Apakah Anda yakin?</h5>
-                  <p class="text-center">Video ini akan di-unassign dari pasien. Tindakan ini tidak dapat dibatalkan.
-                  </p>
+                <div v-else class="text-center">
+                  <i class="fas fa-question-circle text-warning" style="font-size: 48px;"></i>
+                  <h5 class="mt-3">Apakah Anda yakin?</h5>
+                  <p>Video ini akan di-unassign dari pasien.</p>
                 </div>
               </div>
               <div class="modal-footer">
-                <button v-if="unassignSuccess" class="btn btn-primary w-100" @click="closeUnassignModal">
-                  <i class="fas fa-check-circle me-2"></i> Selesai
+                <button v-if="unassignSuccess" class="btn btn-primary" @click="closeUnassignModal">
+                  Selesai
                 </button>
                 <template v-else>
-                  <button class="btn btn-outline-secondary" @click="closeUnassignModal">
-                    <i class="fas fa-times"></i> Batal
-                  </button>
+                  <button class="btn btn-secondary" @click="closeUnassignModal">Batal</button>
                   <button class="btn btn-danger" :disabled="unassignLoading" @click="unassignVideo">
-                    <div v-if="unassignLoading" class="spinner-border spinner-border-sm me-2" role="status">
-                      <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <i v-else class="fas fa-user-minus me-1"></i>
+                    <span v-if="unassignLoading" class="spinner-border spinner-border-sm me-2"></span>
                     Unassign
+                  </button>
+                </template>
+              </div>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Modal Diagnosis Manual - Simple Design -->
+      <transition name="fade">
+        <div v-if="showDiagnosisModal" class="modal-overlay" @click.self="closeDiagnosisModal">
+          <div class="modal-dialog">
+            <div class="modal-content simple-modal">
+              <div class="modal-header">
+                <h5 class="modal-title">Input Diagnosis Manual</h5>
+                <button type="button" class="btn-close" @click="closeDiagnosisModal"></button>
+              </div>
+              <div class="modal-body">
+                <div v-if="diagnosisSuccess" class="text-center py-3">
+                  <i class="fas fa-check-circle text-success" style="font-size: 48px;"></i>
+                  <h5 class="mt-3 text-success">Berhasil!</h5>
+                  <p>Diagnosis manual telah berhasil disimpan</p>
+                </div>
+                <div v-else>
+                  <label for="diagnosisText" class="form-label">Diagnosis Manual:</label>
+                  <textarea 
+                    v-model="diagnosisText" 
+                    id="diagnosisText" 
+                    class="form-control" 
+                    rows="4" 
+                    placeholder="Masukkan diagnosis manual (maksimal 100 kata)"
+                    @input="countWords"
+                  ></textarea>
+                  <small class="form-text text-muted">
+                    {{ wordCount }}/100 kata
+                  </small>
+                  <div v-if="wordCount > 100" class="text-danger small mt-1">
+                    Diagnosis melebihi batas maksimal 100 kata
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button v-if="diagnosisSuccess" class="btn btn-primary" @click="closeDiagnosisModal">
+                  Selesai
+                </button>
+                <template v-else>
+                  <button class="btn btn-secondary" @click="closeDiagnosisModal">Batal</button>
+                  <button 
+                    class="btn btn-primary" 
+                    :disabled="!diagnosisText.trim() || wordCount > 100 || diagnosisLoading" 
+                    @click="saveDiagnosis"
+                  >
+                    <span v-if="diagnosisLoading" class="spinner-border spinner-border-sm me-2"></span>
+                    Simpan
                   </button>
                 </template>
               </div>
@@ -176,12 +213,20 @@
               <div class="video-info">
                 <p class="mb-2"><strong>Pasien:</strong> {{ video.user ? video.user.name : 'Belum di-assign' }}</p>
                 <p class="mb-2"><strong>Diagnosis:</strong> {{ video.hasil_diagnosis || 'Belum ada diagnosis' }}</p>
-                <p class="mb-0"><strong>Keterangan:</strong> {{ video.keterangan || 'Tidak ada keterangan' }}</p>
+                <div class="mb-2">
+                  <strong>Diagnosis Manual:</strong>
+                  <div v-if="video.keterangan" class="diagnosis-text">
+                    {{ video.keterangan }}
+                  </div>
+                  <div v-else class="text-muted small">
+                    Belum ada diagnosis manual
+                  </div>
+                </div>
               </div>
             </div>
             <div class="card-footer bg-light">
               <small class="text-muted d-block mb-2">Diupload pada: {{ formatDate(video.created_at) }}</small>
-              <div class="d-grid" v-if="userRole === 'dokter'">
+              <div class="d-grid gap-2" v-if="userRole === 'dokter'">
                 <button v-if="video.status !== 'assigned'" @click="openAssignModal(video)"
                   class="btn btn-primary btn-sm">
                   <i class="fas fa-user-plus me-1"></i> Assign ke Pasien
@@ -189,6 +234,9 @@
                 <button v-if="video.status === 'assigned'" @click="openUnassignModal(video)"
                   class="btn btn-danger btn-sm">
                   <i class="fas fa-user-minus me-1"></i> Unassign
+                </button>
+                <button @click="openDiagnosisModal(video)" class="btn btn-success btn-sm">
+                  <i class="fas fa-edit me-1"></i> Input Diagnosis Manual
                 </button>
               </div>
             </div>
@@ -230,13 +278,19 @@ export default {
     
     const showAssignModal = ref(false);
     const showUnassignModal = ref(false);
+    const showDiagnosisModal = ref(false);
     const selectedUserId = ref("");
     const videoToAssign = ref(null);
     const videoToUnassign = ref(null);
+    const videoToDiagnose = ref(null);
     const assignLoading = ref(false);
     const unassignLoading = ref(false);
+    const diagnosisLoading = ref(false);
     const assignSuccess = ref(false);
     const unassignSuccess = ref(false);
+    const diagnosisSuccess = ref(false);
+    const diagnosisText = ref("");
+    const wordCount = ref(0);
     const isLoading = computed(() => videoStore.isLoading);
 
     // Function to get the user role from JWT
@@ -355,6 +409,28 @@ export default {
       }, 300);
     };
 
+    const openDiagnosisModal = (video) => {
+      videoToDiagnose.value = video;
+      diagnosisText.value = video.keterangan || "";
+      countWords();
+      diagnosisSuccess.value = false;
+      showDiagnosisModal.value = true;
+    };
+
+    const closeDiagnosisModal = () => {
+      showDiagnosisModal.value = false;
+      setTimeout(() => {
+        diagnosisSuccess.value = false;
+        diagnosisText.value = "";
+        wordCount.value = 0;
+      }, 300);
+    };
+
+    const countWords = () => {
+      const text = diagnosisText.value.trim();
+      wordCount.value = text ? text.split(/\s+/).length : 0;
+    };
+
     const assignToUser = async () => {
       if (!selectedUserId.value) return;
       try {
@@ -371,12 +447,12 @@ export default {
         await videoStore.fetchVideos(selectedDate.value, true); // Force refresh
         assignSuccess.value = true;
 
-        // Close modal automatically after 3 seconds
+        // Close modal automatically after 2 seconds
         setTimeout(() => {
           if (showAssignModal.value) {
             closeAssignModal();
           }
-        }, 3000);
+        }, 2000);
 
       } catch (error) {
         console.error('Gagal assign video:', error);
@@ -400,12 +476,12 @@ export default {
         await videoStore.fetchVideos(selectedDate.value, true); // Force refresh
         unassignSuccess.value = true;
 
-        // Close modal automatically after 3 seconds
+        // Close modal automatically after 2 seconds
         setTimeout(() => {
           if (showUnassignModal.value) {
             closeUnassignModal();
           }
-        }, 3000);
+        }, 2000);
 
       } catch (error) {
         console.error('Gagal unassign video:', error);
@@ -415,26 +491,70 @@ export default {
       }
     };
 
+    const saveDiagnosis = async () => {
+      if (!diagnosisText.value.trim() || wordCount.value > 100) return;
+      
+      try {
+        diagnosisLoading.value = true;
+        const videoId = videoToDiagnose.value.id;
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+
+        // Update video with diagnosis manual (keterangan)
+        await axios.put(api.getEndpoint(`videos/${videoId}`), {
+          keterangan: diagnosisText.value.trim()
+        }, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        // Refresh videos with current date filter
+        await videoStore.fetchVideos(selectedDate.value, true); // Force refresh
+        diagnosisSuccess.value = true;
+
+        // Close modal automatically after 2 seconds
+        setTimeout(() => {
+          if (showDiagnosisModal.value) {
+            closeDiagnosisModal();
+          }
+        }, 2000);
+
+      } catch (error) {
+        console.error('Gagal menyimpan diagnosis:', error);
+        alert('Gagal menyimpan diagnosis manual. Silakan coba lagi.');
+      } finally {
+        diagnosisLoading.value = false;
+      }
+    };
+
     return {
       videos,
       users,
       showAssignModal,
       showUnassignModal,
+      showDiagnosisModal,
       selectedUserId,
       videoToAssign,
       videoToUnassign,
+      videoToDiagnose,
       isLoading,
       selectedDate,
       assignLoading,
       unassignLoading,
+      diagnosisLoading,
       assignSuccess,
       unassignSuccess,
+      diagnosisSuccess,
+      diagnosisText,
+      wordCount,
       openAssignModal,
       openUnassignModal,
+      openDiagnosisModal,
       closeAssignModal,
       closeUnassignModal,
+      closeDiagnosisModal,
       assignToUser,
       unassignVideo,
+      saveDiagnosis,
+      countWords,
       formatDate,
       filterByDate,
       resetFilter,
@@ -479,7 +599,7 @@ export default {
   text-align: center;
 }
 
-/* Modal styling - Clean white design */
+/* Simple Modal styling */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -496,32 +616,30 @@ export default {
 .modal-dialog {
   width: 100%;
   max-width: 500px;
+  margin: 1rem;
 }
 
-.modal-content {
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+.simple-modal {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   border: none;
   background-color: #fff;
 }
 
-.modal-header {
-  background-color: #fff;
-  color: #333;
-  padding: 15px 20px;
-  border-bottom: 1px solid #eee;
+.simple-modal .modal-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  padding: 1rem;
 }
 
-.modal-body {
-  padding: 20px;
-  background-color: #fff;
+.simple-modal .modal-body {
+  padding: 1.5rem;
 }
 
-.modal-footer {
-  padding: 15px 20px;
-  border-top: 1px solid #eee;
-  background-color: #fff;
+.simple-modal .modal-footer {
+  background-color: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+  padding: 1rem;
 }
 
 /* Card styling */
@@ -581,6 +699,16 @@ export default {
   margin: 0 auto;
 }
 
+.diagnosis-text {
+  background-color: #f8f9fa;
+  padding: 8px;
+  border-radius: 4px;
+  border-left: 3px solid #28a745;
+  margin-top: 4px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
 .card-footer {
   background-color: #f8f9fa;
   border-top: none;
@@ -602,7 +730,6 @@ export default {
 .btn-primary:hover {
   background-color: #3b78e7;
   border-color: #3b78e7;
-  transform: translateY(-2px);
 }
 
 .btn-danger {
@@ -613,7 +740,16 @@ export default {
 .btn-danger:hover {
   background-color: #d33426;
   border-color: #d33426;
-  transform: translateY(-2px);
+}
+
+.btn-success {
+  background-color: #28a745;
+  border-color: #28a745;
+}
+
+.btn-success:hover {
+  background-color: #218838;
+  border-color: #1e7e34;
 }
 
 /* Fade transition */
@@ -625,99 +761,6 @@ export default {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-}
-
-/* Checkmark animation */
-.success-animation {
-  margin: 20px auto;
-}
-
-.checkmark-circle {
-  width: 80px;
-  height: 80px;
-  position: relative;
-  display: inline-block;
-  vertical-align: top;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.checkmark-circle .background {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: #34a853;
-  position: absolute;
-}
-
-.checkmark {
-  border-radius: 50%;
-  display: block;
-  stroke-width: 6;
-  stroke: #34a853;
-  stroke-miterlimit: 10;
-  box-shadow: inset 0px 0px 0px #34a853;
-  animation: fill 0.4s ease-in-out 0.4s forwards, scale 0.3s ease-in-out 0.9s both;
-  position: relative;
-  top: 4px;
-  left: 4px;
-  width: 72px;
-  height: 72px;
-}
-
-.checkmark.draw:after {
-  content: '';
-  transform: translateX(24px) translateY(35px) rotate(45deg);
-  transform-origin: 0 0;
-  width: 25px;
-  height: 8px;
-  position: absolute;
-  border-bottom: 6px solid #34a853;
-  border-right: 6px solid #34a853;
-  animation: check 0.6s ease 0s forwards;
-}
-
-@keyframes check {
-  0% {
-    height: 0;
-    width: 0;
-    opacity: 1;
-  }
-
-  20% {
-    height: 0;
-    width: 25px;
-    opacity: 1;
-  }
-
-  40% {
-    height: 8px;
-    width: 25px;
-    opacity: 1;
-  }
-
-  100% {
-    height: 8px;
-    width: 25px;
-    opacity: 1;
-  }
-}
-
-@keyframes fill {
-  100% {
-    box-shadow: inset 0px 0px 0px 38px #34a853;
-  }
-}
-
-@keyframes scale {
-  0%,
-  100% {
-    transform: none;
-  }
-
-  50% {
-    transform: scale3d(1.1, 1.1, 1);
-  }
 }
 
 @media (max-width: 768px) {
@@ -732,6 +775,10 @@ export default {
   
   .video-stream {
     max-height: 100px;
+  }
+
+  .modal-dialog {
+    margin: 0.5rem;
   }
 }
 </style>

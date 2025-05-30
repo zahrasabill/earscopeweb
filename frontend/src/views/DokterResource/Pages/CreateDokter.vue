@@ -117,24 +117,71 @@
     <!-- Hidden iframe for printing in a new tab -->
     <iframe id="printFrame" style="display:none;"></iframe>
 
-    <!-- Hidden div for printing -->
+    <!-- Hidden div for printing - menggunakan format yang sama dengan ViewDokter -->
     <div id="printArea" class="d-none">
-      <div style="padding: 20px; font-family: Arial, sans-serif;">
-        <h2 style="text-align: center; margin-bottom: 20px;">Informasi Akun Dokter</h2>
-        <div style="border: 1px solid #ccc; padding: 15px; margin-bottom: 20px;">
-          <h4>Dokter: {{ dokter.nama }}</h4>
-          <p><strong>No. STR:</strong> {{ dokter.noStr }}</p>
-          <p><strong>Tanggal Lahir:</strong> {{ formatDateForDisplay(dokter.tanggalLahir) }}</p>
-          <p><strong>Nomor Telepon:</strong> +62{{ dokter.phone }}</p>
-          <p><strong>Gender:</strong> {{ dokter.gender }}</p>
+      <div style="padding: 20px; font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
+        <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #0066cc; padding-bottom: 20px;">
+          <h1 style="color: #0066cc; margin-bottom: 5px;">INFORMASI LENGKAP DOKTER</h1>
+          <p style="color: #666; margin: 0; font-size: 14px;">Tanggal Cetak: {{ getCurrentDate() }}</p>
         </div>
-        <div style="border: 2px dashed #dc3545; padding: 15px; background-color: #f8f9fa;">
-          <h4 style="color: #dc3545;">Kredensial Login</h4>
-          <p><strong>Kode Akses:</strong> {{ generatedCredentials.kodeAkses }}</p>
-          <p><strong>Password:</strong> {{ generatedCredentials.password }}</p>
-          <p style="font-style: italic; color: #dc3545; margin-top: 15px;">
-            Penting: Informasi ini hanya ditampilkan sekali. Harap simpan dengan aman.
-          </p>
+        
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+          <h3 style="color: #333; margin-bottom: 15px; border-bottom: 1px solid #dee2e6; padding-bottom: 10px;">Data Pribadi</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr style="border-bottom: 1px solid #eee;">
+              <td style="padding: 8px 0; font-weight: bold; width: 30%;">Nama Lengkap</td>
+              <td style="padding: 8px 0;">: {{ dokter.nama || '-' }}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #eee;">
+              <td style="padding: 8px 0; font-weight: bold;">Tanggal Lahir</td>
+              <td style="padding: 8px 0;">: {{ formatDateForDisplay(dokter.tanggalLahir) || '-' }}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #eee;">
+              <td style="padding: 8px 0; font-weight: bold;">Nomor Telepon</td>
+              <td style="padding: 8px 0;">: {{ dokter.phone ? '+62' + dokter.phone : '-' }}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #eee;">
+              <td style="padding: 8px 0; font-weight: bold;">Nomor STR</td>
+              <td style="padding: 8px 0;">: {{ dokter.noStr || '-' }}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold;">Gender</td>
+              <td style="padding: 8px 0;">: {{ capitalizeFirst(dokter.gender) || '-' }}</td>
+            </tr>
+          </table>
+        </div>
+        
+        <div style="background-color: #e7f3ff; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+          <h3 style="color: #333; margin-bottom: 15px; border-bottom: 1px solid #b3d9ff; padding-bottom: 10px;">Informasi Akun</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr style="border-bottom: 1px solid #b3d9ff;">
+              <td style="padding: 8px 0; font-weight: bold; width: 30%;">Kode Akses</td>
+              <td style="padding: 8px 0;">: {{ generatedCredentials.kodeAkses || '-' }}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold;">Role</td>
+              <td style="padding: 8px 0;">: Dokter</td>
+            </tr>
+          </table>
+        </div>
+        
+        <div style="border: 2px solid #dc3545; padding: 20px; border-radius: 8px; background-color: #fff5f5;">
+          <h3 style="color: #dc3545; text-align: center; margin-bottom: 20px;">KREDENSIAL LOGIN</h3>
+          
+          <div style="background-color: white; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+            <p style="margin: 5px 0;"><strong>Password:</strong> {{ generatedCredentials.password || '-' }}</p>
+          </div>
+          
+          <div style="background-color: #ffe6e6; padding: 15px; border-radius: 5px; border-left: 4px solid #dc3545;">
+            <p style="margin: 0; font-weight: bold; color: #dc3545; text-align: center;">
+              ⚠️ PENTING: Informasi kredensial ini hanya ditampilkan sekali. Harap simpan dengan aman.
+            </p>
+          </div>
+        </div>
+        
+        <!-- Footer for print -->
+        <div style="position: fixed; bottom: 20px; left: 20px; font-size: 12px; color: #666;">
+          EarScope@2025
         </div>
       </div>
     </div>
@@ -176,13 +223,10 @@ export default {
         if (!token) {
           throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
         }
-
-        // Format phone number with prefix
         const phoneNumber = this.dokter.phone.startsWith('0')
           ? this.dokter.phone.substring(1)
           : this.dokter.phone;
 
-        // Pastikan format data sesuai yang diharapkan API
         const formattedData = {
           name: this.dokter.nama,
           no_str: this.dokter.noStr,
@@ -266,6 +310,22 @@ export default {
       });
     },
 
+    getCurrentDate() {
+      const now = new Date();
+      return now.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    },
+
+    capitalizeFirst(string) {
+      if (!string) return '';
+      return string.charAt(0).toUpperCase() + string.slice(1);
+    },
+
     showCredentialsModal() {
       // Inisialisasi atau perbarui modal
       if (!this.modal) {
@@ -304,56 +364,74 @@ export default {
 
     printCredentials() {
       try {
-        // Ambil konten yang akan dicetak
-        const printContentHTML = document.getElementById('printArea').innerHTML;
+        const filename = `Informasi Akun Dokter - ${this.dokter.nama || 'Unknown'}`;
+        const printWindow = window.open('', '_blank', 'width=800,height=600');
+        const printContent = document.getElementById('printArea').innerHTML;
         
-        // Gunakan iframe yang sudah ada di DOM
-        const iframe = document.getElementById('printFrame');
-        const iframeDoc = iframe.contentWindow || iframe.contentDocument;
-        
-        // Buat dokumen HTML lengkap di dalam iframe
-        if (iframeDoc.document) {
-          const doc = iframeDoc.document;
-          doc.open();
-          doc.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <title>Informasi Akun Dokter - ${this.dokter.nama}</title>
-              <style>
-                @media print {
-                  body { font-family: Arial, sans-serif; }
-                  .print-button { display: none; }
-                }
-              </style>
-            </head>
-            <body>
-              ${printContentHTML}
-              <div class="print-button" style="text-align: center; margin-top: 20px;">
-                <button onclick="window.print(); window.close();" 
-                  style="padding: 10px 15px; background-color: #0d6efd; color: white; 
-                  border: none; border-radius: 5px; cursor: pointer;">
-                  Cetak
-                </button>
-              </div>
-            </body>
-            </html>
-          `);
-          doc.close();
-          
-          // Buka di tab baru
-          iframe.contentWindow.location.href = 'about:blank';
-          const printWindow = window.open('', '_blank');
-          if (printWindow) {
-            printWindow.document.write(doc.documentElement.outerHTML);
-            printWindow.document.close();
-            // Secara opsional, cetak otomatis
-            // printWindow.print();
-          } else {
-            console.error('Pop-up blocker mungkin aktif, tidak dapat membuka jendela baru');
-            alert('Pop-up blocker mungkin aktif. Silakan izinkan pop-up untuk mencetak.');
+        printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${filename}</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: white;
           }
+          @media print {
+            @page {
+              margin: 1cm;
+              size: A4;
+            }
+            body {
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+          }
+          .d-none { display: block !important; }
+        </style>
+      </head>
+      <body>
+        ${printContent}
+      </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    
+    // Tunggu sampai konten dimuat, lalu print
+    printWindow.addEventListener('load', () => {
+      printWindow.focus();
+      printWindow.print();
+      
+      // Tutup window print setelah print selesai atau dibatalkan
+      printWindow.addEventListener('afterprint', () => {
+        printWindow.close();
+      });
+      
+      // Alternatif: tutup window setelah delay (jika afterprint tidak bekerja)
+      setTimeout(() => {
+        if (!printWindow.closed) {
+          printWindow.close();
         }
+      }, 1000);
+    });
+    
+    // Fallback jika load event tidak fire
+    setTimeout(() => {
+      if (printWindow && !printWindow.closed) {
+        printWindow.focus();
+        printWindow.print();
+        
+        setTimeout(() => {
+          if (!printWindow.closed) {
+            printWindow.close();
+          }
+        }, 1000);
+      }
+    }, 500);
       } catch (err) {
         console.error('Error saat mencetak:', err);
         alert('Terjadi kesalahan saat mencetak. Silahkan coba lagi.');
@@ -408,5 +486,26 @@ export default {
 
 .modal-header {
   border-radius: 8px 8px 0 0;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printArea, #printArea * {
+    visibility: visible;
+  }
+  #printArea {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  
+  /* Print specific styles */
+  @page {
+    margin: 1cm;
+    size: A4;
+  }
 }
 </style>
