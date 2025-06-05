@@ -2,7 +2,7 @@
   <div class="login-container">
     <div class="left-panel">
       <div class="logo-container">
-        <img :src="logo" alt="OIDO" class="logo" />
+        <img :src="logo" alt="EARSCOPE" class="logo" />
       </div>
     </div>
     <div class="right-panel">
