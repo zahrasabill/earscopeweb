@@ -3,7 +3,6 @@ import HomeView from "../views/HomeView.vue";
 import LoginView from "../views/LoginView.vue";
 import DashboardView from "@/views/DashboardView.vue";
 import RiwayatPemeriksaanView from "@/views/RiwayatPemeriksaanView.vue";
-import Penanganan from "@/views/PenangananView.vue";
 
 import ForbiddenView from "@/views/errors/ForbiddenView.vue";
 import NotFoundView from "@/views/errors/NotFoundView.vue";
@@ -21,7 +20,9 @@ import EditPasien from '@/views/PasienResource/Pages/EditPasien.vue'
 import ViewPasien from '@/views/PasienResource/Pages/ViewPasien.vue'
 import PemeriksaanResource from "@/views/PemeriksaanResource.vue";
 import PemeriksaanView from "@/views/PemeriksaanResource/Pages/PemeriksaanView.vue";
-import PenangananView from "@/views/PenangananView.vue";
+import PenangananResource from "@/views/PenangananResource.vue";
+import ListPenanganan from "@/views/PenangananResource/Pages/ListPenanganan.vue";
+import PenangananView from "@/views/PenangananResource/Pages/PenangananView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -109,11 +110,22 @@ const router = createRouter({
       ],
     },
   {
-    path: "/penanganan",
-    name: "penanganan",
-    component: PenangananView,
+    path: '/penanganan',
+    component: PenangananResource,
     meta: { requiresAuth: true },
-  },
+    children: [
+      {
+        path: '',
+        name: 'list-penanganan',
+        component: ListPenanganan
+      },
+      {
+        path: 'penanganan',
+        name: 'penanganan-view',
+        component: PenangananView
+      },
+    ],
+    },
   {
     path: "/riwayat",
     name: "riwayat",

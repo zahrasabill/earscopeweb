@@ -86,7 +86,7 @@
           <router-link 
             to="/penanganan" 
             class="nav-link text-white d-flex align-items-center"
-            :class="{ 'active-menu': activePage === 'penanganan' }"
+           :class="{ 'active-menu': activePage === 'penangananresource' || activePage === 'penanganan' }"
             @click="closeSidebar"
           >
             <i class="bi bi-book-fill me-3"></i>
@@ -211,7 +211,7 @@ export default {
         dokterresource: "Kelola Dokter",
         pasienresource: "Kelola Pasien",
         pemeriksaanresource: "Hasil Pemeriksaan",
-        penanganan: "Penanganan",
+        penangananresource: "Penanganan",
         riwayat: "Riwayat Pemeriksaan",
       };
       this.pageTitle = titles[page] || "Dashboard";
