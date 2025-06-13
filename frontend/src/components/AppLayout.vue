@@ -68,17 +68,41 @@
             <span>Pasien</span>
           </router-link>
         </li>
-
+        
         <!-- Dokter & Pasien bisa melihat menu Hasil Pemeriksaan -->
         <li v-if="currentUser.role === 'dokter' || currentUser.role === 'pasien'" class="nav-item mb-2">
           <router-link 
             to="/pemeriksaan" 
             class="nav-link text-white d-flex align-items-center"
-            :class="{ 'active-menu': activePage === 'pemeriksaan' }"
+            :class="{ 'active-menu': activePage === 'pemeriksaanresource' || activePage === 'pemeriksaan' }"
             @click="closeSidebar"
           >
             <i class="bi bi-clipboard2-pulse me-3"></i>
             <span>Hasil Pemeriksaan</span>
+          </router-link>
+        </li>
+
+        <li v-if="currentUser.role === 'dokter'" class="nav-item mb-2">
+          <router-link 
+            to="/penanganan" 
+            class="nav-link text-white d-flex align-items-center"
+            :class="{ 'active-menu': activePage === 'penanganan' }"
+            @click="closeSidebar"
+          >
+            <i class="bi bi-book-fill me-3"></i>
+            <span>Penanganan</span>
+          </router-link>
+        </li>
+
+        <li v-if="currentUser.role === 'dokter' || currentUser.role === 'pasien'" class="nav-item mb-2">
+          <router-link 
+            to="/riwayat" 
+            class="nav-link text-white d-flex align-items-center"
+            :class="{ 'active-menu': activePage === 'riwayat' }"
+            @click="closeSidebar"
+          >
+            <i class="bi bi-clock-history me-3"></i>
+            <span>Riwayat Pemeriksaan</span>
           </router-link>
         </li>
       </ul>
@@ -186,7 +210,9 @@ export default {
         dashboard: "Dashboard",
         dokterresource: "Kelola Dokter",
         pasienresource: "Kelola Pasien",
-        pemeriksaan: "Hasil Pemeriksaan",
+        pemeriksaanresource: "Hasil Pemeriksaan",
+        penanganan: "Penanganan",
+        riwayat: "Riwayat Pemeriksaan",
       };
       this.pageTitle = titles[page] || "Dashboard";
     },
