@@ -4,9 +4,19 @@
     <div class="form-section">
       <div class="card shadow">
         <div class="card-header bg-gradient text-white">
-          <h5 class="mb-0">
-            <i class="fas fa-clipboard-list me-2"></i>Data Penanganan
-          </h5>
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+              <i class="fas fa-clipboard-list me-2"></i>Data Penanganan
+            </h5>
+            <button 
+              type="button" 
+              @click="navigateToList" 
+              class="btn btn-light btn-sm"
+              :disabled="isSubmitting"
+            >
+              <i class="fas fa-arrow-left me-1"></i>Kembali ke Daftar
+            </button>
+          </div>
         </div>
         <div class="card-body">
           <form @submit.prevent="submitForm">
@@ -237,6 +247,9 @@
               <p class="mb-0">Data penanganan telah berhasil dikirim ke pasien <strong>{{ selectedPatientName }}</strong></p>
             </div>
             <div class="modal-footer">
+              <button class="btn btn-outline-primary me-2" @click="navigateToList">
+                <i class="fas fa-list me-1"></i>Lihat Daftar Penanganan
+              </button>
               <button class="btn btn-primary" @click="closeSuccessModal">
                 <i class="fas fa-plus me-1"></i>Input Penanganan Baru
               </button>
@@ -258,6 +271,7 @@
 
 <script>
 import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import AppLayout from '@/components/AppLayout.vue';
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
@@ -271,6 +285,7 @@ export default {
   setup() {
     const userStore = useUserStore();
     const { users } = storeToRefs(userStore);
+    const router = useRouter();
     
     // Form data
     const formData = ref({
@@ -280,8 +295,7 @@ export default {
       riwayatPenyakit: '',
       diagnosisManual: '',
       telinga: '',
-      tindakan: '',
-      catatanTambahan: ''
+      tindakan: ''
     });
 
     // Form validation errors
@@ -292,8 +306,7 @@ export default {
       keluhan: 0,
       riwayatPenyakit: 0,
       diagnosisManual: 0,
-      tindakan: 0,
-      catatanTambahan: 0
+      tindakan: 0
     });
 
     // Loading and modal states
@@ -309,6 +322,11 @@ export default {
     const selectedPatient = computed(() => {
       return users.value.find(user => user.id.toString() === formData.value.patientId.toString());
     });
+
+    // Navigate to list page
+    const navigateToList = () => {
+      router.push({ name: 'list-penanganan' });
+    };
 
     // Function to get user role from JWT
     const getUserRoleFromToken = () => {
@@ -379,10 +397,6 @@ export default {
         errors.value.riwayatPenyakit = 'Riwayat penyakit tidak boleh lebih dari 150 kata';
       }
 
-      if (wordCounts.value.catatanTambahan > 100) {
-        errors.value.catatanTambahan = 'Catatan tambahan tidak boleh lebih dari 100 kata';
-      }
-
       return Object.keys(errors.value).length === 0;
     };
 
@@ -408,8 +422,7 @@ export default {
           riwayat_penyakit: formData.value.riwayatPenyakit.trim() || null,
           diagnosis_manual: formData.value.diagnosisManual.trim(),
           telinga_terkena: formData.value.telinga,
-          tindakan: formData.value.tindakan.trim(),
-          catatan_tambahan: formData.value.catatanTambahan.trim() || null
+          tindakan: formData.value.tindakan.trim()
         };
 
         await axios.post(api.getEndpoint('penanganan'), payload, {
@@ -448,8 +461,7 @@ export default {
         riwayatPenyakit: '',
         diagnosisManual: '',
         telinga: '',
-        tindakan: '',
-        catatanTambahan: ''
+        tindakan: ''
       };
       
       wordCounts.value = {
@@ -457,7 +469,6 @@ export default {
         riwayatPenyakit: 0,
         diagnosisManual: 0,
         tindakan: 0,
-        catatanTambahan: 0
       };
       
       errors.value = {};
@@ -511,7 +522,8 @@ export default {
       validateForm,
       submitForm,
       resetForm,
-      closeSuccessModal
+      closeSuccessModal,
+      navigateToList
     };
   }
 };
@@ -693,6 +705,26 @@ export default {
   font-size: 1.1rem;
 }
 
+/* Back button in header */
+.btn-light {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #495057;
+  font-weight: 500;
+}
+
+.btn-light:hover {
+  background-color: #fff;
+  border-color: #fff;
+  color: #495057;
+  transform: translateY(-1px);
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
 /* Modal styling */
 .modal-overlay {
   position: fixed;
@@ -854,25 +886,23 @@ export default {
     text-align: center;
   }
   
-  .col-md-4.text-end {
-    text-align: center !important;
-    margin-top: 1rem;
+  .d-flex.justify-content-between {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
   }
   
-  .btn-lg {
-    padding: 0.875rem 1.5rem;
-    font-size: 1rem;
+  .btn-light {
+    margin-top: 0.5rem;
   }
   
-  .telinga-buttons .btn {
-    padding: 0.625rem 0.875rem;
-    font-size: 0.9rem;
+  .telinga-buttons .row {
+    gap: 0.5rem;
   }
   
-  .form-control, 
-  .form-select {
-    padding: 0.625rem 0.875rem;
-    font-size: 0.9rem;
+  .telinga-buttons .col-6,
+  .telinga-buttons .col-12 {
+    padding: 0.25rem;
   }
   
   .modal-dialog {
@@ -887,6 +917,16 @@ export default {
   .simple-modal .modal-footer {
     padding: 1rem;
   }
+  
+  .btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+  }
+  
+  .d-flex.gap-2 {
+    flex-direction: column;
+    gap: 0.5rem !important;
+  }
 }
 
 @media (max-width: 576px) {
@@ -894,21 +934,27 @@ export default {
     padding: 10px;
   }
   
+  .card-header {
+    padding: 1rem;
+  }
+  
   .card-body {
     padding: 1rem;
   }
   
-  .header-section .card-body {
-    padding: 0.75rem;
+  .form-group {
+    margin-bottom: 1rem;
   }
   
-  .form-label {
+  .form-control,
+  .form-select {
+    padding: 0.5rem 0.75rem;
     font-size: 0.9rem;
   }
   
   .btn {
-    padding: 0.625rem 1rem;
-    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
   }
   
   .btn-lg {
@@ -916,17 +962,7 @@ export default {
     font-size: 0.95rem;
   }
   
-  .telinga-buttons .row {
-    gap: 0.5rem;
-  }
-  
   .telinga-buttons .btn {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.85rem;
-  }
-  
-  .form-control, 
-  .form-select {
     padding: 0.5rem 0.75rem;
     font-size: 0.85rem;
   }
@@ -935,198 +971,116 @@ export default {
     font-size: 1.1rem;
   }
   
-  .header-section h4 {
-    font-size: 1.3rem;
+  .modal-dialog {
+    margin: 0.25rem;
   }
   
-  .simple-modal .modal-body {
-    padding: 1rem;
+  .simple-modal .modal-body h4 {
+    font-size: 1.25rem;
   }
   
-  .simple-modal .modal-header,
-  .simple-modal .modal-footer {
-    padding: 0.75rem;
-  }
-  
-  .fas.fa-check-circle {
+  .simple-modal .modal-body i {
     font-size: 48px !important;
   }
 }
 
-/* Focus and accessibility improvements */
-.btn:focus,
-.form-control:focus,
-.form-select:focus {
-  outline: none;
-  box-shadow: 0 0 0 0.2rem rgba(66, 133, 244, 0.25);
+/* Loading animation */
+.loading-overlay .loading-content {
+  animation: fadeInUp 0.5s ease;
 }
 
-.btn:focus-visible {
-  outline: 2px solid #4285f4;
-  outline-offset: 2px;
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* Enhanced hover effects */
-.card {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+/* Form validation animation */
+.form-control.is-invalid,
+.form-select.is-invalid {
+  animation: shake 0.5s ease-in-out;
 }
 
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+@keyframes shake {
+  0%, 20%, 40%, 60%, 80%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-5px);
+  }
 }
 
-/* Form validation styling improvements */
-.form-control.is-invalid:focus,
-.form-select.is-invalid:focus {
-  border-color: #dc3545;
-  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+/* Enhanced modal animations */
+.modal-overlay {
+  animation: fadeIn 0.3s ease;
 }
 
-.form-control.is-valid,
-.form-select.is-valid {
-  border-color: #28a745;
+.modal-dialog {
+  animation: slideInDown 0.3s ease;
 }
 
-.form-control.is-valid:focus,
-.form-select.is-valid:focus {
-  border-color: #28a745;
-  box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-/* Word count styling */
-.form-text {
-  font-size: 0.8rem;
-  margin-top: 0.25rem;
-  color: #6c757d;
+@keyframes slideInDown {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
-.form-text.text-warning {
-  color: #ffc107 !important;
+/* Success icon animation */
+.text-success.fas.fa-check-circle {
+  animation: checkmark 0.8s ease-in-out;
 }
 
-.form-text.text-danger {
-  color: #dc3545 !important;
+@keyframes checkmark {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
-/* Enhanced button states */
+/* Improved button states */
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none !important;
 }
 
-.btn:disabled:hover {
-  transform: none !important;
-  box-shadow: none !important;
+.btn-success:disabled {
+  background: linear-gradient(135deg, #6c757d, #5a6268);
 }
 
-/* Loading spinner in buttons */
-.spinner-border-sm {
-  width: 1rem;
-  height: 1rem;
-  border-width: 0.1em;
-}
-
-/* Enhanced modal backdrop */
-.modal-overlay {
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-}
-
-/* Gradient backgrounds */
-.bg-gradient {
-  background: linear-gradient(135deg, #4285f4, #34a853) !important;
-}
-
-/* Enhanced shadows */
-.shadow-lg {
-  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175) !important;
-}
-
-/* Custom scrollbar for textareas */
-.form-control::-webkit-scrollbar {
-  width: 8px;
-}
-
-.form-control::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-.form-control::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
-
-.form-control::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-/* Enhanced form group spacing */
-.form-group:last-child {
-  margin-bottom: 0;
-}
-
-/* Icon styling improvements */
-.fas, .far, .fab {
-  width: 1.2em;
-  text-align: center;
-}
-
-/* Enhanced button group styling */
-.d-flex.gap-2 {
-  gap: 0.5rem;
-}
-
-/* Print styles */
-@media print {
+/* Container max-width adjustments */
+@media (min-width: 1200px) {
   .penanganan-container {
-    padding: 0;
-  }
-  
-  .card {
-    border: 1px solid #dee2e6 !important;
-    box-shadow: none !important;
-  }
-  
-  .btn {
-    display: none;
-  }
-  
-  .modal-overlay {
-    display: none !important;
-  }
-  
-  .loading-overlay {
-    display: none !important;
+    max-width: 1200px;
   }
 }
 
-/* Smooth transitions for all interactive elements */
-* {
-  transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
-}
-
-/* Enhanced focus indicators for better accessibility */
-.form-control:focus,
-.form-select:focus,
-.btn:focus {
-  outline: 2px solid transparent;
-  outline-offset: 2px;
-}
-
-/* Custom utility classes */
-.text-gradient {
-  background: linear-gradient(135deg, #4285f4, #34a853);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.border-gradient {
-  border: 2px solid transparent;
-  background: linear-gradient(white, white) padding-box,
-              linear-gradient(135deg, #4285f4, #34a853) border-box;
+@media (min-width: 1400px) {
+  .penanganan-container {
+    max-width: 1300px;
+  }
 }
 </style>
