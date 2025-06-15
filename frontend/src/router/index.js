@@ -22,7 +22,7 @@ import PemeriksaanResource from "@/views/PemeriksaanResource.vue";
 import PemeriksaanView from "@/views/PemeriksaanResource/Pages/PemeriksaanView.vue";
 import PenangananResource from "@/views/PenangananResource.vue";
 import ListPenanganan from "@/views/PenangananResource/Pages/ListPenanganan.vue";
-import PenangananView from "@/views/PenangananResource/Pages/PenangananView.vue";
+import CreatePenanganan from "@/views/PenangananResource/Pages/CreatePenanganan.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -120,9 +120,9 @@ const router = createRouter({
         component: ListPenanganan
       },
       {
-        path: 'penanganan',
-        name: 'penanganan-view',
-        component: PenangananView
+        path: 'create',
+        name: 'create-penanganan',
+        component: CreatePenanganan
       },
     ],
     },

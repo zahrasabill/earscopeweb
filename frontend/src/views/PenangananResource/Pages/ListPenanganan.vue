@@ -73,14 +73,7 @@
             <p class="mt-3 fw-bold">Memuat data...</p>
           </div>
 
-          <!-- Empty State -->
-          <div v-else-if="filteredPenanganan.length === 0" class="text-center py-5">
-            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-            <h5 class="text-muted">Tidak ada data penanganan</h5>
-            <p class="text-muted">Belum ada data penanganan yang tersedia</p>
-          </div>
-
-          <!-- Table -->
+          <!-- Table - Always show header -->
           <div v-else class="table-responsive">
             <table class="table table-hover mb-0">
               <thead class="table-light">
@@ -92,16 +85,10 @@
                     <i class="fas fa-user me-1"></i>Nama Pasien
                   </th>
                   <th scope="col" class="fw-bold">
-                    <i class="fas fa-id-badge me-1"></i>Kode Akses
-                  </th>
-                  <th scope="col" class="fw-bold">
                     <i class="fas fa-calendar me-1"></i>Tanggal Penanganan
                   </th>
                   <th scope="col" class="fw-bold">
-                    <i class="fas fa-stethoscope me-1"></i>Diagnosis
-                  </th>
-                  <th scope="col" class="fw-bold">
-                    <i class="fas fa-info-circle me-1"></i>Status
+                    <i class="fas fa-exclamation-triangle me-1"></i>Keluhan Pasien
                   </th>
                   <th scope="col" class="fw-bold text-center">
                     <i class="fas fa-cogs me-1"></i>Action
@@ -109,7 +96,16 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(item, index) in paginatedData" :key="item.id" class="table-row">
+                <!-- Empty State -->
+                <tr v-if="filteredPenanganan.length === 0">
+                  <td colspan="5" class="text-center py-5">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Tidak ada data penanganan</h5>
+                  </td>
+                </tr>
+                
+                <!-- Data Rows -->
+                <tr v-else v-for="(item, index) in paginatedData" :key="item.id" class="table-row">
                   <td class="fw-bold text-primary">{{ getRowNumber(index) }}</td>
                   <td>
                     <div class="d-flex align-items-center">
@@ -118,50 +114,44 @@
                       </div>
                       <div>
                         <div class="fw-bold">{{ item.patient_name }}</div>
-                        <small class="text-muted">{{ item.patient_email || 'Email tidak tersedia' }}</small>
                       </div>
                     </div>
-                  </td>
-                  <td>
-                    <span class="badge bg-info">{{ item.kode_akses || 'N/A' }}</span>
                   </td>
                   <td>
                     <div class="fw-bold">{{ formatDate(item.tanggal_penanganan) }}</div>
                     <small class="text-muted">{{ formatTime(item.created_at) }}</small>
                   </td>
                   <td>
-                    <div class="diagnosis-preview">
-                      {{ truncateText(item.diagnosis_manual, 50) }}
+                    <div class="keluhan-preview" :title="item.keluhan">
+                      {{ truncateText(item.keluhan, 60) }}
                     </div>
-                  </td>
-                  <td>
-                    <span 
-                      class="badge"
-                      :class="item.is_assigned ? 'bg-success' : 'bg-warning'"
-                    >
-                      <i :class="item.is_assigned ? 'fas fa-check-circle' : 'fas fa-clock'" class="me-1"></i>
-                      {{ item.is_assigned ? 'Assigned' : 'Unassigned' }}
-                    </span>
                   </td>
                   <td class="text-center">
                     <div class="btn-group" role="group">
                       <button
-                        @click="toggleAssignment(item)"
-                        class="btn btn-sm"
-                        :class="item.is_assigned ? 'btn-outline-danger' : 'btn-outline-success'"
-                        :disabled="isUpdating === item.id"
-                        :title="item.is_assigned ? 'Unassign Pasien' : 'Assign Pasien'"
-                      >
-                        <span v-if="isUpdating === item.id" class="spinner-border spinner-border-sm me-1"></span>
-                        <i v-else :class="item.is_assigned ? 'fas fa-user-times' : 'fas fa-user-check'" class="me-1"></i>
-                        {{ item.is_assigned ? 'Unassign' : 'Assign' }}
-                      </button>
-                      <button
                         @click="viewDetail(item)"
-                        class="btn btn-sm btn-outline-primary"
+                        class="btn btn-sm btn-outline-info"
                         title="Lihat Detail"
                       >
                         <i class="fas fa-eye"></i>
+                      </button>
+                      <button
+                        v-if="userRole === 'dokter'"
+                        @click="editPenanganan(item)"
+                        class="btn btn-sm btn-outline-warning"
+                        title="Edit Data"
+                      >
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button
+                        v-if="userRole === 'dokter'"
+                        @click="deletePenanganan(item)"
+                        class="btn btn-sm btn-outline-danger"
+                        title="Hapus Data"
+                        :disabled="isDeleting === item.id"
+                      >
+                        <span v-if="isDeleting === item.id" class="spinner-border spinner-border-sm"></span>
+                        <i v-else class="fas fa-trash"></i>
                       </button>
                     </div>
                   </td>
@@ -234,12 +224,6 @@
                     <div class="detail-value">{{ selectedDetail.patient_name }}</div>
                   </div>
                   <div class="detail-group mb-3">
-                    <label class="detail-label">Kode Akses</label>
-                    <div class="detail-value">
-                      <span class="badge bg-info">{{ selectedDetail.kode_akses || 'N/A' }}</span>
-                    </div>
-                  </div>
-                  <div class="detail-group mb-3">
                     <label class="detail-label">Tanggal Penanganan</label>
                     <div class="detail-value">{{ formatDate(selectedDetail.tanggal_penanganan) }}</div>
                   </div>
@@ -248,6 +232,10 @@
                     <div class="detail-value">
                       <span class="badge bg-secondary">{{ selectedDetail.telinga_terkena }}</span>
                     </div>
+                  </div>
+                  <div class="detail-group mb-3">
+                    <label class="detail-label">Dibuat Pada</label>
+                    <div class="detail-value">{{ formatDateTime(selectedDetail.created_at) }}</div>
                   </div>
                 </div>
                 <div class="col-md-6">
@@ -261,10 +249,6 @@
                         {{ selectedDetail.is_assigned ? 'Assigned' : 'Unassigned' }}
                       </span>
                     </div>
-                  </div>
-                  <div class="detail-group mb-3">
-                    <label class="detail-label">Dibuat Pada</label>
-                    <div class="detail-value">{{ formatDateTime(selectedDetail.created_at) }}</div>
                   </div>
                   <div class="detail-group mb-3">
                     <label class="detail-label">Terakhir Update</label>
@@ -289,13 +273,9 @@
                     <label class="detail-label">Diagnosis Manual</label>
                     <div class="detail-value detail-text">{{ selectedDetail.diagnosis_manual }}</div>
                   </div>
-                  <div class="detail-group mb-3">
+                  <div class="detail-group mb-0">
                     <label class="detail-label">Tindakan</label>
                     <div class="detail-value detail-text">{{ selectedDetail.tindakan }}</div>
-                  </div>
-                  <div class="detail-group mb-0" v-if="selectedDetail.catatan_tambahan">
-                    <label class="detail-label">Catatan Tambahan</label>
-                    <div class="detail-value detail-text">{{ selectedDetail.catatan_tambahan }}</div>
                   </div>
                 </div>
               </div>
@@ -310,38 +290,36 @@
       </div>
     </transition>
 
-    <!-- Confirmation Modal -->
+    <!-- Delete Confirmation Modal -->
     <transition name="fade">
-      <div v-if="showConfirmModal" class="modal-overlay" @click.self="closeConfirmModal">
+      <div v-if="showDeleteModal" class="modal-overlay" @click.self="closeDeleteModal">
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title">
-                <i class="fas fa-question-circle me-2"></i>Konfirmasi
+                <i class="fas fa-exclamation-triangle me-2 text-danger"></i>Konfirmasi Hapus
               </h5>
-              <button type="button" class="btn-close" @click="closeConfirmModal"></button>
+              <button type="button" class="btn-close" @click="closeDeleteModal"></button>
             </div>
             <div class="modal-body">
-              <p v-if="confirmAction === 'assign'">
-                Apakah Anda yakin ingin <strong>assign</strong> pasien <strong>{{ confirmData?.patient_name }}</strong>?
-              </p>
-              <p v-else>
-                Apakah Anda yakin ingin <strong>unassign</strong> pasien <strong>{{ confirmData?.patient_name }}</strong>?
-              </p>
+              <p>Apakah Anda yakin ingin menghapus data penanganan untuk pasien <strong>{{ deleteData?.patient_name }}</strong>?</p>
+              <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Peringatan:</strong> Tindakan ini tidak dapat dibatalkan!
+              </div>
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" @click="closeConfirmModal">
+              <button class="btn btn-secondary" @click="closeDeleteModal">
                 <i class="fas fa-times me-1"></i>Batal
               </button>
               <button 
-                class="btn"
-                :class="confirmAction === 'assign' ? 'btn-success' : 'btn-danger'"
-                @click="confirmAssignment"
-                :disabled="isUpdating"
+                class="btn btn-danger"
+                @click="confirmDelete"
+                :disabled="isDeleting"
               >
-                <span v-if="isUpdating" class="spinner-border spinner-border-sm me-2"></span>
-                <i v-else :class="confirmAction === 'assign' ? 'fas fa-check' : 'fas fa-times'" class="me-1"></i>
-                {{ confirmAction === 'assign' ? 'Ya, Assign' : 'Ya, Unassign' }}
+                <span v-if="isDeleting" class="spinner-border spinner-border-sm me-2"></span>
+                <i v-else class="fas fa-trash me-1"></i>
+                {{ isDeleting ? 'Menghapus...' : 'Ya, Hapus' }}
               </button>
             </div>
           </div>
@@ -360,7 +338,7 @@ import axios from 'axios';
 import { jwtDecode } from "jwt-decode";
 
 export default {
-  name: 'ListPenangananView',
+  name: 'ListPenanganan',
   components: { AppLayout },
   setup() {
     const router = useRouter();
@@ -369,7 +347,7 @@ export default {
     const penangananData = ref([]);
     const filteredPenanganan = ref([]);
     const isLoading = ref(false);
-    const isUpdating = ref(null);
+    const isDeleting = ref(null);
     
     // Filters
     const searchQuery = ref('');
@@ -381,10 +359,9 @@ export default {
     
     // Modals
     const showDetailModal = ref(false);
-    const showConfirmModal = ref(false);
+    const showDeleteModal = ref(false);
     const selectedDetail = ref(null);
-    const confirmData = ref(null);
-    const confirmAction = ref('');
+    const deleteData = ref(null);
     
     // User role
     const userRole = ref('pasien');
@@ -403,8 +380,13 @@ export default {
     const visiblePages = computed(() => {
       const pages = [];
       const maxVisible = 5;
-      const start = Math.max(1, currentPage.value - Math.floor(maxVisible / 2));
-      const end = Math.min(totalPages.value, start + maxVisible - 1);
+      let start = Math.max(1, currentPage.value - Math.floor(maxVisible / 2));
+      let end = Math.min(totalPages.value, start + maxVisible - 1);
+      
+      // Adjust start if we're at the end
+      if (end - start + 1 < maxVisible) {
+        start = Math.max(1, end - maxVisible + 1);
+      }
       
       for (let i = start; i <= end; i++) {
         pages.push(i);
@@ -456,7 +438,7 @@ export default {
         const query = searchQuery.value.toLowerCase().trim();
         filtered = filtered.filter(item => 
           item.patient_name.toLowerCase().includes(query) ||
-          (item.kode_akses && item.kode_akses.toLowerCase().includes(query))
+          item.keluhan.toLowerCase().includes(query)
         );
       }
       
@@ -471,47 +453,50 @@ export default {
       currentPage.value = 1; // Reset to first page
     };
     
-    const toggleAssignment = (item) => {
-      confirmData.value = item;
-      confirmAction.value = item.is_assigned ? 'unassign' : 'assign';
-      showConfirmModal.value = true;
+    const viewDetail = (item) => {
+      selectedDetail.value = item;
+      showDetailModal.value = true;
     };
     
-    const confirmAssignment = async () => {
+    const editPenanganan = (item) => {
+      // Navigate to edit form with item id
+      router.push({ name: 'penanganan-edit', params: { id: item.id } });
+    };
+    
+    const deletePenanganan = (item) => {
+      deleteData.value = item;
+      showDeleteModal.value = true;
+    };
+    
+    const confirmDelete = async () => {
       try {
-        isUpdating.value = confirmData.value.id;
+        isDeleting.value = deleteData.value.id;
         const token = localStorage.getItem("token") || sessionStorage.getItem("token");
         
-        const endpoint = confirmAction.value === 'assign' 
-          ? `${api.getEndpoint('penanganan')}/${confirmData.value.id}/assign`
-          : `${api.getEndpoint('penanganan')}/${confirmData.value.id}/unassign`;
-        
-        await axios.post(endpoint, {}, {
+        await axios.delete(`${api.getEndpoint('penanganan')}/${deleteData.value.id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         
-        // Update local data
-        const index = penangananData.value.findIndex(item => item.id === confirmData.value.id);
+        // Remove from local data
+        const index = penangananData.value.findIndex(item => item.id === deleteData.value.id);
         if (index !== -1) {
-          penangananData.value[index].is_assigned = confirmAction.value === 'assign';
+          penangananData.value.splice(index, 1);
         }
         
         // Refresh filtered data
         filterData();
         
-        closeConfirmModal();
+        closeDeleteModal();
+        
+        // Show success message
+        alert(`Data penanganan untuk pasien ${deleteData.value.patient_name} berhasil dihapus.`);
         
       } catch (error) {
-        console.error('Error updating assignment:', error);
-        alert('Gagal mengupdate status assignment. Silakan coba lagi.');
+        console.error('Error deleting penanganan:', error);
+        alert('Gagal menghapus data penanganan. Silakan coba lagi.');
       } finally {
-        isUpdating.value = null;
+        isDeleting.value = null;
       }
-    };
-    
-    const viewDetail = (item) => {
-      selectedDetail.value = item;
-      showDetailModal.value = true;
     };
     
     const closeDetailModal = () => {
@@ -519,14 +504,13 @@ export default {
       selectedDetail.value = null;
     };
     
-    const closeConfirmModal = () => {
-      showConfirmModal.value = false;
-      confirmData.value = null;
-      confirmAction.value = '';
+    const closeDeleteModal = () => {
+      showDeleteModal.value = false;
+      deleteData.value = null;
     };
     
     const navigateToForm = () => {
-      router.push({name : 'penanganan-view'});
+      router.push({ name: 'create-penanganan' });
     };
     
     const changePage = (page) => {
@@ -589,7 +573,7 @@ export default {
       penangananData,
       filteredPenanganan,
       isLoading,
-      isUpdating,
+      isDeleting,
       searchQuery,
       selectedDate,
       currentPage,
@@ -598,18 +582,18 @@ export default {
       paginatedData,
       visiblePages,
       showDetailModal,
-      showConfirmModal,
+      showDeleteModal,
       selectedDetail,
-      confirmData,
-      confirmAction,
+      deleteData,
       userRole,
       fetchPenangananData,
       filterData,
-      toggleAssignment,
-      confirmAssignment,
       viewDetail,
+      editPenanganan,
+      deletePenanganan,
+      confirmDelete,
       closeDetailModal,
-      closeConfirmModal,
+      closeDeleteModal,
       navigateToForm,
       changePage,
       updatePagination,
@@ -626,111 +610,125 @@ export default {
 
 <style scoped>
 .list-penanganan-container {
-  padding: 20px;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-/* Header Section */
-.header-section .card {
-  border-radius: 12px;
-  border: none;
-}
-
-.header-section .card-body {
   padding: 1.5rem;
 }
 
-/* Filters Section */
-.filters-section .card {
-  border-radius: 12px;
-  border: none;
+.text-gradient {
+  background: linear-gradient(45deg, #007bff, #0056b3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.filters-section .card-body {
-  padding: 1.5rem;
+.bg-gradient {
+  background: linear-gradient(135deg, #007bff, #0056b3);
 }
 
-/* Table Section */
-.table-section .card {
-  border-radius: 12px;
-  border: none;
-  overflow: hidden;
-}
-
-.card-header {
-  background: linear-gradient(135deg, #4285f4, #34a853);
-  color: white;
-  border-bottom: none;
-  padding: 1rem 1.5rem;
-}
-
-.card-body {
-  padding: 0;
-}
-
-/* Table styling */
-.table {
-  margin-bottom: 0;
-}
-
-.table thead th {
-  background-color: #f8f9fa;
-  border-bottom: 2px solid #dee2e6;
-  font-weight: 600;
-  color: #495057;
-  padding: 1rem 0.75rem;
-  vertical-align: middle;
-}
-
-.table tbody td {
-  padding: 1rem 0.75rem;
-  vertical-align: middle;
-  border-bottom: 1px solid #dee2e6;
-}
-
-.table-row:hover {
-  background-color: #f8f9fa;
-}
-
-/* Avatar circle */
 .avatar-circle {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #4285f4, #34a853);
-  color: white;
+  background: linear-gradient(45deg, #007bff, #28a745);
   display: flex;
   align-items: center;
   justify-content: center;
+  color: white;
   font-weight: bold;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
 }
 
-/* Diagnosis preview */
-.diagnosis-preview {
-  max-width: 200px;
-  word-wrap: break-word;
+.table-row:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+.keluhan-preview {
   line-height: 1.4;
+  max-width: 300px;
 }
 
-/* Badges */
-.badge {
-  font-size: 0.75rem;
-  padding: 0.35rem 0.65rem;
-  border-radius: 0.375rem;
+.detail-label {
+  font-weight: 600;
+  color: #6c757d;
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+  display: block;
 }
 
-/* Buttons */
-.btn {
-  border-radius: 6px;
+.detail-value {
   font-weight: 500;
-  transition: all 0.3s ease;
+  color: #212529;
+  margin-bottom: 0;
 }
 
-.btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.detail-text {
+  background-color: #f8f9fa;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  border-left: 4px solid #007bff;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1050;
+}
+
+.modal-dialog {
+  max-width: 500px;
+  width: 90%;
+  margin: 1.75rem auto;
+}
+
+.modal-lg {
+  max-width: 800px;
+}
+
+.modal-content {
+  border: none;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  border-bottom: 1px solid #dee2e6;
+  padding: 1rem 1.25rem;
+}
+
+.modal-title {
+  font-weight: 600;
+  color: #495057;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #000;
+  opacity: 0.5;
+  cursor: pointer;
+}
+
+.btn-close:hover {
+  opacity: 0.75;
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
 }
 
 .btn-group .btn {
@@ -741,505 +739,24 @@ export default {
   margin-right: 0;
 }
 
-.btn-sm {
-  padding: 0.375rem 0.75rem;
-  font-size: 0.875rem;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #4285f4, #1a73e8);
-  border: none;
-}
-
-.btn-primary:hover {
-  background: linear-gradient(135deg, #1a73e8, #1557b0);
-}
-
-.btn-outline-primary {
-  border-color: #4285f4;
-  color: #4285f4;
-}
-
-.btn-outline-primary:hover {
-  background-color: #4285f4;
-  border-color: #4285f4;
-  color: #fff;
-}
-
-.btn-outline-success {
-  border-color: #28a745;
-  color: #28a745;
-}
-
-.btn-outline-success:hover {
-  background-color: #28a745;
-  border-color: #28a745;
-  color: #fff;
-}
-
-.btn-outline-danger {
-  border-color: #dc3545;
-  color: #dc3545;
-}
-
-.btn-outline-danger:hover {
-  background-color: #dc3545;
-  border-color: #dc3545;
-  color: #fff;
-}
-
-.btn-success {
-  background: linear-gradient(135deg, #28a745, #1e7e34);
-  border: none;
-}
-
-.btn-success:hover {
-  background: linear-gradient(135deg, #1e7e34, #155724);
-}
-
-.btn-danger {
-  background: linear-gradient(135deg, #dc3545, #c82333);
-  border: none;
-}
-
-.btn-danger:hover {
-  background: linear-gradient(135deg, #c82333, #a02622);
-}
-
-.btn-secondary {
-  background: linear-gradient(135deg, #6c757d, #545b62);
-  border: none;
-}
-
-.btn-secondary:hover {
-  background: linear-gradient(135deg, #545b62, #3d4142);
-}
-
-/* Form controls */
-.form-control,
-.form-select {
-  border-radius: 6px;
-  border: 1px solid #dee2e6;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.form-control:focus,
-.form-select:focus {
-  border-color: #4285f4;
-  box-shadow: 0 0 0 0.2rem rgba(66, 133, 244, 0.25);
-  outline: 0;
-}
-
-.form-label {
-  font-weight: 600;
-  color: #495057;
-  margin-bottom: 0.5rem;
-}
-
-/* Pagination */
-.pagination {
-  margin-bottom: 0;
-}
-
-.page-link {
-  color: #4285f4;
-  border: 1px solid #dee2e6;
-  padding: 0.375rem 0.75rem;
-  font-size: 0.875rem;
-  border-radius: 6px;
-  margin: 0 0.125rem;
-  transition: all 0.3s ease;
-}
-
-.page-link:hover {
-  color: #1a73e8;
-  background-color: #f8f9fa;
-  border-color: #4285f4;
-  transform: translateY(-1px);
-}
-
-.page-item.active .page-link {
-  background: linear-gradient(135deg, #4285f4, #1a73e8);
-  border-color: #4285f4;
-  color: #fff;
-}
-
-.page-item.disabled .page-link {
-  color: #6c757d;
-  background-color: #fff;
-  border-color: #dee2e6;
-  cursor: not-allowed;
-}
-
-/* Loading states */
-.spinner-border {
-  width: 1rem;
-  height: 1rem;
-  border-width: 0.125em;
-}
-
-.spinner-border-sm {
-  width: 0.875rem;
-  height: 0.875rem;
-  border-width: 0.1em;
-}
-
-/* Empty state */
-.text-muted {
-  color: #6c757d !important;
-}
-
-/* Modal styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1050;
-  backdrop-filter: blur(4px);
-}
-
-.modal-dialog {
-  position: relative;
-  width: auto;
-  margin: 1.75rem;
-  pointer-events: none;
-  max-width: 500px;
-}
-
-.modal-dialog.modal-lg {
-  max-width: 800px;
-}
-
-.modal-content {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  pointer-events: auto;
-  background-color: #fff;
-  background-clip: padding-box;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  outline: 0;
-  animation: modalFadeIn 0.3s ease-out;
-}
-
-@keyframes modalFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-50px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.5rem;
-  border-bottom: 1px solid #dee2e6;
-  border-top-left-radius: 12px;
-  border-top-right-radius: 12px;
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-}
-
-.modal-title {
-  margin-bottom: 0;
-  line-height: 1.5;
-  font-weight: 600;
-  color: #495057;
-}
-
-.btn-close {
-  padding: 0.5rem;
-  margin: -0.5rem -0.5rem -0.5rem auto;
-  background: transparent;
-  border: 0;
-  border-radius: 6px;
-  opacity: 0.5;
-  font-size: 1.25rem;
-  cursor: pointer;
-  transition: opacity 0.15s ease-in-out;
-}
-
-.btn-close:hover {
-  opacity: 0.75;
-}
-
-.btn-close::before {
-  content: "×";
-  font-weight: bold;
-  color: #000;
-}
-
-.modal-body {
-  position: relative;
-  flex: 1 1 auto;
-  padding: 1.5rem;
-  max-height: 70vh;
-  overflow-y: auto;
-}
-
-.modal-footer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #dee2e6;
-  border-bottom-right-radius: 12px;
-  border-bottom-left-radius: 12px;
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-  gap: 0.5rem;
-}
-
-/* Detail modal styles */
-.detail-group {
-  margin-bottom: 1rem;
-}
-
-.detail-label {
-  font-weight: 600;
-  color: #495057;
-  font-size: 0.875rem;
-  margin-bottom: 0.25rem;
-  display: block;
-}
-
-.detail-value {
-  color: #212529;
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-.detail-text {
-  background-color: #f8f9fa;
-  padding: 0.75rem;
-  border-radius: 6px;
-  border-left: 3px solid #4285f4;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-
-/* Transitions */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-/* Gradient text */
-.text-gradient {
-  background: linear-gradient(135deg, #4285f4, #34a853);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  font-weight: 700;
-}
-
-/* Card footer */
-.card-footer {
-  background-color: #f8f9fa;
-  border-top: 1px solid #dee2e6;
-  padding: 1rem 1.5rem;
-}
-
-/* Responsive design */
 @media (max-width: 768px) {
   .list-penanganan-container {
-    padding: 15px;
-  }
-  
-  .header-section .col-md-4 {
-    text-align: left !important;
-    margin-top: 1rem;
-  }
-  
-  .filters-section .row {
-    margin-bottom: 0;
-  }
-  
-  .filters-section .col-md-6 {
-    margin-bottom: 1rem;
+    padding: 1rem;
   }
   
   .table-responsive {
-    border-radius: 6px;
-  }
-  
-  .table thead {
-    display: none;
-  }
-  
-  .table,
-  .table tbody,
-  .table tr,
-  .table td {
-    display: block;
-    width: 100%;
-  }
-  
-  .table tr {
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    padding: 1rem;
-    background-color: #fff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  }
-  
-  .table td {
-    border: none;
-    border-bottom: 1px solid #dee2e6;
-    position: relative;
-    padding-left: 50% !important;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-  }
-  
-  .table td:last-child {
-    border-bottom: none;
-  }
-  
-  .table td::before {
-    content: attr(data-label);
-    position: absolute;
-    left: 6px;
-    width: 45%;
-    padding-right: 10px;
-    white-space: nowrap;
-    font-weight: bold;
-    color: #495057;
+    font-size: 0.875rem;
   }
   
   .btn-group {
-    display: flex;
     flex-direction: column;
-    width: 100%;
+    gap: 0.25rem;
   }
   
   .btn-group .btn {
     margin-right: 0;
-    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
   }
-  
-  .btn-group .btn:last-child {
-    margin-bottom: 0;
-  }
-  
-  .modal-dialog {
-    margin: 1rem;
-    max-width: calc(100vw - 2rem);
-  }
-  
-  .pagination {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  
-  .card-footer .row {
-    text-align: center;
-  }
-  
-  .card-footer .col-md-6 {
-    margin-bottom: 1rem;
-  }
-  
-  .card-footer .col-md-6:last-child {
-    margin-bottom: 0;
-  }
-}
-
-@media (max-width: 576px) {
-  .header-section .card-body,
-  .filters-section .card-body {
-    padding: 1rem;
-  }
-  
-  .btn-lg {
-    font-size: 0.9rem;
-    padding: 0.5rem 1rem;
-  }
-  
-  .modal-header,
-  .modal-body,
-  .modal-footer {
-    padding: 1rem;
-  }
-  
-  .detail-group {
-    margin-bottom: 0.75rem;
-  }
-  
-  .avatar-circle {
-    width: 35px;
-    height: 35px;
-    font-size: 0.8rem;
-  }
-}
-
-/* Print styles */
-@media print {
-  .list-penanganan-container {
-    padding: 0;
-  }
-  
-  .header-section .btn,
-  .filters-section,
-  .card-footer,
-  .table td:last-child {
-    display: none !important;
-  }
-  
-  .card {
-    border: none !important;
-    box-shadow: none !important;
-  }
-  
-  .card-header {
-    background: #f8f9fa !important;
-    color: #000 !important;
-    -webkit-print-color-adjust: exact;
-  }
-  
-  .table {
-    font-size: 0.8rem;
-  }
-  
-  .badge {
-    border: 1px solid #000;
-    color: #000 !important;
-    background: transparent !important;
-  }
-}
-
-/* Accessibility improvements */
-.btn:focus,
-.form-control:focus,
-.form-select:focus,
-.page-link:focus {
-  outline: 2px solid #4285f4;
-  outline-offset: 2px;
-}
-
-.btn:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
 }
 </style>
