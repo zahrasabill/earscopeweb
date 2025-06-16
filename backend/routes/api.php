@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VideoController;
+use App\Http\Controllers\PenangananController;
 
 
 Route::post('login', [AuthController::class, 'login']);
@@ -45,9 +46,16 @@ Route::middleware('jwt.auth')->group(function () {
         Route::get('videos/pasien', [UserController::class, 'showVideosByPasienId']);
         Route::post('videos/{videoId}/assign/{userId}', [VideoController::class, 'assignToUser']);
         Route::patch('/videos/{videoId}', [VideoController::class, 'updateStatusVideo']);
+        Route::patch('v1/videos/{videoId}/keterangan', [VideoController::class, 'updateKeterangan']);
         
         Route::get('pasien', [UserController::class, 'getAllPasien']);
         Route::post('register/pasien', [UserController::class, 'registerPasien']);
+
+        Route::get('penanganan', [PenangananController::class, 'index']);
+        Route::post('penanganan', [PenangananController::class, 'store']);
+        Route::get('penanganan/{id}', [PenangananController::class, 'show']);
+        Route::put('penanganan/{id}', [PenangananController::class, 'update']);
+        Route::delete('penanganan/{id}/force-delete', [PenangananController::class, 'forceDelete']);
     });
 
 });

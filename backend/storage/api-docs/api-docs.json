@@ -1,7 +1,8 @@
 {
     "openapi": "3.0.0",
     "info": {
-        "title": "Earscope API",
+        "title": "EarScope API",
+        "description": "Dokumentasi API untuk EarScope",
         "version": "1.0"
     },
     "paths": {
@@ -77,6 +78,406 @@
                 "responses": {
                     "200": {
                         "description": "Token refreshed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/penanganan": {
+            "get": {
+                "tags": [
+                    "Penanganan"
+                ],
+                "summary": "Get all penanganan records",
+                "operationId": "4b92bbb7e1f6303640289d52c212ad5b",
+                "responses": {
+                    "200": {
+                        "description": "List of penanganan records",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Data penanganan berhasil diambil"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Penanganan"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Penanganan"
+                ],
+                "summary": "Create new penanganan record",
+                "operationId": "b21ee7904e0d9048ffd26fa09c36339f",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "user_id",
+                                    "tanggal_penanganan",
+                                    "keluhan",
+                                    "diagnosis_manual",
+                                    "telinga_terkena",
+                                    "tindakan"
+                                ],
+                                "properties": {
+                                    "user_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "tanggal_penanganan": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2024-01-15"
+                                    },
+                                    "keluhan": {
+                                        "type": "string",
+                                        "example": "Telinga terasa sakit dan berdenging"
+                                    },
+                                    "riwayat_penyakit": {
+                                        "type": "string",
+                                        "example": "Pernah mengalami infeksi telinga"
+                                    },
+                                    "diagnosis_manual": {
+                                        "type": "string",
+                                        "example": "Otitis Media Akut"
+                                    },
+                                    "telinga_terkena": {
+                                        "type": "string",
+                                        "enum": [
+                                            "kiri",
+                                            "kanan",
+                                            "keduanya"
+                                        ],
+                                        "example": "kiri"
+                                    },
+                                    "tindakan": {
+                                        "type": "string",
+                                        "example": "Pemberian antibiotik dan analgesik"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Penanganan record created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Data penanganan berhasil dibuat"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Penanganan"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Validation failed"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/penanganan/{id}": {
+            "get": {
+                "tags": [
+                    "Penanganan"
+                ],
+                "summary": "Get specific penanganan record",
+                "operationId": "4c259ee0dced5e73b038edcd2a18eea7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Penanganan record details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Data penanganan berhasil diambil"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Penanganan"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Penanganan not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Data penanganan tidak ditemukan"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Penanganan"
+                ],
+                "summary": "Update penanganan record",
+                "operationId": "ab0de9ed486308db49700b557e27251b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "tanggal_penanganan": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2024-01-15"
+                                    },
+                                    "keluhan": {
+                                        "type": "string",
+                                        "example": "Telinga terasa sakit dan berdenging"
+                                    },
+                                    "riwayat_penyakit": {
+                                        "type": "string",
+                                        "example": "Pernah mengalami infeksi telinga"
+                                    },
+                                    "diagnosis_manual": {
+                                        "type": "string",
+                                        "example": "Otitis Media Akut"
+                                    },
+                                    "telinga_terkena": {
+                                        "type": "string",
+                                        "enum": [
+                                            "kiri",
+                                            "kanan",
+                                            "keduanya"
+                                        ],
+                                        "example": "kiri"
+                                    },
+                                    "tindakan": {
+                                        "type": "string",
+                                        "example": "Pemberian antibiotik dan analgesik"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Penanganan record updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Data penanganan berhasil diupdate"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Penanganan"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/penanganan/{id}/force-delete": {
+            "delete": {
+                "tags": [
+                    "Penanganan"
+                ],
+                "summary": "Force delete penanganan record",
+                "operationId": "301c1d208578bd9574716abb47a644f0",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Penanganan record deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Data penanganan berhasil dihapus"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Penanganan not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Data penanganan tidak ditemukan"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -335,9 +736,9 @@
                                         "format": "email",
                                         "example": "new.email@example.com"
                                     },
-                                    "no_ktp": {
+                                    "no_telp": {
                                         "type": "string",
-                                        "example": "1234567890123456"
+                                        "example": "08122751"
                                     },
                                     "tanggal_lahir": {
                                         "type": "string",
@@ -850,6 +1251,46 @@
                 ]
             }
         },
+        "/api/v1/videos/{videoId}/keterangan": {
+            "patch": {
+                "tags": [
+                    "Videos"
+                ],
+                "summary": "Update keterangan video",
+                "operationId": "22c90b7440129cb3b27fb35efe70d587",
+                "parameters": [
+                    {
+                        "name": "videoId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "keterangan": {
+                                        "type": "string",
+                                        "example": "Diagnosis manual"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
         "/v1/videos/pasien": {
             "get": {
                 "tags": [
@@ -967,10 +1408,128 @@
             }
         }
     },
+    "components": {
+        "schemas": {
+            "Penanganan": {
+                "title": "Penanganan",
+                "description": "Penanganan model",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "user_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "tanggal_penanganan": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2024-01-15"
+                    },
+                    "keluhan": {
+                        "type": "string",
+                        "example": "Telinga terasa sakit dan berdenging"
+                    },
+                    "riwayat_penyakit": {
+                        "type": "string",
+                        "example": "Pernah mengalami infeksi telinga"
+                    },
+                    "diagnosis_manual": {
+                        "type": "string",
+                        "example": "Otitis Media Akut"
+                    },
+                    "telinga_terkena": {
+                        "type": "string",
+                        "enum": [
+                            "kiri",
+                            "kanan",
+                            "keduanya"
+                        ],
+                        "example": "kiri"
+                    },
+                    "tindakan": {
+                        "type": "string",
+                        "example": "Pemberian antibiotik dan analgesik"
+                    },
+                    "created_by": {
+                        "type": "integer",
+                        "example": 2
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T10:30:00Z"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T10:30:00Z"
+                    },
+                    "user": {
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "example": 1
+                            },
+                            "name": {
+                                "type": "string",
+                                "example": "John Doe"
+                            },
+                            "email": {
+                                "type": "string",
+                                "example": "john@example.com"
+                            },
+                            "role": {
+                                "type": "string",
+                                "example": "pasien"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "created_by_user": {
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "example": 2
+                            },
+                            "name": {
+                                "type": "string",
+                                "example": "Dr. Smith"
+                            },
+                            "email": {
+                                "type": "string",
+                                "example": "doctor@example.com"
+                            },
+                            "role": {
+                                "type": "string",
+                                "example": "dokter"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+                "description": "Masukkan token di kolom ini dengan format Bearer <token>"
+            }
+        }
+    },
     "tags": [
         {
             "name": "Auth",
             "description": "Authentication management endpoints",
+            "x-order": 2
+        },
+        {
+            "name": "Penanganan",
+            "description": "Penanganan management endpoints",
             "x-order": 2
         },
         {
@@ -983,16 +1542,6 @@
             "description": "Videos"
         }
     ],
-    "components": {
-        "securitySchemes": {
-            "bearerAuth": {
-                "type": "http",
-                "scheme": "bearer",
-                "bearerFormat": "JWT",
-                "description": "Masukkan token di kolom ini dengan format Bearer <token>"
-            }
-        }
-    },
     "security": [
         {
             "bearerAuth": []
