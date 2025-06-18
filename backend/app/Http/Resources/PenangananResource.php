@@ -17,72 +17,57 @@ class PenangananResource extends JsonResource
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
-            'tanggal_penanganan' => $this->tanggal_penanganan->format('Y-m-d'),
-            'tanggal_penanganan_formatted' => $this->tanggal_penanganan->format('d F Y'),
+            'tanggal_penanganan' => $this->tanggal_penanganan,
             'keluhan' => $this->keluhan,
             'riwayat_penyakit' => $this->riwayat_penyakit,
             'diagnosis_manual' => $this->diagnosis_manual,
             'telinga_terkena' => $this->telinga_terkena,
             'tindakan' => $this->tindakan,
+            'status' => $this->status,
+            'assigned_to' => $this->assigned_to,
             'created_by' => $this->created_by,
-            'created_at' => $this->created_at->toISOString(),
-            'updated_at' => $this->updated_at->toISOString(),
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'deleted_at' => $this->deleted_at,
             
-            // Relasi user (pasien)
-            'user' => $this->whenLoaded('user', function () {
+            // Relasi user (pasien yang ditangani)
+            'user' => $this->when($this->relationLoaded('user'), function () {
                 return [
                     'id' => $this->user->id,
-                    'name' => $this->user->name,
-                    'email' => $this->user->email,
-                    'role' => $this->user->role,
-                    'phone' => $this->user->phone ?? null,
-                    'date_of_birth' => $this->user->date_of_birth ?? null,
-                    'gender' => $this->user->gender ?? null,
+                    'nama' => $this->user->name,
+                    'kode_akses' => $this->user->kode_akses,
+                    'tanggal_lahir' => $this->user->tanggal_lahir,
+                    'usia' => $this->user->usia,
+                    'gender' => $this->user->gender,
+                    'no_telp' => $this->user->no_telp,
                 ];
             }),
             
-            // Relasi created by user (dokter/admin yang membuat record)
-            'created_by_user' => $this->whenLoaded('createdByUser', function () {
+            // Relasi assigned_to_user (dokter yang di-assign)
+            'assigned_to_user' => $this->when($this->relationLoaded('assignedToUser') && $this->assignedToUser, function () {
+                return [
+                    'id' => $this->assignedToUser->id,
+                    'nama' => $this->assignedToUser->name,
+                    'kode_akses' => $this->assignedToUser->kode_akses,
+                    'tanggal_lahir' => $this->assignedToUser->tanggal_lahir,
+                    'usia' => $this->assignedToUser->usia,
+                    'gender' => $this->assignedToUser->gender,
+                    'no_telp' => $this->assignedToUser->no_telp,
+                ];
+            }),
+            
+            // Relasi created_by_user (user yang membuat record)
+            'created_by_user' => $this->when($this->relationLoaded('createdByUser') && $this->createdByUser, function () {
                 return [
                     'id' => $this->createdByUser->id,
-                    'name' => $this->createdByUser->name,
-                    'email' => $this->createdByUser->email,
-                    'role' => $this->createdByUser->role,
+                    'nama' => $this->createdByUser->name,
+                    'kode_akses' => $this->createdByUser->kode_akses,
+                    'tanggal_lahir' => $this->createdByUser->tanggal_lahir,
+                    'usia' => $this->createdByUser->usia,
+                    'gender' => $this->createdByUser->gender,
+                    'no_telp' => $this->createdByUser->no_telp,
                 ];
             }),
-            
-            // Computed attributes
-            'patient_name' => $this->user->name ?? 'Unknown',
-            'doctor_name' => $this->createdByUser->name ?? 'System',
-            
-            // Additional formatted data for frontend
-            'telinga_display' => $this->getTelingaDisplay(),
-            'summary' => $this->getSummary(),
         ];
-    }
-    
-    /**
-     * Get display text for telinga terkena
-     */
-    private function getTelingaDisplay(): string
-    {
-        return match($this->telinga_terkena) {
-            'kiri' => 'Telinga Kiri',
-            'kanan' => 'Telinga Kanan',
-            'keduanya' => 'Kedua Telinga',
-            default => $this->telinga_terkena
-        };
-    }
-    
-    /**
-     * Get summary of the penanganan for quick view
-     */
-    private function getSummary(): string
-    {
-        $summary = $this->diagnosis_manual;
-        if (strlen($summary) > 50) {
-            $summary = substr($summary, 0, 47) . '...';
-        }
-        return $summary;
     }
 }

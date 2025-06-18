@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @OA\Schema(
@@ -20,43 +20,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *     @OA\Property(property="diagnosis_manual", type="string", example="Otitis Media Akut"),
  *     @OA\Property(property="telinga_terkena", type="string", enum={"kiri", "kanan", "keduanya"}, example="kiri"),
  *     @OA\Property(property="tindakan", type="string", example="Pemberian antibiotik dan analgesik"),
+ *     @OA\Property(property="status", type="string", enum={"unassigned", "assigned"}, example="unassigned"),
  *     @OA\Property(property="created_by", type="integer", example=2),
+ *     @OA\Property(property="assigned_to", type="integer", nullable=true, example=3),
  *     @OA\Property(property="created_at", type="string", format="date-time", example="2024-01-15T10:30:00Z"),
  *     @OA\Property(property="updated_at", type="string", format="date-time", example="2024-01-15T10:30:00Z"),
- *     @OA\Property(
- *         property="user",
- *         type="object",
- *         @OA\Property(property="id", type="integer", example=1),
- *         @OA\Property(property="name", type="string", example="John Doe"),
- *         @OA\Property(property="email", type="string", example="john@example.com"),
- *         @OA\Property(property="role", type="string", example="pasien")
- *     ),
- *     @OA\Property(
- *         property="created_by_user",
- *         type="object",
- *         @OA\Property(property="id", type="integer", example=2),
- *         @OA\Property(property="name", type="string", example="Dr. Smith"),
- *         @OA\Property(property="email", type="string", example="doctor@example.com"),
- *         @OA\Property(property="role", type="string", example="dokter")
- *     )
+ *     @OA\Property(property="deleted_at", type="string", format="date-time", nullable=true, example="2024-01-16T10:30:00Z")
  * )
  */
 class Penanganan extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
-    protected $table = 'penanganans';
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'user_id',
         'tanggal_penanganan',
@@ -65,89 +40,34 @@ class Penanganan extends Model
         'diagnosis_manual',
         'telinga_terkena',
         'tindakan',
-        'created_by'
+        'status',
+        'created_by',
+        'assigned_to'
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'tanggal_penanganan' => 'date',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
     ];
 
-    /**
-     * Get the user that owns the penanganan (patient).
-     */
-    public function user(): BelongsTo
+    protected $dates = [
+        'deleted_at',
+    ];
+
+    // Relasi ke User (Pasien)
+    public function user()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class);
     }
 
-    /**
-     * Get the user who created this penanganan record (doctor/admin).
-     */
-    public function createdByUser(): BelongsTo
+    // Relasi ke User yang membuat penanganan (Dokter/Admin)
+    public function createdByUser()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    /**
-     * Scope a query to only include penanganan for a specific user.
-     */
-    public function scopeForUser($query, $userId)
+    // Relasi ke User yang ditugaskan (Dokter)
+    public function assignedToUser()
     {
-        return $query->where('user_id', $userId);
-    }
-
-    /**
-     * Scope a query to only include penanganan created by a specific user.
-     */
-    public function scopeCreatedBy($query, $userId)
-    {
-        return $query->where('created_by', $userId);
-    }
-
-    /**
-     * Scope a query to filter by telinga terkena.
-     */
-    public function scopeByTelinga($query, $telinga)
-    {
-        return $query->where('telinga_terkena', $telinga);
-    }
-
-    /**
-     * Scope a query to filter by date range.
-     */
-    public function scopeByDateRange($query, $startDate, $endDate)
-    {
-        return $query->whereBetween('tanggal_penanganan', [$startDate, $endDate]);
-    }
-
-    /**
-     * Get formatted tanggal penanganan.
-     */
-    public function getFormattedTanggalAttribute()
-    {
-        return $this->tanggal_penanganan->format('d F Y');
-    }
-
-    /**
-     * Get the patient name.
-     */
-    public function getPatientNameAttribute()
-    {
-        return $this->user->name ?? 'Unknown';
-    }
-
-    /**
-     * Get the doctor name who created this record.
-     */
-    public function getDoctorNameAttribute()
-    {
-        return $this->createdByUser->name ?? 'System';
+        return $this->belongsTo(User::class, 'assigned_to');
     }
 }

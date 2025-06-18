@@ -15,7 +15,7 @@ class Video extends Model
         'processed_video_path',
         'hasil_diagnosis',
         'status',
-        'keterangan',
+        'keterangan'
     ];
 
     // Relasi ke User

@@ -87,13 +87,25 @@
                 ]
             }
         },
-        "/api/v1/penanganan": {
+        "/v1/penanganan": {
             "get": {
                 "tags": [
                     "Penanganan"
                 ],
                 "summary": "Get all penanganan records",
-                "operationId": "4b92bbb7e1f6303640289d52c212ad5b",
+                "operationId": "e61dc13a233190687ba5da7f5e6f5349",
+                "parameters": [
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "description": "Filter penanganan by created date (format: YYYY-MM-DD)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "List of penanganan records",
@@ -153,7 +165,7 @@
                     "Penanganan"
                 ],
                 "summary": "Create new penanganan record",
-                "operationId": "b21ee7904e0d9048ffd26fa09c36339f",
+                "operationId": "bd87c65df24c2e4a4072805a0a212d54",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -263,13 +275,13 @@
                 ]
             }
         },
-        "/api/v1/penanganan/{id}": {
+        "/v1/penanganan/{id}": {
             "get": {
                 "tags": [
                     "Penanganan"
                 ],
                 "summary": "Get specific penanganan record",
-                "operationId": "4c259ee0dced5e73b038edcd2a18eea7",
+                "operationId": "53bf17b3894ad840e1eb488fcf4b4197",
                 "parameters": [
                     {
                         "name": "id",
@@ -336,7 +348,7 @@
                     "Penanganan"
                 ],
                 "summary": "Update penanganan record",
-                "operationId": "ab0de9ed486308db49700b557e27251b",
+                "operationId": "3243cabc5b5163170fb4f20a6f6686c8",
                 "parameters": [
                     {
                         "name": "id",
@@ -419,15 +431,503 @@
                         "bearerAuth": []
                     }
                 ]
+            },
+            "delete": {
+                "tags": [
+                    "Penanganan"
+                ],
+                "summary": "Delete penanganan record",
+                "operationId": "62bbdb296bda8655a04460878a101c97",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Penanganan record deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Data penanganan berhasil dihapus"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Penanganan not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Data penanganan tidak ditemukan"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Penanganan"
+                ],
+                "summary": "Unassign penanganan",
+                "operationId": "44d3372a91a639f40b4fbaa5eb54868f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Penanganan ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Penanganan unassigned successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Penanganan unassigned successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Penanganan"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Penanganan not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
-        "/api/v1/penanganan/{id}/force-delete": {
+        "/v1/penanganan/{id}/assign/{userId}": {
+            "post": {
+                "tags": [
+                    "Penanganan"
+                ],
+                "summary": "Assign penanganan to user",
+                "operationId": "1c38d71becbd47d83a2cb1e914f6a1d5",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Penanganan ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "description": "User ID to assign to",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Penanganan assigned successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Penanganan assigned to user successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Penanganan"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Penanganan or User not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Penanganan tidak ditemukan"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "User is not a patient",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User bukan pasien"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/v1/penanganan/{id}/unassign": {
+            "patch": {
+                "tags": [
+                    "Penanganan"
+                ],
+                "summary": "Unassign penanganan from user",
+                "operationId": "b15aa9072721bd85bceca4dc4a5e49bb",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Penanganan ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Penanganan unassigned successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Penanganan unassigned successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Penanganan"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Penanganan not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Penanganan tidak ditemukan"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/v1/penanganan/pasien": {
+            "get": {
+                "tags": [
+                    "Penanganan"
+                ],
+                "summary": "Get penanganan records assigned to a specific patient",
+                "description": "Get penanganan records filtered by patient. Dokter can see all assigned records to specific patient, Pasien can only see their own assigned records",
+                "operationId": "c2e7c9421426f21dd6f47147e3a726cf",
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "query",
+                        "description": "Patient user ID (required for dokter, ignored for pasien role)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of penanganan records assigned to the patient",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Penanganan"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "User ID is required for dokter",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User ID is required"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/v1/penanganan/{id}/restore": {
+            "patch": {
+                "tags": [
+                    "Penanganan"
+                ],
+                "summary": "Restore soft deleted penanganan record",
+                "operationId": "f3bd7a6b5cc237cf3126aa988842d179",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Penanganan record restored successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Data penanganan berhasil dipulihkan"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Penanganan"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Penanganan not found in trash",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Data penanganan tidak ditemukan di trash"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/v1/penanganan/{id}/soft-delete": {
+            "delete": {
+                "tags": [
+                    "Penanganan"
+                ],
+                "summary": "Soft delete penanganan record",
+                "operationId": "a150078274e5ca5a6714ddf1edef4560",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Penanganan record soft deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Data penanganan berhasil dihapus sementara"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Penanganan not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Data penanganan tidak ditemukan"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/v1/penanganan/{id}/force-delete": {
             "delete": {
                 "tags": [
                     "Penanganan"
                 ],
                 "summary": "Force delete penanganan record",
-                "operationId": "301c1d208578bd9574716abb47a644f0",
+                "operationId": "8f88003c3ca7c71070812a382b8b2fc6",
                 "parameters": [
                     {
                         "name": "id",
@@ -1251,13 +1751,13 @@
                 ]
             }
         },
-        "/api/v1/videos/{videoId}/keterangan": {
+        "/v1/videos/{videoId}/keterangan": {
             "patch": {
                 "tags": [
                     "Videos"
                 ],
                 "summary": "Update keterangan video",
-                "operationId": "22c90b7440129cb3b27fb35efe70d587",
+                "operationId": "381172ed86eaad4862f0055f2032382b",
                 "parameters": [
                     {
                         "name": "videoId",
@@ -1276,7 +1776,7 @@
                                 "properties": {
                                     "keterangan": {
                                         "type": "string",
-                                        "example": "Diagnosis manual"
+                                        "example": "Diagnosis manual yang diisi oleh dokter"
                                     }
                                 },
                                 "type": "object"
@@ -1286,7 +1786,59 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Success"
+                        "description": "Keterangan berhasil diupdate",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Keterangan updated successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "keterangan": {
+                                                    "type": "string"
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Video not found"
+                    },
+                    "500": {
+                        "description": "Server error"
                     }
                 }
             }
@@ -1452,9 +2004,22 @@
                         "type": "string",
                         "example": "Pemberian antibiotik dan analgesik"
                     },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "unassigned",
+                            "assigned"
+                        ],
+                        "example": "unassigned"
+                    },
                     "created_by": {
                         "type": "integer",
                         "example": 2
+                    },
+                    "assigned_to": {
+                        "type": "integer",
+                        "example": 3,
+                        "nullable": true
                     },
                     "created_at": {
                         "type": "string",
@@ -1466,47 +2031,11 @@
                         "format": "date-time",
                         "example": "2024-01-15T10:30:00Z"
                     },
-                    "user": {
-                        "properties": {
-                            "id": {
-                                "type": "integer",
-                                "example": 1
-                            },
-                            "name": {
-                                "type": "string",
-                                "example": "John Doe"
-                            },
-                            "email": {
-                                "type": "string",
-                                "example": "john@example.com"
-                            },
-                            "role": {
-                                "type": "string",
-                                "example": "pasien"
-                            }
-                        },
-                        "type": "object"
-                    },
-                    "created_by_user": {
-                        "properties": {
-                            "id": {
-                                "type": "integer",
-                                "example": 2
-                            },
-                            "name": {
-                                "type": "string",
-                                "example": "Dr. Smith"
-                            },
-                            "email": {
-                                "type": "string",
-                                "example": "doctor@example.com"
-                            },
-                            "role": {
-                                "type": "string",
-                                "example": "dokter"
-                            }
-                        },
-                        "type": "object"
+                    "deleted_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-16T10:30:00Z",
+                        "nullable": true
                     }
                 },
                 "type": "object"

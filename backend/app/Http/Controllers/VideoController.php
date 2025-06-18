@@ -6,7 +6,12 @@ use Illuminate\Http\Request;
 use App\Models\Video;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\File;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Exception;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use Spatie\Permission\Traits\HasRoles;
 
 class VideoController extends Controller
 {
@@ -182,6 +187,101 @@ class VideoController extends Controller
     }
 
     /**
+ * @OA\Put(
+ *     path="/v1/videos/{videoId}/keterangan",
+ *     tags={"Videos"},
+ *     summary="Update keterangan video",
+ *     @OA\Parameter(
+ *         name="videoId",
+ *         in="path",
+ *         required=true,
+ *         @OA\Schema(type="integer")
+ *     ),
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\JsonContent(
+ *             @OA\Property(property="keterangan", type="string", example="Diagnosis manual yang diisi oleh dokter")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Keterangan berhasil diupdate",
+ *         @OA\JsonContent(
+ *             @OA\Property(property="message", type="string", example="Keterangan updated successfully"),
+ *             @OA\Property(property="data", type="object",
+ *                 @OA\Property(property="id", type="integer"),
+ *                 @OA\Property(property="keterangan", type="string"),
+ *                 @OA\Property(property="updated_at", type="string", format="date-time")
+ *             )
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=400,
+ *         description="Validation error",
+ *         @OA\JsonContent(
+ *             @OA\Property(property="message", type="string"),
+ *             @OA\Property(property="errors", type="object")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=404,
+ *         description="Video not found"
+ *     ),
+ *     @OA\Response(
+ *         response=500,
+ *         description="Server error"
+ *     )
+ * )
+ */
+public function updateKeterangan(Request $request, $id, $videoId)
+{
+    try {
+        // Validasi input
+        $validator = Validator::make($request->all(), [
+            'keterangan' => 'required|string|max:2000', // Maksimal 2000 karakter
+        ], [
+            'keterangan.required' => 'Keterangan harus diisi',
+            'keterangan.string' => 'Keterangan harus berupa teks',
+            'keterangan.max' => 'Keterangan maksimal 2000 karakter'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 400);
+        }
+
+        // Cari video berdasarkan ID
+        $video = Video::findOrFail($videoId);
+        
+        // Update keterangan
+        $video->keterangan = $request->keterangan;
+        $video->save();
+
+        return response()->json([
+            'message' => 'Keterangan updated successfully',
+            'data' => [
+                'id' => $video->id,
+                'keterangan' => $video->keterangan,
+                'updated_at' => $video->updated_at->toISOString()
+            ]
+        ], 200);
+
+    } catch (ModelNotFoundException $e) {
+        return response()->json([
+            'message' => 'Video not found'
+        ], 404);
+    } catch (Exception $e) {
+        Log::error('Error updating keterangan: ' . $e->getMessage());
+        
+        return response()->json([
+            'message' => 'Internal server error'
+        ], 500);
+    }
+}
+
+    /**
      * @OA\Get(
      *     path="/v1/videos",
      *     summary="Get all videos",
@@ -218,13 +318,13 @@ class VideoController extends Controller
      */
     public function showAllVideos(Request $request)
     {
-        $user = auth()->user();
+        $user = Auth::user();
         $videos = collect();
 
         // Check if date parameter is provided
         $dateFilter = $request->query('date');
 
-        if ($user->hasRole('dokter')) {
+        if ($user->role === 'dokter') {
             $videosQuery = Video::with('user');
 
             // Apply date filter if provided
@@ -233,7 +333,7 @@ class VideoController extends Controller
             }
 
             $videos = $videosQuery->get();
-        } elseif ($user->hasRole('pasien')) {
+        } elseif ($user->role === 'pasien') {
             $videosQuery = Video::where('user_id', $user->id)->with('user');
 
             // Apply date filter if provided
@@ -307,10 +407,10 @@ class VideoController extends Controller
      */
     public function showVideosByPasienId(Request $request)
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
         // Pastikan user memiliki hak akses untuk melihat video pasien
-        if (!$user->hasRole('dokter')) {
+        if ($user->role !== 'dokter') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -353,10 +453,10 @@ class VideoController extends Controller
         exec($command, $output, $returnCode);
 
         // Logging hasil eksekusi
-        \Log::info('FFmpeg output', ['output' => $output]);
+        Log::info('FFmpeg output', ['output' => $output]);
 
         if ($returnCode !== 0 || !file_exists($outputPath)) {
-            \Log::error('FFmpeg conversion failed', ['command' => $command, 'output' => $output]);
+            Log::error('FFmpeg conversion failed', ['command' => $command, 'output' => $output]);
             throw new \Exception("FFmpeg conversion failed. See logs for details.");
         }
     }

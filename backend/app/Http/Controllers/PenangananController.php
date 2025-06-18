@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Penanganan;
+use App\Models\User;
 use App\Http\Resources\PenangananResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+
 
 /**
  * @OA\Tag(
@@ -20,10 +23,17 @@ class PenangananController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/api/v1/penanganan",
+     *     path="/v1/penanganan",
      *     summary="Get all penanganan records",
      *     tags={"Penanganan"},
      *     security={{"bearerAuth": {}}},
+     *     @OA\Parameter(
+     *         name="date",
+     *         in="query",
+     *         description="Filter penanganan by created date (format: YYYY-MM-DD)",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date")
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="List of penanganan records",
@@ -43,28 +53,72 @@ class PenangananController extends Controller
      *     )
      * )
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         try {
             $user = Auth::user();
+            $dateFilter = $request->query('date');
             
             // Jika dokter, bisa lihat semua penanganan
-            // Jika pasien, hanya bisa lihat penanganan miliknya sendiri
+            // Jika pasien, hanya bisa lihat penanganan yang di-assign ke dia
             if ($user->role === 'pasien') {
-                $penanganan = Penanganan::with('user')
-                    ->where('user_id', $user->id)
-                    ->orderBy('tanggal_penanganan', 'desc')
-                    ->get();
+                $query = Penanganan::with(['user', 'assignedToUser', 'createdByUser'])
+                    ->where('assigned_to', $user->id)
+                    ->where('status', 'assigned');
             } else {
-                $penanganan = Penanganan::with('user')
-                    ->orderBy('tanggal_penanganan', 'desc')
-                    ->get();
+                $query = Penanganan::with(['user', 'assignedToUser', 'createdByUser']);
             }
+
+            // Apply date filter if provided
+            if ($dateFilter) {
+                $query->whereDate('created_at', $dateFilter);
+            }
+
+            $penanganan = $query->orderBy('tanggal_penanganan', 'desc')->get();
+
+            // Format data seperti VideoController
+            $formattedData = $penanganan->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'user_id' => $item->user_id,
+                    'tanggal_penanganan' => $item->tanggal_penanganan,
+                    'keluhan' => $item->keluhan,
+                    'riwayat_penyakit' => $item->riwayat_penyakit,
+                    'diagnosis_manual' => $item->diagnosis_manual,
+                    'telinga_terkena' => $item->telinga_terkena,
+                    'tindakan' => $item->tindakan,
+                    'status' => $item->status,
+                    'assigned_to' => $item->assigned_to,
+                    'created_by' => $item->created_by,
+                    'created_at' => $item->created_at,
+                    'updated_at' => $item->updated_at,
+                    'deleted_at' => $item->deleted_at,
+                    // Relasi data
+                    'user' => $item->user ? [
+                        'id' => $item->user->id,
+                        'name' => $item->user->name,
+                        'kode_akses' => $item->user->kode_akses,
+                        'role' => $item->user->role
+                    ] : null,
+                    'assigned_to_user' => $item->assignedToUser ? [
+                        'id' => $item->assignedToUser->id,
+                        'name' => $item->assignedToUser->name,
+                        'kode_akses' => $item->assignedToUser->kode_akses,
+                        'role' => $item->assignedToUser->role
+                    ] : null,
+                    'created_by_user' => $item->createdByUser ? [
+                        'id' => $item->createdByUser->id,
+                        'name' => $item->createdByUser->name,
+                        'kode_akses' => $item->createdByUser->kode_akses,
+                        'role' => $item->createdByUser->role
+                    ] : null,
+                ];
+            });
 
             return response()->json([
                 'success' => true,
                 'message' => 'Data penanganan berhasil diambil',
-                'data' => PenangananResource::collection($penanganan)
+                'data' => $formattedData
             ], 200);
 
         } catch (\Exception $e) {
@@ -78,7 +132,7 @@ class PenangananController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/v1/penanganan",
+     *     path="/v1/penanganan",
      *     summary="Create new penanganan record",
      *     tags={"Penanganan"},
      *     security={{"bearerAuth": {}}},
@@ -144,15 +198,54 @@ class PenangananController extends Controller
                 'diagnosis_manual' => $request->diagnosis_manual,
                 'telinga_terkena' => $request->telinga_terkena,
                 'tindakan' => $request->tindakan,
+                'status' => 'unassigned',
+                'assigned_to' => null,
                 'created_by' => Auth::id()
             ]);
 
-            $penanganan->load('user');
+            $penanganan->load(['user', 'assignedToUser', 'createdByUser']);
+
+            // Format data seperti VideoController
+            $formattedData = [
+                'id' => $penanganan->id,
+                'user_id' => $penanganan->user_id,
+                'tanggal_penanganan' => $penanganan->tanggal_penanganan,
+                'keluhan' => $penanganan->keluhan,
+                'riwayat_penyakit' => $penanganan->riwayat_penyakit,
+                'diagnosis_manual' => $penanganan->diagnosis_manual,
+                'telinga_terkena' => $penanganan->telinga_terkena,
+                'tindakan' => $penanganan->tindakan,
+                'status' => $penanganan->status,
+                'assigned_to' => $penanganan->assigned_to,
+                'created_by' => $penanganan->created_by,
+                'created_at' => $penanganan->created_at,
+                'updated_at' => $penanganan->updated_at,
+                'deleted_at' => $penanganan->deleted_at,
+                // Relasi data
+                'user' => $penanganan->user ? [
+                    'id' => $penanganan->user->id,
+                    'name' => $penanganan->user->name,
+                    'kode_akses' => $penanganan->user->kode_akses,
+                    'role' => $penanganan->user->role
+                ] : null,
+                'assigned_to_user' => $penanganan->assignedToUser ? [
+                    'id' => $penanganan->assignedToUser->id,
+                    'name' => $penanganan->assignedToUser->name,
+                    'kode_akses' => $penanganan->assignedToUser->kode_akses,
+                    'role' => $penanganan->assignedToUser->role
+                ] : null,
+                'created_by_user' => $penanganan->createdByUser ? [
+                    'id' => $penanganan->createdByUser->id,
+                    'name' => $penanganan->createdByUser->name,
+                    'kode_akses' => $penanganan->createdByUser->kode_akses,
+                    'role' => $penanganan->createdByUser->role
+                ] : null,
+            ];
 
             return response()->json([
                 'success' => true,
                 'message' => 'Data penanganan berhasil dibuat',
-                'data' => new PenangananResource($penanganan)
+                'data' => $formattedData
             ], 201);
 
         } catch (\Exception $e) {
@@ -166,7 +259,7 @@ class PenangananController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/v1/penanganan/{id}",
+     *     path="/v1/penanganan/{id}",
      *     summary="Get specific penanganan record",
      *     tags={"Penanganan"},
      *     security={{"bearerAuth": {}}},
@@ -200,7 +293,7 @@ class PenangananController extends Controller
         try {
             $user = Auth::user();
             
-            $penanganan = Penanganan::with('user')->find($id);
+            $penanganan = Penanganan::with(['user', 'assignedToUser', 'createdByUser'])->find($id);
 
             if (!$penanganan) {
                 return response()->json([
@@ -209,18 +302,55 @@ class PenangananController extends Controller
                 ], 404);
             }
 
-            // Jika pasien, hanya bisa lihat penanganan miliknya sendiri
-            if ($user->role === 'pasien' && $penanganan->user_id !== $user->id) {
+            // Jika pasien, hanya bisa lihat penanganan yang di-assign ke dia
+            if ($user->role === 'pasien' && $penanganan->assigned_to !== $user->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Akses ditolak'
                 ], 403);
             }
 
+            // Format data seperti VideoController
+            $formattedData = [
+                'id' => $penanganan->id,
+                'user_id' => $penanganan->user_id,
+                'tanggal_penanganan' => $penanganan->tanggal_penanganan,
+                'keluhan' => $penanganan->keluhan,
+                'riwayat_penyakit' => $penanganan->riwayat_penyakit,
+                'diagnosis_manual' => $penanganan->diagnosis_manual,
+                'telinga_terkena' => $penanganan->telinga_terkena,
+                'tindakan' => $penanganan->tindakan,
+                'status' => $penanganan->status,
+                'assigned_to' => $penanganan->assigned_to,
+                'created_by' => $penanganan->created_by,
+                'created_at' => $penanganan->created_at,
+                'updated_at' => $penanganan->updated_at,
+                'deleted_at' => $penanganan->deleted_at,
+                // Relasi data
+                'user' => $penanganan->user ? [
+                    'id' => $penanganan->user->id,
+                    'name' => $penanganan->user->name,
+                    'kode_akses' => $penanganan->user->kode_akses,
+                    'role' => $penanganan->user->role
+                ] : null,
+                'assigned_to_user' => $penanganan->assignedToUser ? [
+                    'id' => $penanganan->assignedToUser->id,
+                    'name' => $penanganan->assignedToUser->name,
+                    'kode_akses' => $penanganan->assignedToUser->kode_akses,
+                    'role' => $penanganan->assignedToUser->role
+                ] : null,
+                'created_by_user' => $penanganan->createdByUser ? [
+                    'id' => $penanganan->createdByUser->id,
+                    'name' => $penanganan->createdByUser->name,
+                    'kode_akses' => $penanganan->createdByUser->kode_akses,
+                    'role' => $penanganan->createdByUser->role
+                ] : null,
+            ];
+
             return response()->json([
                 'success' => true,
                 'message' => 'Data penanganan berhasil diambil',
-                'data' => new PenangananResource($penanganan)
+                'data' => $formattedData
             ], 200);
 
         } catch (\Exception $e) {
@@ -234,7 +364,7 @@ class PenangananController extends Controller
 
     /**
      * @OA\Put(
-     *     path="/api/v1/penanganan/{id}",
+     *     path="/v1/penanganan/{id}",
      *     summary="Update penanganan record",
      *     tags={"Penanganan"},
      *     security={{"bearerAuth": {}}},
@@ -304,12 +434,49 @@ class PenangananController extends Controller
                 'tindakan'
             ]));
 
-            $penanganan->load('user');
+            $penanganan->load(['user', 'assignedToUser', 'createdByUser']);
+
+            // Format data seperti VideoController
+            $formattedData = [
+                'id' => $penanganan->id,
+                'user_id' => $penanganan->user_id,
+                'tanggal_penanganan' => $penanganan->tanggal_penanganan,
+                'keluhan' => $penanganan->keluhan,
+                'riwayat_penyakit' => $penanganan->riwayat_penyakit,
+                'diagnosis_manual' => $penanganan->diagnosis_manual,
+                'telinga_terkena' => $penanganan->telinga_terkena,
+                'tindakan' => $penanganan->tindakan,
+                'status' => $penanganan->status,
+                'assigned_to' => $penanganan->assigned_to,
+                'created_by' => $penanganan->created_by,
+                'created_at' => $penanganan->created_at,
+                'updated_at' => $penanganan->updated_at,
+                'deleted_at' => $penanganan->deleted_at,
+                // Relasi data
+                'user' => $penanganan->user ? [
+                    'id' => $penanganan->user->id,
+                    'name' => $penanganan->user->name,
+                    'kode_akses' => $penanganan->user->kode_akses,
+                    'role' => $penanganan->user->role
+                ] : null,
+                'assigned_to_user' => $penanganan->assignedToUser ? [
+                    'id' => $penanganan->assignedToUser->id,
+                    'name' => $penanganan->assignedToUser->name,
+                    'kode_akses' => $penanganan->assignedToUser->kode_akses,
+                    'role' => $penanganan->assignedToUser->role
+                ] : null,
+                'created_by_user' => $penanganan->createdByUser ? [
+                    'id' => $penanganan->createdByUser->id,
+                    'name' => $penanganan->createdByUser->name,
+                    'kode_akses' => $penanganan->createdByUser->kode_akses,
+                    'role' => $penanganan->createdByUser->role
+                ] : null,
+            ];
 
             return response()->json([
                 'success' => true,
                 'message' => 'Data penanganan berhasil diupdate',
-                'data' => new PenangananResource($penanganan)
+                'data' => $formattedData
             ], 200);
 
         } catch (\Exception $e) {
@@ -322,8 +489,660 @@ class PenangananController extends Controller
     }
 
     /**
+     * @OA\Post(
+     *     path="/v1/penanganan/{id}/assign/{userId}",
+     *     summary="Assign penanganan to user",
+     *     tags={"Penanganan"},
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer"),
+     *         description="Penanganan ID"
+     *     ),
+     *     @OA\Parameter(
+     *         name="userId",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer"),
+     *         description="User ID to assign to"
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Penanganan assigned successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Penanganan assigned to user successfully"),
+     *             @OA\Property(property="data", ref="#/components/schemas/Penanganan")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Penanganan or User not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Penanganan tidak ditemukan")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="User is not a patient",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="User bukan pasien")
+     *         )
+     *     )
+     * )
+     */
+    public function assignToUser($penangananId, $userId): JsonResponse
+    {
+        try {
+            // Logging awal saat method dipanggil
+            Log::info("Assigning penangananId: $penangananId to userId: $userId");
+
+            // Cari penanganan
+            $penanganan = Penanganan::find($penangananId);
+            if (!$penanganan) {
+                Log::warning("Penanganan tidak ditemukan untuk ID: $penangananId");
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Penanganan tidak ditemukan'
+                ], 404);
+            }
+
+            // Cari user
+            $user = User::find($userId);
+            if (!$user) {
+                Log::warning("User tidak ditemukan untuk ID: $userId");
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User tidak ditemukan'
+                ], 404);
+            }
+
+            // Validasi role user
+            if ($user->role !== 'pasien') {
+                Log::warning("User ID $userId bukan pasien, tapi " . $user->role);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User bukan pasien'
+                ], 400);
+            }
+
+            // Update penanganan
+            $penanganan->update([
+                'assigned_to' => $userId,
+                'status' => 'assigned',
+            ]);
+
+            // Load relasi untuk response
+            $penanganan->load(['user', 'assignedToUser', 'createdByUser']);
+
+            Log::info("Penanganan ID $penangananId berhasil di-assign ke User ID $userId");
+
+            // Format data seperti method lainnya
+            $formattedData = [
+                'id' => $penanganan->id,
+                'user_id' => $penanganan->user_id,
+                'tanggal_penanganan' => $penanganan->tanggal_penanganan,
+                'keluhan' => $penanganan->keluhan,
+                'riwayat_penyakit' => $penanganan->riwayat_penyakit,
+                'diagnosis_manual' => $penanganan->diagnosis_manual,
+                'telinga_terkena' => $penanganan->telinga_terkena,
+                'tindakan' => $penanganan->tindakan,
+                'status' => $penanganan->status,
+                'assigned_to' => $penanganan->assigned_to,
+                'created_by' => $penanganan->created_by,
+                'created_at' => $penanganan->created_at,
+                'updated_at' => $penanganan->updated_at,
+                'deleted_at' => $penanganan->deleted_at,
+                // Relasi data
+                'user' => $penanganan->user ? [
+                    'id' => $penanganan->user->id,
+                    'name' => $penanganan->user->name,
+                    'kode_akses' => $penanganan->user->kode_akses,
+                    'role' => $penanganan->user->role
+                ] : null,
+                'assigned_to_user' => $penanganan->assignedToUser ? [
+                    'id' => $penanganan->assignedToUser->id,
+                    'name' => $penanganan->assignedToUser->name,
+                    'kode_akses' => $penanganan->assignedToUser->kode_akses,
+                    'role' => $penanganan->assignedToUser->role
+                ] : null,
+                'created_by_user' => $penanganan->createdByUser ? [
+                    'id' => $penanganan->createdByUser->id,
+                    'name' => $penanganan->createdByUser->name,
+                    'kode_akses' => $penanganan->createdByUser->kode_akses,
+                    'role' => $penanganan->createdByUser->role
+                ] : null,
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Penanganan assigned to user successfully',
+                'data' => $formattedData
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error("Error assigning penanganan: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal assign penanganan',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * @OA\Patch(
+     *     path="/v1/penanganan/{id}/unassign",
+     *     summary="Unassign penanganan from user",
+     *     tags={"Penanganan"},
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer"),
+     *         description="Penanganan ID"
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Penanganan unassigned successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Penanganan unassigned successfully"),
+     *             @OA\Property(property="data", ref="#/components/schemas/Penanganan")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Penanganan not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Penanganan tidak ditemukan")
+     *         )
+     *     )
+     * )
+     */
+    public function unassignFromUser($id): JsonResponse
+    {
+        try {
+            // Logging awal saat method dipanggil
+            Log::info("Unassigning penanganan ID: $id");
+
+            // Cari penanganan
+            $penanganan = Penanganan::find($id);
+            if (!$penanganan) {
+                Log::warning("Penanganan tidak ditemukan untuk ID: $id");
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Penanganan tidak ditemukan'
+                ], 404);
+            }
+
+            // Update penanganan - set assigned_to ke null dan status ke unassigned
+            $penanganan->update([
+                'assigned_to' => null,
+                'status' => 'unassigned'
+            ]);
+
+            // Load relasi untuk response
+            $penanganan->load(['user', 'assignedToUser', 'createdByUser']);
+
+            Log::info("Penanganan ID $id berhasil di-unassign");
+
+            // Format data seperti method lainnya
+            $formattedData = [
+                'id' => $penanganan->id,
+                'user_id' => $penanganan->user_id,
+                'tanggal_penanganan' => $penanganan->tanggal_penanganan,
+                'keluhan' => $penanganan->keluhan,
+                'riwayat_penyakit' => $penanganan->riwayat_penyakit,
+                'diagnosis_manual' => $penanganan->diagnosis_manual,
+                'telinga_terkena' => $penanganan->telinga_terkena,
+                'tindakan' => $penanganan->tindakan,
+                'status' => $penanganan->status,
+                'assigned_to' => $penanganan->assigned_to,
+                'created_by' => $penanganan->created_by,
+                'created_at' => $penanganan->created_at,
+                'updated_at' => $penanganan->updated_at,
+                'deleted_at' => $penanganan->deleted_at,
+                // Relasi data
+                'user' => $penanganan->user ? [
+                    'id' => $penanganan->user->id,
+                    'name' => $penanganan->user->name,
+                    'kode_akses' => $penanganan->user->kode_akses,
+                    'role' => $penanganan->user->role
+                ] : null,
+                'assigned_to_user' => $penanganan->assignedToUser ? [
+                    'id' => $penanganan->assignedToUser->id,
+                    'name' => $penanganan->assignedToUser->name,
+                    'kode_akses' => $penanganan->assignedToUser->kode_akses,
+                    'role' => $penanganan->assignedToUser->role
+                ] : null,
+                'created_by_user' => $penanganan->createdByUser ? [
+                    'id' => $penanganan->createdByUser->id,
+                    'name' => $penanganan->createdByUser->name,
+                    'kode_akses' => $penanganan->createdByUser->kode_akses,
+                    'role' => $penanganan->createdByUser->role
+                ] : null,
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Penanganan unassigned successfully',
+                'data' => $formattedData
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error("Error unassigning penanganan: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal unassign penanganan',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * @OA\Patch(
+     *     path="/v1/penanganan/{id}",
+     *     summary="Unassign penanganan",
+     *     tags={"Penanganan"},
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer"),
+     *         description="Penanganan ID"
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Penanganan unassigned successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Penanganan unassigned successfully"),
+     *             @OA\Property(property="data", ref="#/components/schemas/Penanganan")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Penanganan not found"
+     *     )
+     * )
+     */
+    public function updateStatusPenanganan($penangananId)
+    {
+        // Temukan penanganan berdasarkan ID
+        $penanganan = Penanganan::findOrFail($penangananId);
+
+        // Update status dan hapus assigned_to - sama seperti VideoController
+        $penanganan->update([
+            'status' => 'unassigned',
+            'assigned_to' => null,
+        ]);
+
+        return response()->json([
+            'message' => 'Penanganan unassigned successfully',
+            'data' => $penanganan,
+        ]);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/v1/penanganan/pasien",
+     *     summary="Get penanganan records assigned to a specific patient",
+     *     description="Get penanganan records filtered by patient. Dokter can see all assigned records to specific patient, Pasien can only see their own assigned records",
+     *     tags={"Penanganan"},
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Parameter(
+     *         name="user_id",
+     *         in="query",
+     *         required=false,
+     *         @OA\Schema(type="integer"),
+     *         description="Patient user ID (required for dokter, ignored for pasien role)"
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of penanganan records assigned to the patient",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/Penanganan")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="User ID is required for dokter",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="User ID is required")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Forbidden",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Unauthorized")
+     *         )
+     *     )
+     * )
+     */
+    public function getPenangananByPasien(Request $request): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized'
+                ], 401);
+            }
+
+            if ($user->role === 'dokter') {
+                // Dokter perlu user_id untuk melihat penanganan pasien tertentu
+                $pasienId = $request->query('user_id');
+
+                if (!$pasienId) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'User ID is required'
+                    ], 400);
+                }
+
+                // Ambil penanganan yang sudah di-assign ke pasien berdasarkan assigned_to
+                $penanganan = Penanganan::where('assigned_to', $pasienId)
+                    ->where('status', 'assigned')
+                    ->with(['user', 'assignedToUser', 'createdByUser'])
+                    ->orderBy('tanggal_penanganan', 'desc')
+                    ->get();
+
+            } elseif ($user->role === 'pasien') {
+                // Pasien hanya bisa melihat penanganan yang di-assign ke mereka
+                $penanganan = Penanganan::where('assigned_to', $user->id)
+                    ->where('status', 'assigned')
+                    ->with(['user', 'assignedToUser', 'createdByUser'])
+                    ->orderBy('tanggal_penanganan', 'desc')
+                    ->get();
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized'
+                ], 403);
+            }
+
+            // Format data sama seperti index method
+            $formattedData = $penanganan->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'user_id' => $item->user_id,
+                    'tanggal_penanganan' => $item->tanggal_penanganan,
+                    'keluhan' => $item->keluhan,
+                    'riwayat_penyakit' => $item->riwayat_penyakit,
+                    'diagnosis_manual' => $item->diagnosis_manual,
+                    'telinga_terkena' => $item->telinga_terkena,
+                    'tindakan' => $item->tindakan,
+                    'status' => $item->status,
+                    'assigned_to' => $item->assigned_to,
+                    'created_by' => $item->created_by,
+                    'created_at' => $item->created_at,
+                    'updated_at' => $item->updated_at,
+                    'deleted_at' => $item->deleted_at,
+                    // Relasi data
+                    'user' => $item->user ? [
+                        'id' => $item->user->id,
+                        'name' => $item->user->name,
+                        'kode_akses' => $item->user->kode_akses,
+                        'role' => $item->user->role
+                    ] : null,
+                    'assigned_to_user' => $item->assignedToUser ? [
+                        'id' => $item->assignedToUser->id,
+                        'name' => $item->assignedToUser->name,
+                        'kode_akses' => $item->assignedToUser->kode_akses,
+                        'role' => $item->assignedToUser->role
+                    ] : null,
+                    'created_by_user' => $item->createdByUser ? [
+                        'id' => $item->createdByUser->id,
+                        'name' => $item->createdByUser->name,
+                        'kode_akses' => $item->createdByUser->kode_akses,
+                        'role' => $item->createdByUser->role
+                    ] : null,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data penanganan berhasil diambil',
+                'data' => $formattedData
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data penanganan',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * @OA\Delete(
-     *     path="/api/v1/penanganan/{id}/force-delete",
+     *     path="/v1/penanganan/{id}",
+     *     summary="Delete penanganan record",
+     *     tags={"Penanganan"},
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Penanganan record deleted successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Data penanganan berhasil dihapus")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Penanganan not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Data penanganan tidak ditemukan")
+     *         )
+     *     )
+     * )
+     */
+    public function delete($id): JsonResponse
+{
+    try {
+        $penanganan = Penanganan::find($id);
+
+        if (!$penanganan) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data penanganan tidak ditemukan'
+            ], 404);
+        }
+
+        $penanganan->delete(); // Ini sekarang akan soft delete
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data penanganan berhasil dihapus sementara'
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal menghapus data penanganan',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+        /**
+     * @OA\Patch(
+     *     path="/v1/penanganan/{id}/restore",
+     *     summary="Restore soft deleted penanganan record",
+     *     tags={"Penanganan"},
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Penanganan record restored successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Data penanganan berhasil dipulihkan"),
+     *             @OA\Property(property="data", ref="#/components/schemas/Penanganan")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Penanganan not found in trash",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Data penanganan tidak ditemukan di trash")
+     *         )
+     *     )
+     * )
+     */
+    public function restore($id): JsonResponse
+    {
+        try {
+            $penanganan = Penanganan::onlyTrashed()->find($id);
+
+            if (!$penanganan) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data penanganan tidak ditemukan di trash'
+                ], 404);
+            }
+
+            $penanganan->restore();
+            $penanganan->load(['user', 'assignedToUser', 'createdByUser']);
+
+            // Format data seperti method lainnya
+            $formattedData = [
+                'id' => $penanganan->id,
+                'user_id' => $penanganan->user_id,
+                'tanggal_penanganan' => $penanganan->tanggal_penanganan,
+                'keluhan' => $penanganan->keluhan,
+                'riwayat_penyakit' => $penanganan->riwayat_penyakit,
+                'diagnosis_manual' => $penanganan->diagnosis_manual,
+                'telinga_terkena' => $penanganan->telinga_terkena,
+                'tindakan' => $penanganan->tindakan,
+                'status' => $penanganan->status,
+                'assigned_to' => $penanganan->assigned_to,
+                'created_by' => $penanganan->created_by,
+                'created_at' => $penanganan->created_at,
+                'updated_at' => $penanganan->updated_at,
+                'deleted_at' => $penanganan->deleted_at,
+                // Relasi data
+                'user' => $penanganan->user ? [
+                    'id' => $penanganan->user->id,
+                    'name' => $penanganan->user->name,
+                    'kode_akses' => $penanganan->user->kode_akses,
+                    'role' => $penanganan->user->role
+                ] : null,
+                'assigned_to_user' => $penanganan->assignedToUser ? [
+                    'id' => $penanganan->assignedToUser->id,
+                    'name' => $penanganan->assignedToUser->name,
+                    'kode_akses' => $penanganan->assignedToUser->kode_akses,
+                    'role' => $penanganan->assignedToUser->role
+                ] : null,
+                'created_by_user' => $penanganan->createdByUser ? [
+                    'id' => $penanganan->createdByUser->id,
+                    'name' => $penanganan->createdByUser->name,
+                    'kode_akses' => $penanganan->createdByUser->kode_akses,
+                    'role' => $penanganan->createdByUser->role
+                ] : null,
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data penanganan berhasil dipulihkan',
+                'data' => $formattedData
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memulihkan data penanganan',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * @OA\Delete(
+     *     path="/v1/penanganan/{id}/soft-delete",
+     *     summary="Soft delete penanganan record",
+     *     tags={"Penanganan"},
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Penanganan record soft deleted successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Data penanganan berhasil dihapus sementara")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Penanganan not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Data penanganan tidak ditemukan")
+     *         )
+     *     )
+     * )
+     */
+    public function softDelete($id): JsonResponse
+    {
+        try {
+            $penanganan = Penanganan::find($id);
+
+            if (!$penanganan) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data penanganan tidak ditemukan'
+                ], 404);
+            }
+
+            $penanganan->delete(); // Ini akan melakukan soft delete karena SoftDeletes trait
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data penanganan berhasil dihapus sementara'
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus data penanganan',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * @OA\Delete(
+     *     path="/v1/penanganan/{id}/force-delete",
      *     summary="Force delete penanganan record",
      *     tags={"Penanganan"},
      *     security={{"bearerAuth": {}}},
