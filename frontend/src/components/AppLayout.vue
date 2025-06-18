@@ -98,7 +98,7 @@
           <router-link 
             to="/riwayat" 
             class="nav-link text-white d-flex align-items-center"
-            :class="{ 'active-menu': activePage === 'riwayat' }"
+            :class="{ 'active-menu': activePage === 'riwayatresource' || activePage === 'riwayat' }"
             @click="closeSidebar"
           >
             <i class="bi bi-clock-history me-3"></i>
@@ -212,7 +212,7 @@ export default {
         pasienresource: "Kelola Pasien",
         pemeriksaanresource: "Hasil Pemeriksaan",
         penangananresource: "Penanganan",
-        riwayat: "Riwayat Pemeriksaan",
+        riwayatresource: "Riwayat Pemeriksaan"
       };
       this.pageTitle = titles[page] || "Dashboard";
     },

@@ -33,6 +33,7 @@
                     id="patientSelect" 
                     class="form-select"
                     :class="{ 'is-invalid': errors.patientId }"
+                    @change="onPatientSelect"
                     required
                   >
                     <option value="" disabled>-- Pilih Pasien --</option>
@@ -42,6 +43,62 @@
                   </select>
                   <div v-if="errors.patientId" class="invalid-feedback">
                     {{ errors.patientId }}
+                  </div>
+                </div>
+
+                <!-- Patient Information Card -->
+                <div v-if="selectedPatientInfo" class="card border-info mb-3">
+                  <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                      <i class="fas fa-info-circle me-2"></i>Informasi Pasien
+                    </h6>
+                  </div>
+                  <div class="card-body">
+                    <div v-if="loadingPatientInfo" class="text-center py-3">
+                      <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                      <span>Memuat informasi pasien...</span>
+                    </div>
+                    <div v-else class="row">
+                      <div class="col-md-6">
+                        <div class="patient-info-item">
+                          <label class="fw-bold text-muted">Nama Lengkap:</label>
+                          <p class="mb-2">{{ selectedPatientInfo.name || '-' }}</p>
+                        </div>
+                        <div class="patient-info-item">
+                          <label class="fw-bold text-muted">No. Rekam Medis:</label>
+                          <p class="mb-2">{{ selectedPatientInfo.kode_akses || '-' }}</p>
+                        </div>
+                        <div class="patient-info-item">
+                          <label class="fw-bold text-muted">Tanggal Lahir:</label>
+                          <p class="mb-2">{{ formatDate(selectedPatientInfo.tanggal_lahir) || '-' }}</p>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="patient-info-item">
+                          <label class="fw-bold text-muted">Usia:</label>
+                          <p class="mb-2">{{ calculateAge(selectedPatientInfo.tanggal_lahir) }}</p>
+                        </div>
+                        <div class="patient-info-item">
+                          <label class="fw-bold text-muted">No. Telepon:</label>
+                          <p class="mb-2">{{ selectedPatientInfo.no_telp || '-' }}</p>
+                        </div>
+                        <div class="patient-info-item">
+                          <label class="fw-bold text-muted">Jenis Kelamin:</label>
+                          <p class="mb-2">
+                            <span
+                              class="badge"
+                              :class="selectedPatientInfo.gender.toLowerCase() === 'laki-laki' ? 'bg-primary' : selectedPatientInfo.gender.toLowerCase() === 'perempuan' ? 'bg-pink' : 'bg-secondary'"
+                            >
+                              {{ selectedPatientInfo.gender.toLowerCase() === 'laki-laki'
+                                ? 'Laki-laki'
+                                : selectedPatientInfo.gender.toLowerCase() === 'perempuan'
+                                ? 'Perempuan'
+                                : '-' }}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -338,6 +395,10 @@ export default {
     const showSuccessModal = ref(false);
     const showAccessDeniedModal = ref(false);
     const selectedPatientName = ref('');
+    const loadingPatientInfo = ref(false);
+
+    // Patient information
+    const selectedPatientInfo = ref(null);
 
     // User role from JWT
     const userRole = ref('pasien');
@@ -354,7 +415,7 @@ export default {
 
     // Redirect to home page
     const redirectToHome = () => {
-      router.push({ name: 'home' }); // Sesuaikan dengan route home Anda
+      router.push({ name: 'login' }); 
     };
 
     // Function to get user role from JWT
@@ -380,6 +441,78 @@ export default {
         return false;
       }
       return true;
+    };
+
+    // Fetch patient details
+    const fetchPatientDetails = async (patientId) => {
+      try {
+        loadingPatientInfo.value = true;
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+        
+        const response = await axios.get(api.getEndpoint(`users/${patientId}`), {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        selectedPatientInfo.value = response.data.data || response.data;
+        console.log('Patient details loaded:', selectedPatientInfo.value);
+        
+      } catch (error) {
+        console.error('Error fetching patient details:', error);
+        selectedPatientInfo.value = null;
+        
+        if (error.response && error.response.status === 404) {
+          alert('Data pasien tidak ditemukan.');
+        } else {
+          alert('Gagal memuat informasi pasien.');
+        }
+      } finally {
+        loadingPatientInfo.value = false;
+      }
+    };
+
+    // Handle patient selection
+    const onPatientSelect = async () => {
+      if (formData.value.patientId) {
+        await fetchPatientDetails(formData.value.patientId);
+      } else {
+        selectedPatientInfo.value = null;
+      }
+    };
+
+    // Format date function
+    const formatDate = (dateString) => {
+      if (!dateString) return '-';
+      
+      try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('id-ID', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+      } catch (error) {
+        return '-';
+      }
+    };
+
+    // Calculate age function
+    const calculateAge = (birthDate) => {
+      if (!birthDate) return '-';
+      
+      try {
+        const today = new Date();
+        const birth = new Date(birthDate);
+        let age = today.getFullYear() - birth.getFullYear();
+        const monthDiff = today.getMonth() - birth.getMonth();
+        
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+          age--;
+        }
+        
+        return `${age} tahun`;
+      } catch (error) {
+        return '-';
+      }
     };
 
     // Count words in textarea
@@ -521,6 +654,7 @@ export default {
       };
       
       errors.value = {};
+      selectedPatientInfo.value = null;
     };
 
     // Close success modal and reset form
@@ -564,6 +698,8 @@ export default {
       showSuccessModal,
       showAccessDeniedModal,
       selectedPatientName,
+      selectedPatientInfo,
+      loadingPatientInfo,
       userRole,
       countWords,
       selectTelinga,
@@ -573,14 +709,39 @@ export default {
       closeSuccessModal,
       navigateToList,
       redirectToHome,
-      checkDoctorAccess
+      checkDoctorAccess,
+      onPatientSelect,
+      fetchPatientDetails,
+      formatDate,
+      calculateAge
     };
   }
 };
 </script>
 
 <style scoped>
-/* Tambahkan CSS untuk styling modal dan animasi */
+/* Patient Info Card Styling */
+.patient-info-item {
+  margin-bottom: 0.75rem;
+}
+
+.patient-info-item label {
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+  display: block;
+}
+
+.patient-info-item p {
+  font-size: 0.95rem;
+  color: #333;
+  margin-bottom: 0;
+}
+
+.bg-pink {
+  background-color: #e83e8c !important;
+}
+
+/* Existing styles */
 .modal-overlay {
   position: fixed;
   top: 0;

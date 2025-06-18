@@ -1,5 +1,5 @@
 <template>
-  <app-layout activePage="penanganan">
+  <app-layout activePage="riwayatresource">
     <router-view />
   </app-layout>
 </template>
@@ -8,7 +8,7 @@
 import AppLayout from '@/components/AppLayout.vue';
 
 export default {
-  name: 'PenangananView',
+  name: 'RiwayatResource',
   components: {
     AppLayout
   }

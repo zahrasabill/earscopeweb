@@ -70,36 +70,76 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(dokter, index) in paginatedDokters" :key="dokter.id">
+                <tr 
+                  v-for="(dokter, index) in paginatedDokters" 
+                  :key="dokter.id"
+                  :class="{ 'deleted-row': dokter.deleted_at }"
+                >
                   <td>{{ startIndex + index + 1 }}</td>
-                  <td>{{ dokter.name }}</td>
-                  <td>{{ formatDate(dokter.tanggal_lahir) }}</td>
-                  <td>+62{{ dokter.no_telp }}</td>
+                  <td>
+                    <span v-if="dokter.deleted_at" class="text-muted text-decoration-line-through">
+                      {{ dokter.name }} 
+                      <small class="badge bg-secondary ms-2">Dihapus</small>
+                    </span>
+                    <span v-else>{{ dokter.name }}</span>
+                  </td>
+                  <td>
+                    <span :class="{ 'text-muted': dokter.deleted_at }">
+                      {{ formatDate(dokter.tanggal_lahir) }}
+                    </span>
+                  </td>
+                  <td>
+                    <span :class="{ 'text-muted': dokter.deleted_at }">
+                      +62{{ dokter.no_telp }}
+                    </span>
+                  </td>
                   <td>
                     <span 
                       :class="[
                         'badge', 
-                        dokter.gender === 'laki-laki' ? 'bg-primary' : 'bg-info'
+                        dokter.deleted_at ? 'bg-secondary' : (dokter.gender === 'laki-laki' ? 'bg-primary' : 'bg-info')
                       ]"
                     >
                       {{ capitalizeFirst(dokter.gender) }}
                     </span>
                   </td>
-                  <td>{{ dokter.no_str || '-' }}</td>
+                  <td>
+                    <span :class="{ 'text-muted': dokter.deleted_at }">
+                      {{ dokter.no_str || '-' }}
+                    </span>
+                  </td>
                   <td>
                     <div class="d-flex justify-content-center gap-2">
-                      <router-link :to="`/dokter/view/${dokter.id}`" class="btn btn-sm btn-info text-white">
-                        <i class="bi bi-eye"></i>
-                      </router-link>
-                      <router-link :to="`/dokter/edit/${dokter.id}`" class="btn btn-sm btn-warning text-white">
-                        <i class="bi bi-pencil"></i>
-                      </router-link>
-                      <button 
-                        @click="confirmDelete(dokter)" 
-                        class="btn btn-sm btn-danger"
-                      >
-                        <i class="bi bi-trash"></i>
-                      </button>
+                      <template v-if="!dokter.deleted_at">
+                        <router-link :to="`/dokter/view/${dokter.id}`" class="btn btn-sm btn-info text-white">
+                          <i class="bi bi-eye"></i>
+                        </router-link>
+                        <router-link :to="`/dokter/edit/${dokter.id}`" class="btn btn-sm btn-warning text-white">
+                          <i class="bi bi-pencil"></i>
+                        </router-link>
+                        <button 
+                          @click="confirmDelete(dokter)" 
+                          class="btn btn-sm btn-danger"
+                        >
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </template>
+                      <template v-else>
+                        <button 
+                          @click="confirmRestore(dokter)" 
+                          class="btn btn-sm btn-success"
+                          title="Pulihkan dokter"
+                        >
+                          <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                        <button 
+                          @click="confirmPermanentDelete(dokter)" 
+                          class="btn btn-sm btn-outline-danger"
+                          title="Hapus permanen"
+                        >
+                          <i class="bi bi-trash-fill"></i>
+                        </button>
+                      </template>
                     </div>
                   </td>
                 </tr>
@@ -149,13 +189,59 @@
           </div>
           <div class="modal-body">
             <p>Apakah Anda yakin ingin menghapus dokter <strong>{{ selectedDokter?.name }}</strong>?</p>
-            <p class="text-danger"><small>Tindakan ini tidak dapat dibatalkan.</small></p>
+            <p class="text-danger"><small>Data dokter akan dipindahkan ke arsip dan dapat dipulihkan kembali.</small></p>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
             <button type="button" class="btn btn-danger" @click="deleteDokter" :disabled="deleteLoading">
               <span v-if="deleteLoading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
               Hapus
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Konfirmasi Pulihkan -->
+    <div class="modal fade" id="restoreModal" tabindex="-1" aria-labelledby="restoreModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-success text-white">
+            <h5 class="modal-title" id="restoreModalLabel">Konfirmasi Pulihkan</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p>Apakah Anda yakin ingin memulihkan dokter <strong>{{ selectedDokter?.name }}</strong>?</p>
+            <p class="text-success"><small>Data dokter akan dikembalikan ke daftar aktif.</small></p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="button" class="btn btn-success" @click="restoreDokter" :disabled="restoreLoading">
+              <span v-if="restoreLoading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+              Pulihkan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Konfirmasi Hapus Permanen -->
+    <div class="modal fade" id="permanentDeleteModal" tabindex="-1" aria-labelledby="permanentDeleteModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title" id="permanentDeleteModalLabel">Konfirmasi Hapus Permanen</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p>Apakah Anda yakin ingin menghapus permanen dokter <strong>{{ selectedDokter?.name }}</strong>?</p>
+            <p class="text-danger"><strong>PERINGATAN: Tindakan ini tidak dapat dibatalkan dan data akan hilang selamanya!</strong></p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="button" class="btn btn-danger" @click="permanentDeleteDokter" :disabled="permanentDeleteLoading">
+              <span v-if="permanentDeleteLoading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+              Hapus Permanen
             </button>
           </div>
         </div>
@@ -182,7 +268,11 @@ export default {
       itemsPerPage: 10,
       selectedDokter: null,
       deleteModal: null,
-      deleteLoading: false
+      restoreModal: null,
+      permanentDeleteModal: null,
+      deleteLoading: false,
+      restoreLoading: false,
+      permanentDeleteLoading: false
     };
   },
   computed: {
@@ -226,7 +316,8 @@ export default {
           throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
         }
         
-        const response = await api.get('dokter', {
+        // Fetch both active and deleted doctors
+        const response = await api.get('dokter?include_deleted=true', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -325,13 +416,34 @@ export default {
     confirmDelete(dokter) {
       this.selectedDokter = dokter;
       
-      // Initialize modal if needed
       if (!this.deleteModal) {
         const modalElement = document.getElementById('deleteModal');
         this.deleteModal = new Modal(modalElement);
       }
       
       this.deleteModal.show();
+    },
+    
+    confirmRestore(dokter) {
+      this.selectedDokter = dokter;
+      
+      if (!this.restoreModal) {
+        const modalElement = document.getElementById('restoreModal');
+        this.restoreModal = new Modal(modalElement);
+      }
+      
+      this.restoreModal.show();
+    },
+    
+    confirmPermanentDelete(dokter) {
+      this.selectedDokter = dokter;
+      
+      if (!this.permanentDeleteModal) {
+        const modalElement = document.getElementById('permanentDeleteModal');
+        this.permanentDeleteModal = new Modal(modalElement);
+      }
+      
+      this.permanentDeleteModal.show();
     },
     
     async deleteDokter() {
@@ -342,22 +454,94 @@ export default {
         if (!token) {
           throw new Error('Token autentikasi tidak ditemukan');
         }
-        await api.delete(`users/${this.selectedDokter.id}/force-delete`, {
+        
+        // Soft delete
+        await api.delete(`users/${this.selectedDokter.id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
         
         this.deleteModal.hide();
-
-        await this.fetchDokters();
         
-        console.log('Dokter berhasil dihapus');
+        // Update the local data to reflect the soft delete
+        const dokterIndex = this.dokters.findIndex(d => d.id === this.selectedDokter.id);
+        if (dokterIndex !== -1) {
+          this.dokters[dokterIndex].deleted_at = new Date().toISOString();
+          this.applyFilters();
+        }
+        
+        console.log('Dokter berhasil dihapus (soft delete)');
       } catch (err) {
         console.error('Error saat menghapus dokter:', err);
         alert(`Gagal menghapus dokter: ${err.response?.data?.message || err.message}`);
       } finally {
         this.deleteLoading = false;
+      }
+    },
+    
+    async restoreDokter() {
+      if (!this.selectedDokter) return;
+      this.restoreLoading = true;
+      try {
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+        if (!token) {
+          throw new Error('Token autentikasi tidak ditemukan');
+        }
+        
+        // Restore the deleted doctor
+        await api.post(`users/${this.selectedDokter.id}/restore`, {}, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        this.restoreModal.hide();
+        
+        // Update the local data to reflect the restore
+        const dokterIndex = this.dokters.findIndex(d => d.id === this.selectedDokter.id);
+        if (dokterIndex !== -1) {
+          this.dokters[dokterIndex].deleted_at = null;
+          this.applyFilters();
+        }
+        
+        console.log('Dokter berhasil dipulihkan');
+      } catch (err) {
+        console.error('Error saat memulihkan dokter:', err);
+        alert(`Gagal memulihkan dokter: ${err.response?.data?.message || err.message}`);
+      } finally {
+        this.restoreLoading = false;
+      }
+    },
+    
+    async permanentDeleteDokter() {
+      if (!this.selectedDokter) return;
+      this.permanentDeleteLoading = true;
+      try {
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+        if (!token) {
+          throw new Error('Token autentikasi tidak ditemukan');
+        }
+        
+        // Permanent delete
+        await api.delete(`users/${this.selectedDokter.id}?force=true`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        this.permanentDeleteModal.hide();
+        
+        // Remove from local data
+        this.dokters = this.dokters.filter(d => d.id !== this.selectedDokter.id);
+        this.applyFilters();
+        
+        console.log('Dokter berhasil dihapus permanen');
+      } catch (err) {
+        console.error('Error saat menghapus permanen dokter:', err);
+        alert(`Gagal menghapus permanen dokter: ${err.response?.data?.message || err.message}`);
+      } finally {
+        this.permanentDeleteLoading = false;
       }
     }
   }
@@ -405,5 +589,14 @@ export default {
 .modal-content {
   border-radius: 8px;
   overflow: hidden;
+}
+
+.deleted-row {
+  background-color: #f8f9fa;
+  opacity: 0.7;
+}
+
+.text-decoration-line-through {
+  text-decoration: line-through;
 }
 </style>

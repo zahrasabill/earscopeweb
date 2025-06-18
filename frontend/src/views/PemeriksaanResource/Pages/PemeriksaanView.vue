@@ -239,6 +239,10 @@
                       <span class="detail-label">No. Rekam Medis:</span>
                       <span class="detail-value">{{ video.user.kode_akses }}</span>
                     </div>
+                    <div class="detail-row" v-if="video.user.tanggal_lahir">
+                      <span class="detail-label">Tanggal Lahir:</span>
+                      <span class="detail-value">{{ video.user.tanggal_lahir }}</span>
+                    </div>
                     <div class="detail-row" v-if="video.user.usia">
                       <span class="detail-label">Usia:</span>
                       <span class="detail-value">{{ video.user.usia }} tahun</span>
@@ -574,8 +578,7 @@ export default {
         const videoId = videoToDiagnose.value.id;
         const token = localStorage.getItem("token") || sessionStorage.getItem("token");
 
-        // Update video with diagnosis manual (keterangan)
-        await axios.put(api.getEndpoint(`videos/${videoId}`), {
+        await axios.put(api.getEndpoint(`videos/${videoId}/keterangan`), {
           keterangan: diagnosisText.value.trim()
         }, {
           headers: { Authorization: `Bearer ${token}` },
@@ -585,7 +588,6 @@ export default {
         await videoStore.fetchVideos(selectedDate.value, true); // Force refresh
         diagnosisSuccess.value = true;
 
-        // Close modal automatically after 2 seconds
         setTimeout(() => {
           if (showDiagnosisModal.value) {
             closeDiagnosisModal();

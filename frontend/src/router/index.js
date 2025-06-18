@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from "vue-router";
 import HomeView from "../views/HomeView.vue";
 import LoginView from "../views/LoginView.vue";
 import DashboardView from "@/views/DashboardView.vue";
-import RiwayatPemeriksaanView from "@/views/RiwayatPemeriksaanView.vue";
 
 import ForbiddenView from "@/views/errors/ForbiddenView.vue";
 import NotFoundView from "@/views/errors/NotFoundView.vue";
@@ -23,6 +22,10 @@ import PemeriksaanView from "@/views/PemeriksaanResource/Pages/PemeriksaanView.v
 import PenangananResource from "@/views/PenangananResource.vue";
 import ListPenanganan from "@/views/PenangananResource/Pages/ListPenanganan.vue";
 import CreatePenanganan from "@/views/PenangananResource/Pages/CreatePenanganan.vue";
+import EditPenanganan from "@/views/PenangananResource/Pages/EditPenanganan.vue";
+import ViewPenanganan from "@/views/PenangananResource/Pages/ViewPenanganan.vue";
+import RiwayatResource from "@/views/RiwayatResource.vue";
+import RiwayatPemeriksaan from "@/views/RiwayatResource/Pages/RiwayatPemeriksaan.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -124,15 +127,35 @@ const router = createRouter({
         name: 'create-penanganan',
         component: CreatePenanganan
       },
+      {
+        path: 'edit/:id',
+        name: 'edit-penanganan',
+        component: EditPenanganan
+      },
+      {
+        path: 'view/:id',
+        name: 'view-penanganan',
+        component: ViewPenanganan
+      },
     ],
     },
   {
-    path: "/riwayat",
-    name: "riwayat",
-    component: RiwayatPemeriksaanView,
-    meta: { requiresAuth: true },
+  path: "/riwayat",
+  component: RiwayatResource,
+  meta: { requiresAuth: true },
+  children: [
+    // {
+    //   path: 'pasien/:id',
+    //   name: 'riwayat-pasien',
+    //   component: RiwayatPemeriksaan
+    // },
+    {
+      path: '',
+      name: 'riwayat',
+      component: RiwayatPemeriksaan
+    },
+  ],
   },
-
   {
     path: "/forbidden",
     name: "forbidden",
