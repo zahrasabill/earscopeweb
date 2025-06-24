@@ -919,7 +919,75 @@ class PenangananController extends Controller
             ], 500);
         }
     }
-    
+
+    /**
+ * @OA\Put(
+ *     path="/api/penanganan/{id}/kirim",
+ *     summary="Kirim hasil penanganan ke pasien",
+ *     description="Dokter mengirimkan hasil penanganan kepada pasien yang terkait. File PDF disimpan dan URL disertakan.",
+ *     tags={"Penanganan"},
+ *     security={{"bearerAuth":{}}},
+ *     @OA\Parameter(
+ *         name="id",
+ *         in="path",
+ *         required=true,
+ *         description="ID penanganan yang akan dikirim",
+ *         @OA\Schema(type="integer")
+ *     ),
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\JsonContent(
+ *             required={"catatan_pengiriman"},
+ *             @OA\Property(property="catatan_pengiriman", type="string", example="Silakan cek hasil pemeriksaan Anda.")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Berhasil mengirim penanganan ke pasien",
+ *         @OA\JsonContent(
+ *             @OA\Property(property="message", type="string", example="Hasil penanganan berhasil dikirim ke pasien."),
+ *             @OA\Property(property="data", ref="#/components/schemas/Penanganan")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=404,
+ *         description="Data penanganan tidak ditemukan",
+ *         @OA\JsonContent(
+ *             @OA\Property(property="message", type="string", example="Data tidak ditemukan.")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=401,
+ *         description="Unauthorized",
+ *         @OA\JsonContent(
+ *             @OA\Property(property="message", type="string", example="Unauthenticated.")
+ *         )
+ *     )
+ * )
+ */
+
+public function kirimKePasien(Request $request, $id)
+{
+    $penanganan = Penanganan::findOrFail($id);
+
+    // Optional: Buat PDF
+    $pdf = Pdf::loadView('pdf.penanganan', compact('penanganan'));
+    $fileName = 'penanganan_' . $penanganan->id . '.pdf';
+    Storage::put("public/pdf/$fileName", $pdf->output());
+
+    $penanganan->update([
+        'is_sent_to_patient' => true,
+        'sent_at' => now(),
+        'catatan_pengiriman' => $request->input('catatan_pengiriman'),
+        'pdf_url' => "storage/pdf/$fileName",
+    ]);
+
+    return response()->json([
+        'message' => 'Hasil penanganan berhasil dikirim ke pasien.',
+        'data' => $penanganan
+    ]);
+}
+
     /**
      * @OA\Delete(
      *     path="/v1/penanganan/{id}",

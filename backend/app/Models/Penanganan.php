@@ -42,6 +42,11 @@ class Penanganan extends Model
         'tindakan',
         'status',
         'created_by',
+        'assigned_to',
+        'is_sent_to_patient',
+        'sent_at',
+        'catatan_pengiriman',
+        'pdf_url',
     ];
 
     protected $casts = [
@@ -62,5 +67,11 @@ class Penanganan extends Model
     public function createdByUser()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    // Relasi ke User yang ditugaskan (Dokter)
+    public function assignedToUser()
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
     }
 }

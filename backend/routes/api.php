@@ -56,7 +56,9 @@ Route::middleware('jwt.auth')->group(function () {
         Route::post('penanganan', [PenangananController::class, 'store']);
         Route::put('penanganan/{id}', [PenangananController::class, 'update']);
         Route::delete('penanganan/{id}', [PenangananController::class, 'delete']);
-
+ 
+        Route::put('/penanganan/{id}/kirim', [PenangananController::class, 'kirimKePasien']);
+        
         Route::delete('penanganan/{id}/force-delete', [PenangananController::class, 'forceDelete']);
         Route::post('penanganan/{id}/assign/{userId}', [PenangananController::class, 'assignToUser']);
 

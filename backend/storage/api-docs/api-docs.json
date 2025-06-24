@@ -786,6 +786,104 @@
                 ]
             }
         },
+        "/api/penanganan/{id}/kirim": {
+            "put": {
+                "tags": [
+                    "Penanganan"
+                ],
+                "summary": "Kirim hasil penanganan ke pasien",
+                "description": "Dokter mengirimkan hasil penanganan kepada pasien yang terkait. File PDF disimpan dan URL disertakan.",
+                "operationId": "aab08ccfd0678e22247e1fa63a2ac32c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID penanganan yang akan dikirim",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "catatan_pengiriman"
+                                ],
+                                "properties": {
+                                    "catatan_pengiriman": {
+                                        "type": "string",
+                                        "example": "Silakan cek hasil pemeriksaan Anda."
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengirim penanganan ke pasien",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Hasil penanganan berhasil dikirim ke pasien."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Penanganan"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Data penanganan tidak ditemukan",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Data tidak ditemukan."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/v1/penanganan/{id}/restore": {
             "patch": {
                 "tags": [
