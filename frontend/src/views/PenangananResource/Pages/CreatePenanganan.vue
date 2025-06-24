@@ -3,10 +3,10 @@
     <!-- Form Section -->
     <div class="form-section">
       <div class="card shadow">
-        <div class="card-header bg-gradient text-white">
+        <div class="card-header bg-gradient text-black">
           <div class="d-flex justify-content-between align-items-center">
             <h5 class="mb-0">
-              <i class="fas fa-clipboard-list me-2"></i>Data Penanganan
+              <i class="fas fa-clipboard-list me-2"></i>  Tambah Data Penanganan
             </h5>
             <button 
               type="button" 
@@ -279,7 +279,7 @@
                   >
                     <span v-if="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
                     <i v-else class="fas fa-save me-2"></i>
-                    {{ isSubmitting ? 'Menyimpan...' : 'Simpan Data Penanganan' }}
+                    {{ isSubmitting ? 'Menyimpan...' : 'Simpan Data' }}
                   </button>
                 </div>
               </div>
@@ -851,5 +851,12 @@ export default {
 
 .penanganan-container {
   padding: 2rem 0;
+}
+.btn-success.btn-lg {
+  background-color: #28a745 !important;   /* Hijau solid */
+  border-color: #28a745 !important;
+  color: #fff !important;
+  background-image: none !important;      /* Hilangkan gradient */
+  box-shadow: none !important;
 }
 </style>

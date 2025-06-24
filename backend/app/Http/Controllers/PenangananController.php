@@ -10,7 +10,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-
+use Illuminate\Support\Facades\Storage;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 /**
  * @OA\Tag(
@@ -92,7 +93,6 @@ class PenangananController extends Controller
                     'created_by' => $item->created_by,
                     'created_at' => $item->created_at,
                     'updated_at' => $item->updated_at,
-                    'deleted_at' => $item->deleted_at,
                     // Relasi data
                     'user' => $item->user ? [
                         'id' => $item->user->id,
@@ -220,7 +220,6 @@ class PenangananController extends Controller
                 'created_by' => $penanganan->created_by,
                 'created_at' => $penanganan->created_at,
                 'updated_at' => $penanganan->updated_at,
-                'deleted_at' => $penanganan->deleted_at,
                 // Relasi data
                 'user' => $penanganan->user ? [
                     'id' => $penanganan->user->id,
@@ -325,7 +324,6 @@ class PenangananController extends Controller
                 'created_by' => $penanganan->created_by,
                 'created_at' => $penanganan->created_at,
                 'updated_at' => $penanganan->updated_at,
-                'deleted_at' => $penanganan->deleted_at,
                 // Relasi data
                 'user' => $penanganan->user ? [
                     'id' => $penanganan->user->id,
@@ -451,7 +449,6 @@ class PenangananController extends Controller
                 'created_by' => $penanganan->created_by,
                 'created_at' => $penanganan->created_at,
                 'updated_at' => $penanganan->updated_at,
-                'deleted_at' => $penanganan->deleted_at,
                 // Relasi data
                 'user' => $penanganan->user ? [
                     'id' => $penanganan->user->id,
@@ -535,16 +532,16 @@ class PenangananController extends Controller
      *     )
      * )
      */
-    public function assignToUser($penangananId, $userId): JsonResponse
+    public function assignToUser($id, $userId): JsonResponse
     {
         try {
             // Logging awal saat method dipanggil
-            Log::info("Assigning penangananId: $penangananId to userId: $userId");
+            Log::info("Assigning penangananId: $id to userId: $userId");
 
             // Cari penanganan
-            $penanganan = Penanganan::find($penangananId);
+            $penanganan = Penanganan::find($id);
             if (!$penanganan) {
-                Log::warning("Penanganan tidak ditemukan untuk ID: $penangananId");
+                Log::warning("Penanganan tidak ditemukan untuk ID: $id");
                 return response()->json([
                     'success' => false,
                     'message' => 'Penanganan tidak ditemukan'
@@ -579,7 +576,7 @@ class PenangananController extends Controller
             // Load relasi untuk response
             $penanganan->load(['user', 'assignedToUser', 'createdByUser']);
 
-            Log::info("Penanganan ID $penangananId berhasil di-assign ke User ID $userId");
+            Log::info("Penanganan ID $id berhasil di-assign ke User ID $userId");
 
             // Format data seperti method lainnya
             $formattedData = [
@@ -596,7 +593,6 @@ class PenangananController extends Controller
                 'created_by' => $penanganan->created_by,
                 'created_at' => $penanganan->created_at,
                 'updated_at' => $penanganan->updated_at,
-                'deleted_at' => $penanganan->deleted_at,
                 // Relasi data
                 'user' => $penanganan->user ? [
                     'id' => $penanganan->user->id,
@@ -708,7 +704,6 @@ class PenangananController extends Controller
                 'created_by' => $penanganan->created_by,
                 'created_at' => $penanganan->created_at,
                 'updated_at' => $penanganan->updated_at,
-                'deleted_at' => $penanganan->deleted_at,
                 // Relasi data
                 'user' => $penanganan->user ? [
                     'id' => $penanganan->user->id,
@@ -773,10 +768,10 @@ class PenangananController extends Controller
      *     )
      * )
      */
-    public function updateStatusPenanganan($penangananId)
+    public function updateStatusPenanganan($id)
     {
         // Temukan penanganan berdasarkan ID
-        $penanganan = Penanganan::findOrFail($penangananId);
+        $penanganan = Penanganan::findOrFail($id);
 
         // Update status dan hapus assigned_to - sama seperti VideoController
         $penanganan->update([
@@ -888,7 +883,6 @@ class PenangananController extends Controller
                     'created_by' => $item->created_by,
                     'created_at' => $item->created_at,
                     'updated_at' => $item->updated_at,
-                    'deleted_at' => $item->deleted_at,
                     // Relasi data
                     'user' => $item->user ? [
                         'id' => $item->user->id,
@@ -925,6 +919,74 @@ class PenangananController extends Controller
             ], 500);
         }
     }
+
+    /**
+ * @OA\Put(
+ *     path="/api/penanganan/{id}/kirim",
+ *     summary="Kirim hasil penanganan ke pasien",
+ *     description="Dokter mengirimkan hasil penanganan kepada pasien yang terkait. File PDF disimpan dan URL disertakan.",
+ *     tags={"Penanganan"},
+ *     security={{"bearerAuth":{}}},
+ *     @OA\Parameter(
+ *         name="id",
+ *         in="path",
+ *         required=true,
+ *         description="ID penanganan yang akan dikirim",
+ *         @OA\Schema(type="integer")
+ *     ),
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\JsonContent(
+ *             required={"catatan_pengiriman"},
+ *             @OA\Property(property="catatan_pengiriman", type="string", example="Silakan cek hasil pemeriksaan Anda.")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=200,
+ *         description="Berhasil mengirim penanganan ke pasien",
+ *         @OA\JsonContent(
+ *             @OA\Property(property="message", type="string", example="Hasil penanganan berhasil dikirim ke pasien."),
+ *             @OA\Property(property="data", ref="#/components/schemas/Penanganan")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=404,
+ *         description="Data penanganan tidak ditemukan",
+ *         @OA\JsonContent(
+ *             @OA\Property(property="message", type="string", example="Data tidak ditemukan.")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=401,
+ *         description="Unauthorized",
+ *         @OA\JsonContent(
+ *             @OA\Property(property="message", type="string", example="Unauthenticated.")
+ *         )
+ *     )
+ * )
+ */
+
+public function kirimKePasien(Request $request, $id)
+{
+    $penanganan = Penanganan::findOrFail($id);
+
+    // Optional: Buat PDF
+    $pdf = Pdf::loadView('pdf.penanganan', compact('penanganan'));
+    $fileName = 'penanganan_' . $penanganan->id . '.pdf';
+    Storage::put("public/pdf/$fileName", $pdf->output());
+
+    $penanganan->update([
+        'is_sent_to_patient' => true,
+        'sent_at' => now(),
+        'catatan_pengiriman' => $request->input('catatan_pengiriman'),
+        'pdf_url' => "storage/pdf/$fileName",
+    ]);
+
+    return response()->json([
+        'message' => 'Hasil penanganan berhasil dikirim ke pasien.',
+        'data' => $penanganan
+    ]);
+}
 
     /**
      * @OA\Delete(
@@ -1045,7 +1107,6 @@ class PenangananController extends Controller
                 'created_by' => $penanganan->created_by,
                 'created_at' => $penanganan->created_at,
                 'updated_at' => $penanganan->updated_at,
-                'deleted_at' => $penanganan->deleted_at,
                 // Relasi data
                 'user' => $penanganan->user ? [
                     'id' => $penanganan->user->id,

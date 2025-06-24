@@ -3,7 +3,7 @@
     <!-- View Section -->
     <div class="view-section">
       <div class="card shadow">
-        <div class="card-header bg-gradient text-white">
+        <div class="card-header bg-gradient text-black">
           <div class="d-flex justify-content-between align-items-center">
             <h5 class="mb-0">
               <i class="fas fa-eye me-2"></i>Detail Penanganan

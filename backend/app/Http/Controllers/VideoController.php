@@ -233,12 +233,17 @@ class VideoController extends Controller
  *     )
  * )
  */
-public function updateKeterangan(Request $request, $id, $videoId)
+public function updateKeterangan(Request $request, $videoId)
 {
+    // Log request awal
+    Log::info('Memulai updateKeterangan', [
+        'videoId' => $videoId,
+        'payload' => $request->all()
+    ]);
+
     try {
-        // Validasi input
         $validator = Validator::make($request->all(), [
-            'keterangan' => 'required|string|max:2000', // Maksimal 2000 karakter
+            'keterangan' => 'required|string|max:2000',
         ], [
             'keterangan.required' => 'Keterangan harus diisi',
             'keterangan.string' => 'Keterangan harus berupa teks',
@@ -252,10 +257,7 @@ public function updateKeterangan(Request $request, $id, $videoId)
             ], 400);
         }
 
-        // Cari video berdasarkan ID
         $video = Video::findOrFail($videoId);
-        
-        // Update keterangan
         $video->keterangan = $request->keterangan;
         $video->save();
 
@@ -264,7 +266,7 @@ public function updateKeterangan(Request $request, $id, $videoId)
             'data' => [
                 'id' => $video->id,
                 'keterangan' => $video->keterangan,
-                'updated_at' => $video->updated_at->toISOString()
+                'updated_at' => $video->updated_at ? $video->updated_at->toISOString() : null
             ]
         ], 200);
 
@@ -273,8 +275,9 @@ public function updateKeterangan(Request $request, $id, $videoId)
             'message' => 'Video not found'
         ], 404);
     } catch (Exception $e) {
+        // Log error detail
         Log::error('Error updating keterangan: ' . $e->getMessage());
-        
+
         return response()->json([
             'message' => 'Internal server error'
         ], 500);
@@ -324,7 +327,7 @@ public function updateKeterangan(Request $request, $id, $videoId)
         // Check if date parameter is provided
         $dateFilter = $request->query('date');
 
-        if ($user->role === 'dokter') {
+        if ($user->hasRole('dokter')) {
             $videosQuery = Video::with('user');
 
             // Apply date filter if provided
@@ -333,7 +336,7 @@ public function updateKeterangan(Request $request, $id, $videoId)
             }
 
             $videos = $videosQuery->get();
-        } elseif ($user->role === 'pasien') {
+        } elseif ($user->hasRole('pasien')) {
             $videosQuery = Video::where('user_id', $user->id)->with('user');
 
             // Apply date filter if provided

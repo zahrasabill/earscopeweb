@@ -1,30 +1,29 @@
 <template>
   <div class="container-fluid list-penanganan-container">
-    <!-- Header Section -->
     <div class="header-section mb-4">
-      <div class="card shadow">
-        <div class="card-body">
-          <div class="row align-items-center">
-            <div class="col-md-8">
-              <h4 class="mb-0 text-gradient">
-                <i class="fas fa-list-alt me-2"></i>Daftar Penanganan Pasien
-              </h4>
-            </div>
-            <div class="col-md-4 text-end">
-              <button 
-                @click="navigateToForm" 
-                class="btn btn-primary btn-lg"
+      <div class="card shadow-sm">
+        <div class="card-header bg-gradient text-black">
+          <div class="d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">
+              <i class="fas fa-list-alt me-2"></i>
+              {{ userRole === 'dokter' ? 'Daftar Penanganan Pasien' : 'Daftar Penanganan Saya' }}
+            </h4>
+            <div class="header-actions">
+              <button
                 v-if="userRole === 'dokter'"
+                @click="navigateToForm"
+                class="btn btn-light btn-sm me-2"
               >
-                <i class="fas fa-plus me-2"></i>Tambah Penanganan
+                <i class="fas fa-plus me-1"></i>Tambah Penanganan
+              </button>
+              <button @click="refreshData" class="btn btn-light btn-sm" :disabled="isLoading">
+                <i class="fas fa-sync-alt me-1" :class="{ 'fa-spin': isLoading }"></i>Refresh
               </button>
             </div>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- Filters Section -->
     <div class="filters-section mb-4">
       <div class="card shadow-sm">
         <div class="card-body">
@@ -55,6 +54,15 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Debug Info (hapus setelah testing) -->
+    <div class="alert alert-info" v-if="isDebugMode">
+      <h6>Debug Info:</h6>
+      <p>Total data: {{ penangananData.length }}</p>
+      <p>Filtered data: {{ filteredPenanganan.length }}</p>
+      <p>Patient data keys: {{ Object.keys(patientData).length }}</p>
+      <pre v-if="penangananData.length > 0">{{ JSON.stringify(penangananData[0], null, 2) }}</pre>
     </div>
 
     <!-- Table Section -->
@@ -113,13 +121,13 @@
                   <td>
                     <div class="d-flex align-items-center">
                       <div class="avatar-circle me-2">
-                        {{ getInitials(item.patient_name) }}
+                        {{ getInitials(getPatientName(item)) }}
                       </div>
                       <div>
-                        <div class="fw-bold">{{ item.patient_name }}</div>
+                        <div class="fw-bold">{{ getPatientName(item) }}</div>
                         <small class="text-muted">
                           <i class="fas fa-id-card me-1"></i>
-                          {{ patientData[item.patient_id]?.kode_akses }}
+                          {{ getPatientCode(item) }}
                         </small>
                       </div>
                     </div>
@@ -255,13 +263,13 @@
                 <div class="col-md-6">
                   <div class="detail-group mb-3">
                     <label class="detail-label">Nama Pasien</label>
-                    <div class="detail-value">{{ selectedDetail.patient_name }}</div>
+                    <div class="detail-value">{{ getPatientName(selectedDetail) }}</div>
                   </div>
                   <div class="detail-group mb-3">
                     <label class="detail-label">Kode Akses</label>
                     <div class="detail-value">
                       <span class="badge bg-info">
-                        {{ patientData[selectedDetail.patient_id]?.kode_akses || 'Loading...' }}
+                        {{ getPatientCode(selectedDetail) }}
                       </span>
                     </div>
                   </div>
@@ -357,7 +365,7 @@
               <button type="button" class="btn-close" @click="closeDeleteModal"></button>
             </div>
             <div class="modal-body">
-              <p>Apakah Anda yakin ingin menghapus data penanganan untuk pasien <strong>{{ deleteData?.patient_name }}</strong>?</p>
+              <p>Apakah Anda yakin ingin menghapus data penanganan untuk pasien <strong>{{ getPatientName(deleteData) }}</strong>?</p>
               <div class="alert alert-warning">
                 <i class="fas fa-exclamation-triangle me-2"></i>
                 <strong>Peringatan:</strong> Tindakan ini tidak dapat dibatalkan!
@@ -404,6 +412,7 @@ export default {
     const patientData = ref({}); // Store patient data by patient_id
     const isLoading = ref(false);
     const isDeleting = ref(null);
+    const isDebugMode = ref(false); // Set to true for debugging
     
     // Filters
     const searchQuery = ref('');
@@ -466,6 +475,61 @@ export default {
       }
     };
     
+    // Helper function to get patient name
+    const getPatientName = (item) => {
+      if (!item) return 'Tidak Diketahui';
+      
+      // Coba berbagai kemungkinan field nama
+      const possibleNames = [
+        item.patient_name,
+        item.patient?.name,
+        item.patient?.nama,
+        item.user?.name,
+        item.user?.nama,
+        item.nama_pasien,
+        item.nama
+      ];
+      
+      for (const name of possibleNames) {
+        if (name && typeof name === 'string' && name.trim()) {
+          return name.trim();
+        }
+      }
+      
+      // Jika tidak ada nama dari item, coba dari patientData
+      const patientId = item.patient_id || item.user_id;
+      if (patientId && patientData.value[patientId]) {
+        const patient = patientData.value[patientId];
+        const patientPossibleNames = [
+          patient.name,
+          patient.nama,
+          patient.full_name,
+          patient.nama_lengkap
+        ];
+        
+        for (const name of patientPossibleNames) {
+          if (name && typeof name === 'string' && name.trim()) {
+            return name.trim();
+          }
+        }
+      }
+      
+      return 'Nama Tidak Tersedia';
+    };
+    
+    // Helper function to get patient code
+    const getPatientCode = (item) => {
+      if (!item) return 'N/A';
+      
+      const patientId = item.patient_id || item.user_id;
+      if (patientId && patientData.value[patientId]) {
+        const patient = patientData.value[patientId];
+        return patient.kode_akses || patient.patient_code || patient.code || 'N/A';
+      }
+      
+      return item.kode_akses || item.patient_code || 'N/A';
+    };
+    
     const fetchPatientData = async (patientId) => {
       // Skip if already fetched
       if (patientData.value[patientId]) {
@@ -474,27 +538,65 @@ export default {
       
       try {
         const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-        const response = await api.get(`users/${patientId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
         
-        // Store patient data
-        patientData.value[patientId] = response.data.data || response.data;
+        // Coba berbagai endpoint yang mungkin
+        const endpoints = [
+          `users/${patientId}`,
+          `patients/${patientId}`,
+          `user/${patientId}`
+        ];
+        
+        let response = null;
+        
+        for (const endpoint of endpoints) {
+          try {
+            response = await api.get(endpoint, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            
+            if (response.data) {
+              break;
+            }
+          } catch (err) {
+            console.warn(`Failed to fetch from ${endpoint}:`, err);
+            continue;
+          }
+        }
+        
+        if (response && response.data) {
+          // Store patient data - handle different response structures
+          const userData = response.data.data || response.data.user || response.data;
+          patientData.value[patientId] = userData;
+          
+          if (isDebugMode.value) {
+            console.log(`Patient data for ${patientId}:`, userData);
+          }
+        } else {
+          throw new Error('No valid response from any endpoint');
+        }
         
       } catch (error) {
         console.error(`Error fetching patient data for ID ${patientId}:`, error);
         // Set fallback data
         patientData.value[patientId] = {
+          name: 'Nama Tidak Tersedia',
           kode_akses: 'N/A'
         };
       }
     };
     
     const fetchAllPatientData = async (penangananList) => {
-      // Get unique patient IDs
-      const patientIds = [...new Set(penangananList.map(item => item.patient_id).filter(id => id))];
+      // Get unique patient IDs from different possible fields
+      const patientIds = [...new Set(
+        penangananList.map(item => item.patient_id || item.user_id)
+          .filter(id => id && id !== null && id !== undefined)
+      )];
+      
+      if (isDebugMode.value) {
+        console.log('Patient IDs to fetch:', patientIds);
+      }
       
       // Fetch data for each unique patient
       await Promise.all(patientIds.map(patientId => fetchPatientData(patientId)));
@@ -511,6 +613,10 @@ export default {
         
         penangananData.value = response.data.data || [];
         filteredPenanganan.value = [...penangananData.value];
+        
+        if (isDebugMode.value) {
+          console.log('Penanganan data:', penangananData.value);
+        }
         
         // Fetch patient data for all patients
         await fetchAllPatientData(penangananData.value);
@@ -529,13 +635,17 @@ export default {
       // Filter by search query
       if (searchQuery.value.trim()) {
         const query = searchQuery.value.toLowerCase().trim();
-        filtered = filtered.filter(item => 
-          item.patient_name.toLowerCase().includes(query) ||
-          item.keluhan.toLowerCase().includes(query) ||
-          item.diagnosis_manual.toLowerCase().includes(query) ||
-          (patientData.value[item.patient_id]?.kode_akses && 
-           patientData.value[item.patient_id].kode_akses.toLowerCase().includes(query))
-        );
+        filtered = filtered.filter(item => {
+          const patientName = getPatientName(item).toLowerCase();
+          const patientCode = getPatientCode(item).toLowerCase();
+          const keluhan = (item.keluhan || '').toLowerCase();
+          const diagnosis = (item.diagnosis_manual || '').toLowerCase();
+          
+          return patientName.includes(query) ||
+                 patientCode.includes(query) ||
+                 keluhan.includes(query) ||
+                 diagnosis.includes(query);
+        });
       }
       
       // Filter by date
@@ -592,36 +702,36 @@ export default {
     };
     
     const confirmDelete = async () => {
-  try {
-    isDeleting.value = deleteData.value.id;
-    const patientName = deleteData.value.patient_name;
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+      try {
+        isDeleting.value = deleteData.value.id;
+        const patientName = getPatientName(deleteData.value);
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
 
-    const response = await axios.delete(`${api.getEndpoint('penanganan')}/${deleteData.value.id}/force-delete`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+        const response = await axios.delete(`${api.getEndpoint('penanganan')}/${deleteData.value.id}/force-delete`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-    if (response.data.success) {
-      const index = penangananData.value.findIndex(item => item.id === deleteData.value.id);
-      if (index !== -1) {
-        penangananData.value.splice(index, 1);
+        if (response.data.success) {
+          const index = penangananData.value.findIndex(item => item.id === deleteData.value.id);
+          if (index !== -1) {
+            penangananData.value.splice(index, 1);
+          }
+
+          filterData();
+          closeDeleteModal();
+
+          alert(`Data penanganan untuk pasien ${patientName} berhasil dihapus.`);
+        } else {
+          alert(`Gagal menghapus data penanganan: ${response.data.message}`);
+        }
+
+      } catch (error) {
+        console.error('Error deleting penanganan:', error);
+        alert('Gagal menghapus data penanganan. Silakan coba lagi.');
+      } finally {
+        isDeleting.value = null;
       }
-
-      filterData();
-      closeDeleteModal();
-
-      alert(`Data penanganan untuk pasien ${patientName} berhasil dihapus.`); // pakai variable ini
-    } else {
-      alert(`Gagal menghapus data penanganan: ${response.data.message}`);
-    }
-
-  } catch (error) {
-    console.error('Error deleting penanganan:', error);
-    alert('Gagal menghapus data penanganan. Silakan coba lagi.');
-  } finally {
-    isDeleting.value = null;
-  }
-};
+    };
     
     const closeDetailModal = () => {
       showDetailModal.value = false;
@@ -652,66 +762,105 @@ export default {
     };
     
     const getInitials = (name) => {
-      return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+      if (!name || typeof name !== 'string') return 'N/A';
+      const words = name.trim().split(' ');
+      if (words.length === 1) {
+        return words[0].substring(0, 2).toUpperCase();
+      }
+      return (words[0][0] + words[words.length - 1][0]).toUpperCase();
     };
     
     const formatDate = (dateString) => {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('id-ID', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
+      if (!dateString) return 'Tidak tersedia';
+      try {
+        const date = new Date(dateString);
+        const options = { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          timeZone: 'Asia/Jakarta'
+        };
+        return date.toLocaleDateString('id-ID', options);
+      } catch (error) {
+        return 'Format tanggal tidak valid';
+      }
     };
     
     const formatTime = (dateString) => {
-      const date = new Date(dateString);
-      return date.toLocaleTimeString('id-ID', {
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+      if (!dateString) return '';
+      try {
+        const date = new Date(dateString);
+        const options = { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          timeZone: 'Asia/Jakarta'
+        };
+        return date.toLocaleTimeString('id-ID', options);
+      } catch (error) {
+        return '';
+      }
     };
     
     const formatDateTime = (dateString) => {
-      const date = new Date(dateString);
-      return date.toLocaleString('id-ID', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+      if (!dateString) return 'Tidak tersedia';
+      try {
+        const date = new Date(dateString);
+        const options = { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit', 
+          minute: '2-digit',
+          timeZone: 'Asia/Jakarta'
+        };
+        return date.toLocaleDateString('id-ID', options);
+      } catch (error) {
+        return 'Format tanggal tidak valid';
+      }
     };
     
-    const truncateText = (text, maxLength) => {
-      if (!text) return '';
-      return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+    const truncateText = (text, length = 50) => {
+      if (!text || typeof text !== 'string') return 'Tidak tersedia';
+      if (text.length <= length) return text;
+      return text.substring(0, length) + '...';
     };
     
-    onMounted(async () => {
+    // Lifecycle
+    onMounted(() => {
       userRole.value = getUserRoleFromToken();
-      await fetchPenangananData();
+      fetchPenangananData();
     });
     
     return {
+      // Data
       penangananData,
       filteredPenanganan,
       patientData,
       isLoading,
       isDeleting,
+      isDebugMode,
+      
+      // Filters
       searchQuery,
       selectedDate,
+      
+      // Pagination
       currentPage,
       itemsPerPage,
       totalPages,
       paginatedData,
       visiblePages,
+      
+      // Modals
       showDetailModal,
       showDeleteModal,
       selectedDetail,
       deleteData,
+      
+      // User
       userRole,
-      fetchPenangananData,
+      
+      // Methods
       filterData,
       viewDetail,
       viewHistory,
@@ -728,6 +877,8 @@ export default {
       updatePagination,
       getRowNumber,
       getInitials,
+      getPatientName,
+      getPatientCode,
       formatDate,
       formatTime,
       formatDateTime,
@@ -738,81 +889,186 @@ export default {
 </script>
 
 <style scoped>
+/* Container Styles */
 .list-penanganan-container {
-  padding: 1.5rem;
+  padding: 20px;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Header Styles */
+.header-section .card {
+  border: none;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%);
+  color: black;
 }
 
 .text-gradient {
-  background: linear-gradient(45deg, #007bff, #0056b3);
+  background: linear-gradient(45deg, #ffffff, #ffffff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  color: #000000;
 }
 
-.bg-gradient {
-  background: linear-gradient(135deg, #007bff, #0056b3);
+/* Filter Section */
+.filters-section .card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
+.form-label {
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+.form-control {
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Table Styles */
+.table-section .card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.card-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid #dee2e6;
+  padding: 1rem 1.5rem;
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+.table th {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #dee2e6;
+  color: #495057;
+  font-weight: 600;
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+}
+
+.table td {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.table-row {
+  transition: all 0.3s ease;
+}
+
+.table-row:hover {
+  background-color: #f8f9fa;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Avatar Circle */
 .avatar-circle {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(45deg, #007bff, #28a745);
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
   font-weight: bold;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
+  flex-shrink: 0;
 }
 
-.table-row:hover {
-  background-color: rgba(0, 123, 255, 0.05);
+/* Text Preview Styles */
+.keluhan-preview,
+.diagnosis-preview {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: help;
 }
 
-.keluhan-preview, .diagnosis-preview {
-  line-height: 1.4;
-  max-width: 250px;
-}
-
+/* Action Buttons */
 .action-buttons {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   gap: 0.25rem;
+  justify-content: center;
 }
 
-.action-buttons .btn {
-  font-size: 0.75rem;
-  padding: 0.375rem 0.5rem;
-  white-space: nowrap;
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  transition: all 0.3s ease;
 }
 
-.detail-label {
-  font-weight: 600;
-  color: #6c757d;
-  font-size: 0.875rem;
-  margin-bottom: 0.25rem;
-  display: block;
+.btn-outline-info:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(23, 162, 184, 0.3);
 }
 
-.detail-value {
-  font-weight: 500;
+.btn-outline-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.btn-outline-warning:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+}
+
+.btn-outline-danger:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+/* Pagination Styles */
+.card-footer {
+  border-top: 1px solid #dee2e6;
+  padding: 1rem 1.5rem;
+}
+
+.pagination {
+  margin: 0;
+}
+
+.page-link {
+  border-radius: 6px;
+  margin: 0 2px;
+  border: 1px solid #dee2e6;
   color: #495057;
-  padding: 0.5rem;
-  background-color: #f8f9fa;
-  border-radius: 0.375rem;
-  border: 1px solid #e9ecef;
+  transition: all 0.3s ease;
 }
 
-.detail-text {
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  line-height: 1.6;
-  min-height: 2.5rem;
+.page-link:hover {
+  background-color: #667eea;
+  border-color: #667eea;
+  color: white;
+  transform: translateY(-1px);
 }
 
-/* Modal styles */
+.page-item.active .page-link {
+  background-color: #667eea;
+  border-color: #667eea;
+}
+
+/* Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -823,281 +1079,93 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999;
+  z-index: 1050;
   backdrop-filter: blur(2px);
 }
 
 .modal-dialog {
+  background: white;
+  border-radius: 12px;
+  max-width: 800px;
   width: 90%;
-  max-width: 600px;
-  margin: 1rem auto;
-}
-
-.modal-dialog.modal-lg {
-  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
 }
 
 .modal-content {
-  background: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-  animation: modalSlideIn 0.3s ease-out;
+  border: none;
+  border-radius: 12px;
 }
 
 .modal-header {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e9ecef;
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+  padding: 1.5rem;
 }
 
 .modal-title {
-  margin: 0;
   font-weight: 600;
-  color: #495057;
-}
-
-.modal-body {
-  padding: 1.5rem;
-  max-height: 70vh;
-  overflow-y: auto;
-}
-
-.modal-footer {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #e9ecef;
-  background-color: #f8f9fa;
-  display: flex;
-  justify-content: end;
-  gap: 0.5rem;
+  font-size: 1.2rem;
 }
 
 .btn-close {
-  background: none;
-  border: none;
-  font-size: 1.25rem;
-  font-weight: 700;
-  line-height: 1;
-  color: #6c757d;
-  opacity: 0.5;
-  cursor: pointer;
-  transition: opacity 0.15s ease-in-out;
+  filter: invert(1);
+  opacity: 0.8;
 }
 
 .btn-close:hover {
-  opacity: 0.75;
+  opacity: 1;
 }
 
-/* Transitions */
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s ease;
+.modal-body {
+  padding: 2rem;
 }
 
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
+.modal-footer {
+  border-top: 1px solid #dee2e6;
+  padding: 1rem 2rem;
+  background-color: #f8f9fa;
+  border-radius: 0 0 12px 12px;
 }
 
-@keyframes modalSlideIn {
-  from {
-    transform: translateY(-50px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+/* Detail Styles */
+.detail-group {
+  margin-bottom: 1rem;
 }
 
-/* Card enhancements */
-.card {
-  border: none;
-  border-radius: 0.75rem;
-  overflow: hidden;
-}
-
-.card.shadow {
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-}
-
-.card.shadow-sm {
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
-}
-
-.card-header {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
-  padding: 1rem 1.5rem;
-}
-
-.card-body {
-  padding: 1.5rem;
-}
-
-.card-footer {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #e9ecef;
-}
-
-/* Table enhancements */
-.table {
-  margin-bottom: 0;
-}
-
-.table thead th {
-  border-bottom: 2px solid #dee2e6;
+.detail-label {
   font-weight: 600;
   color: #495057;
-  background-color: #f8f9fa;
-  padding: 1rem 0.75rem;
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
-}
-
-.table tbody td {
-  padding: 1rem 0.75rem;
-  vertical-align: middle;
-  border-top: 1px solid #dee2e6;
-}
-
-.table-hover tbody tr:hover {
-  background-color: rgba(0, 123, 255, 0.075);
-}
-
-/* Pagination styles */
-.pagination {
-  margin: 0;
-}
-
-.page-link {
-  color: #007bff;
-  background-color: #fff;
-  border: 1px solid #dee2e6;
-  padding: 0.375rem 0.75rem;
-  margin-left: -1px;
-  line-height: 1.25;
-  text-decoration: none;
-  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
-}
-
-.page-link:hover {
-  color: #0056b3;
-  background-color: #e9ecef;
-  border-color: #dee2e6;
-}
-
-.page-item.active .page-link {
-  color: #fff;
-  background-color: #007bff;
-  border-color: #007bff;
-}
-
-.page-item.disabled .page-link {
-  color: #6c757d;
-  background-color: #fff;
-  border-color: #dee2e6;
-  cursor: not-allowed;
-}
-
-/* Button enhancements */
-.btn {
-  border-radius: 0.375rem;
-  font-weight: 500;
-  transition: all 0.15s ease-in-out;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #007bff, #0056b3);
-  border: none;
-  color: white;
-}
-
-.btn-primary:hover {
-  background: linear-gradient(135deg, #0056b3, #003d82);
-  transform: translateY(-1px);
-  box-shadow: 0 0.25rem 0.5rem rgba(0, 123, 255, 0.25);
-}
-
-.btn-outline-info:hover {
-  background-color: #17a2b8;
-  border-color: #17a2b8;
-  transform: translateY(-1px);
-  box-shadow: 0 0.125rem 0.25rem rgba(23, 162, 184, 0.25);
-}
-
-.btn-outline-primary:hover {
-  background-color: #007bff;
-  border-color: #007bff;
-  transform: translateY(-1px);
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 123, 255, 0.25);
-}
-
-.btn-outline-warning:hover {
-  background-color: #ffc107;
-  border-color: #ffc107;
-  transform: translateY(-1px);
-  box-shadow: 0 0.125rem 0.25rem rgba(255, 193, 7, 0.25);
-}
-
-.btn-outline-danger:hover {
-  background-color: #dc3545;
-  border-color: #dc3545;
-  transform: translateY(-1px);
-  box-shadow: 0 0.125rem 0.25rem rgba(220, 53, 69, 0.25);
-}
-
-/* Form enhancements */
-.form-control {
-  border-radius: 0.375rem;
-  border: 1px solid #ced4da;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.form-control:focus {
-  border-color: #80bdff;
-  outline: 0;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-.form-label {
-  font-weight: 500;
-  color: #495057;
+  font-size: 0.9rem;
   margin-bottom: 0.5rem;
+  display: block;
 }
 
-/* Badge enhancements */
+.detail-value {
+  color: #212529;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.detail-text {
+  background-color: #f8f9fa;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border-left: 4px solid #667eea;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Badge Styles */
 .badge {
-  font-size: 0.75em;
-  font-weight: 500;
-  padding: 0.375em 0.75em;
-  border-radius: 0.375rem;
+  font-size: 0.8rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
 }
 
-.badge.bg-info {
-  background-color: #17a2b8 !important;
-}
-
-.badge.bg-secondary {
-  background-color: #6c757d !important;
-}
-
-.badge.bg-success {
-  background-color: #28a745 !important;
-}
-
-.badge.bg-warning {
-  background-color: #ffc107 !important;
-  color: #212529 !important;
-}
-
-.badge.bg-light {
-  background-color: #f8f9fa !important;
-  color: #495057 !important;
-}
-
-/* Spinner enhancements */
+/* Loading Spinner */
 .spinner-border {
   animation: spinner-border 0.75s linear infinite;
 }
@@ -1108,51 +1176,30 @@ export default {
   }
 }
 
-/* Alert enhancements */
-.alert {
-  border-radius: 0.5rem;
-  border: none;
-  padding: 0.75rem 1rem;
+/* Transitions */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
 }
 
-.alert-warning {
-  background-color: #fff3cd;
-  color: #856404;
-  border-left: 4px solid #ffc107;
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
-/* Loading state */
-.text-center.py-5 {
-  padding: 3rem 0;
-}
-
-.text-muted {
-  color: #6c757d !important;
-}
-
-/* Empty state icon */
-.fa-inbox {
-  opacity: 0.3;
-}
-
-/* Responsive adjustments */
+/* Responsive Design */
 @media (max-width: 768px) {
   .list-penanganan-container {
-    padding: 1rem;
+    padding: 10px;
   }
   
-  .modal-dialog {
-    width: 95%;
-    margin: 0.5rem auto;
-  }
-  
-  .modal-body {
-    padding: 1rem;
+  .header-section .col-md-4 {
+    text-align: center !important;
+    margin-top: 1rem;
   }
   
   .action-buttons {
     flex-direction: column;
-    align-items: center;
   }
   
   .action-buttons .btn {
@@ -1160,46 +1207,95 @@ export default {
     margin-bottom: 0.25rem;
   }
   
-  .card-body {
+  .modal-dialog {
+    width: 95%;
+    margin: 1rem;
+  }
+  
+  .modal-body {
     padding: 1rem;
   }
   
-  .table thead th,
-  .table tbody td {
-    padding: 0.5rem;
-    font-size: 0.875rem;
+  .table-responsive {
+    font-size: 0.9rem;
   }
   
   .avatar-circle {
-    width: 32px;
-    height: 32px;
-    font-size: 0.75rem;
+    width: 35px;
+    height: 35px;
+    font-size: 0.7rem;
   }
 }
 
 @media (max-width: 576px) {
-  .modal-dialog {
-    width: 98%;
-    margin: 0.25rem auto;
+  .keluhan-preview,
+  .diagnosis-preview {
+    max-width: 150px;
   }
   
-  .modal-header,
-  .modal-body,
-  .modal-footer {
-    padding: 0.75rem;
+  .filters-section .row .col-md-6 {
+    margin-bottom: 1rem;
   }
   
-  .table-responsive {
-    font-size: 0.8rem;
+  .card-footer .row .col-md-6:first-child {
+    margin-bottom: 1rem;
   }
-  
-  .action-buttons .btn {
-    font-size: 0.7rem;
-    padding: 0.25rem 0.5rem;
-  }
-  
-  .pagination {
-    font-size: 0.875rem;
-  }
+}
+
+/* Debug Alert */
+.alert-info {
+  border-radius: 8px;
+  border-left: 4px solid #17a2b8;
+}
+
+.alert-info pre {
+  background-color: #f8f9fa;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* Empty State */
+.fa-inbox {
+  opacity: 0.3;
+}
+
+/* Hover Effects */
+.card:hover {
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
+}
+
+.form-control:hover {
+  border-color: #adb5bd;
+}
+
+/* Focus States */
+.btn:focus {
+  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Custom Scrollbar */
+.modal-dialog::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-dialog::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.modal-dialog::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.modal-dialog::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+.table-section .card-header h5 {
+  color: #111 !important;
 }
 </style>

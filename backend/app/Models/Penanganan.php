@@ -42,7 +42,11 @@ class Penanganan extends Model
         'tindakan',
         'status',
         'created_by',
-        'assigned_to'
+        'assigned_to',
+        'is_sent_to_patient',
+        'sent_at',
+        'catatan_pengiriman',
+        'pdf_url',
     ];
 
     protected $casts = [
