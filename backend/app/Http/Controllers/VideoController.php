@@ -324,7 +324,7 @@ public function updateKeterangan(Request $request, $id, $videoId)
         // Check if date parameter is provided
         $dateFilter = $request->query('date');
 
-        if ($user->role === 'dokter') {
+        if ($user->hasRole('dokter')) {
             $videosQuery = Video::with('user');
 
             // Apply date filter if provided
@@ -333,7 +333,7 @@ public function updateKeterangan(Request $request, $id, $videoId)
             }
 
             $videos = $videosQuery->get();
-        } elseif ($user->role === 'pasien') {
+        } elseif ($user->hasRole('pasien')) {
             $videosQuery = Video::where('user_id', $user->id)->with('user');
 
             // Apply date filter if provided
