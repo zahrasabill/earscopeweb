@@ -254,15 +254,7 @@
                     >
                       <i class="fas fa-user-minus"></i>
                     </button>
-                    <button 
-                      v-if="!riwayat.is_sent_to_patient" 
-                      @click="showKirimModal(riwayat)" 
-                      class="btn btn-sm btn-outline-primary"
-                      :disabled="isUpdating"
-                      title="Kirim ke Pasien"
-                    >
-                      <i class="fas fa-share"></i>
-                    </button>
+                    <!-- Button Kirim ke Pasien dihapus -->
                   </div>
                 </div>
               </div>
@@ -301,7 +293,7 @@
     <!-- Assign Modal -->
     <transition name="fade">
       <div v-if="showAssignModalFlag" class="modal-overlay" @click.self="closeAssignModal">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-assign">
           <div class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title">
@@ -1144,7 +1136,7 @@ export default {
 }
 
 .header-section .card-header h4 {
-  color: white;
+  color: #222 !important;
   font-weight: 600;
   margin: 0;
 }
@@ -1392,6 +1384,24 @@ export default {
   max-height: 90vh;
   overflow-y: auto;
   animation: modalSlideIn 0.3s ease-out;
+}
+
+/* Tambahkan style untuk modal-assign agar lebih besar dan nyata */
+.modal-dialog.modal-assign {
+  max-width: 600px;
+  min-width: 350px;
+  width: 100%;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+  border-radius: 16px;
+  padding: 0 10px;
+}
+
+@media (max-width: 768px) {
+  .modal-dialog.modal-assign {
+    max-width: 98vw;
+    min-width: unset;
+    padding: 0;
+  }
 }
 
 @keyframes modalSlideIn {
