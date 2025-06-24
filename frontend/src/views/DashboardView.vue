@@ -44,35 +44,55 @@
     </div>
 
     <!-- Quick Action Buttons -->
-    <div class="row mt-4">
-      <div class="col-12">
-        <div class="row">
-          <!-- Quick Actions untuk Admin -->
-          <div v-if="currentUser.role === 'admin'" class="col-md-6 mb-3">
-            <router-link to="/dokter" class="btn btn-outline-success btn-lg w-100 d-flex align-items-center justify-content-center">
-              <i class="bi bi-person-plus me-2"></i>
-              Kelola Dokter
-            </router-link>
-          </div>
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="row">
+      <!-- Quick Actions untuk Admin -->
+      <div v-if="currentUser.role === 'admin'" class="col-md-6 mb-3">
+        <router-link to="/dokter" class="btn btn-outline-success btn-lg w-100 d-flex align-items-center justify-content-center">
+          <i class="bi bi-person-plus me-2"></i>
+          Kelola Dokter
+        </router-link>
+      </div>
 
-          <!-- Quick Actions untuk Dokter -->
-          <div v-if="currentUser.role === 'dokter'" class="col-md-6 mb-3">
-            <router-link to="/pasien" class="btn btn-outline-primary btn-lg w-100 d-flex align-items-center justify-content-center">
-              <i class="bi bi-people me-2"></i>
-              Kelola Pasien
-            </router-link>
-          </div>
+      <!-- Quick Actions untuk Dokter -->
+      <div v-if="currentUser.role === 'dokter'" class="col-md-6 mb-3">
+        <router-link to="/pasien" class="btn btn-outline-primary btn-lg w-100 d-flex align-items-center justify-content-center">
+          <i class="bi bi-people me-2"></i>
+          Kelola Pasien
+        </router-link>
+      </div>
+      <div v-if="currentUser.role === 'dokter'" class="col-md-6 mb-3">
+        <router-link to="/penanganan" class="btn btn-outline-success btn-lg w-100 d-flex align-items-center justify-content-center">
+          <i class="bi bi-book-fill me-2"></i>
+          Penanganan
+        </router-link>
+      </div>
+      <div v-if="currentUser.role === 'dokter'" class="col-md-6 mb-3">
+        <router-link to="/riwayat" class="btn btn-outline-info btn-lg w-100 d-flex align-items-center justify-content-center">
+          <i class="bi bi-clock-history me-2"></i>
+          Riwayat Pemeriksaan
+        </router-link>
+      </div>
 
-          <!-- Quick Actions untuk Dokter dan Pasien -->
-          <div v-if="currentUser.role === 'dokter' || currentUser.role === 'pasien'" class="col-md-6 mb-3">
-            <router-link to="/pemeriksaan" class="btn btn-outline-warning btn-lg w-100 d-flex align-items-center justify-content-center">
-              <i class="bi bi-clipboard2-pulse me-2"></i>
-              {{ currentUser.role === 'pasien' ? 'Lihat Hasil' : 'Hasil Pemeriksaan' }}
-            </router-link>
-          </div>
-        </div>
+      <!-- Quick Actions untuk Dokter dan Pasien -->
+      <div v-if="currentUser.role === 'dokter' || currentUser.role === 'pasien'" class="col-md-6 mb-3">
+        <router-link to="/pemeriksaan" class="btn btn-outline-warning btn-lg w-100 d-flex align-items-center justify-content-center">
+          <i class="bi bi-clipboard2-pulse me-2"></i>
+          {{ currentUser.role === 'pasien' ? 'Lihat Hasil' : 'Hasil Pemeriksaan' }}
+        </router-link>
+      </div>
+
+      <!-- Quick Actions untuk Pasien -->
+      <div v-if="currentUser.role === 'pasien'" class="col-md-6 mb-3">
+        <router-link to="/riwayat" class="btn btn-outline-info btn-lg w-100 d-flex align-items-center justify-content-center">
+          <i class="bi bi-clock-history me-2"></i>
+          Riwayat Pemeriksaan
+        </router-link>
       </div>
     </div>
+  </div>
+</div>
   </app-layout>
 </template>
 
