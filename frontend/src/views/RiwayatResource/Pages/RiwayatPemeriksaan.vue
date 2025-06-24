@@ -53,7 +53,7 @@
     <!-- Statistics Cards for Doctor -->
     <div v-if="userRole === 'dokter'" class="stats-section mb-4">
       <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-4">
           <div class="card border-primary">
             <div class="card-body text-center">
               <i class="fas fa-file-medical text-primary mb-2" style="font-size: 2rem;"></i>
@@ -62,12 +62,21 @@
             </div>
           </div>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-4">
           <div class="card border-warning">
             <div class="card-body text-center">
               <i class="fas fa-paper-plane text-warning mb-2" style="font-size: 2rem;"></i>
               <h5 class="card-title">Assigned</h5>
               <h3 class="text-warning">{{ pemeriksaanAssigned }}</h3>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card border-success">
+            <div class="card-body text-center">
+              <i class="fas fa-share text-success mb-2" style="font-size: 2rem;"></i>
+              <h5 class="card-title">Terkirim</h5>
+              <h3 class="text-success">{{ pemeriksaanTerkirim }}</h3>
             </div>
           </div>
         </div>
@@ -131,6 +140,9 @@
                 >
                   {{ getStatusText(riwayat.status) }}
                 </span>
+                <span v-if="riwayat.is_sent_to_patient" class="badge bg-success me-1">
+                  <i class="fas fa-check-circle me-1"></i>Terkirim
+                </span>
                 <span class="badge bg-secondary">
                   {{ formatDate(riwayat.tanggal_penanganan) }}
                 </span>
@@ -186,6 +198,25 @@
                 <span class="badge bg-success">{{ getAssignedPatientName(riwayat.assigned_to) }}</span>
               </div>
 
+              <!-- Info Pengiriman -->
+              <div v-if="riwayat.is_sent_to_patient" class="info-item mb-3">
+                <div class="d-flex align-items-center mb-2">
+                  <i class="fas fa-paper-plane text-success me-2"></i>
+                  <strong>Dikirim:</strong>
+                </div>
+                <small class="text-success">
+                  <i class="fas fa-clock me-1"></i>{{ formatDateTime(riwayat.sent_at) }}
+                </small>
+                <div v-if="riwayat.catatan_pengiriman" class="mt-1">
+                  <small class="text-muted">{{ riwayat.catatan_pengiriman }}</small>
+                </div>
+                <div v-if="riwayat.pdf_url" class="mt-2">
+                  <a :href="riwayat.pdf_url" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-file-pdf me-1"></i>Lihat PDF
+                  </a>
+                </div>
+              </div>
+
               <!-- Riwayat Penyakit (if exists) -->
               <div v-if="riwayat.riwayat_penyakit" class="info-item mb-3">
                 <div class="d-flex align-items-center mb-2">
@@ -222,6 +253,15 @@
                       title="Unassign dari Pasien"
                     >
                       <i class="fas fa-user-minus"></i>
+                    </button>
+                    <button 
+                      v-if="!riwayat.is_sent_to_patient" 
+                      @click="showKirimModal(riwayat)" 
+                      class="btn btn-sm btn-outline-primary"
+                      :disabled="isUpdating"
+                      title="Kirim ke Pasien"
+                    >
+                      <i class="fas fa-share"></i>
                     </button>
                   </div>
                 </div>
@@ -319,6 +359,78 @@
       </div>
     </transition>
 
+    <!-- Kirim ke Pasien Modal -->
+    <transition name="fade">
+      <div v-if="showKirimModalFlag" class="modal-overlay" @click.self="closeKirimModal">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">
+                <i class="fas fa-share me-2"></i>Kirim Hasil Penanganan ke Pasien
+              </h5>
+              <button type="button" class="btn-close" @click="closeKirimModal"></button>
+            </div>
+            <div class="modal-body">
+              <div v-if="kirimSuccess" class="text-center py-3">
+                <i class="fas fa-check-circle text-success" style="font-size: 48px;"></i>
+                <h5 class="mt-3 text-success">Berhasil Terkirim!</h5>
+                <p>Hasil penanganan telah berhasil dikirim ke pasien</p>
+                <div v-if="kirimResult && kirimResult.pdf_url" class="mt-3">
+                  <a :href="kirimResult.pdf_url" target="_blank" class="btn btn-outline-primary">
+                    <i class="fas fa-file-pdf me-1"></i>Lihat PDF yang Dikirim
+                  </a>
+                </div>
+              </div>
+              <div v-else-if="selectedRiwayatForKirim">
+                <div class="alert alert-info">
+                  <strong>Penanganan untuk:</strong> {{ selectedRiwayatForKirim.patient_name }}
+                  <br>
+                  <strong>Tanggal:</strong> {{ formatDate(selectedRiwayatForKirim.tanggal_penanganan) }}
+                  <br>
+                  <strong>Diagnosis:</strong> {{ truncateText(selectedRiwayatForKirim.diagnosis_manual, 50) }}
+                </div>
+                
+                <div class="mb-3">
+                  <label class="form-label fw-bold">Catatan Pengiriman (Opsional):</label>
+                  <textarea 
+                    v-model="catatanPengiriman" 
+                    class="form-control" 
+                    rows="3"
+                    placeholder="Tambahkan catatan khusus untuk pasien..."
+                  ></textarea>
+                  <small class="form-text text-muted">
+                    Catatan ini akan disertakan dalam hasil yang dikirim ke pasien
+                  </small>
+                </div>
+
+                <div class="alert alert-warning">
+                  <i class="fas fa-info-circle me-2"></i>
+                  <strong>Informasi:</strong> Sistem akan membuat PDF otomatis dan mengirimkannya ke pasien.
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button v-if="kirimSuccess" class="btn btn-primary w-100" @click="closeKirimModal">
+                Selesai
+              </button>
+              <template v-else>
+                <button class="btn btn-secondary" @click="closeKirimModal">Batal</button>
+                <button 
+                  class="btn btn-primary"
+                  :disabled="kirimLoading"
+                  @click="kirimKePasien"
+                >
+                  <span v-if="kirimLoading" class="spinner-border spinner-border-sm me-2"></span>
+                  <i v-else class="fas fa-share me-1"></i>
+                  {{ kirimLoading ? 'Mengirim...' : 'Kirim ke Pasien' }}
+                </button>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <!-- Loading Overlay -->
     <div v-if="isUpdating" class="loading-overlay">
       <div class="loading-content">
@@ -368,6 +480,14 @@ export default {
     const selectedAssignUserId = ref('');
     const assignLoading = ref(false);
     const assignSuccess = ref(false);
+
+    // Kirim ke Pasien Modal states
+    const showKirimModalFlag = ref(false);
+    const selectedRiwayatForKirim = ref(null);
+    const catatanPengiriman = ref('');
+    const kirimLoading = ref(false);
+    const kirimSuccess = ref(false);
+    const kirimResult = ref(null);
 
     // Get user role and ID from JWT
     const getUserInfoFromToken = () => {
@@ -442,6 +562,9 @@ export default {
     const totalPemeriksaan = computed(() => riwayatList.value.length);
     const pemeriksaanAssigned = computed(() => {
       return riwayatList.value.filter(item => item.status === 'assigned').length;
+    });
+    const pemeriksaanTerkirim = computed(() => {
+      return riwayatList.value.filter(item => item.is_sent_to_patient === true).length;
     });
 
     // Methods
@@ -684,6 +807,95 @@ export default {
       }
     };
 
+    // New methods for "Kirim ke Pasien" functionality
+    const showKirimModal = (riwayat) => {
+      selectedRiwayatForKirim.value = riwayat;
+      catatanPengiriman.value = '';
+      kirimSuccess.value = false;
+      kirimResult.value = null;
+      showKirimModalFlag.value = true;
+    };
+
+    const closeKirimModal = () => {
+      showKirimModalFlag.value = false;
+      setTimeout(() => {
+        selectedRiwayatForKirim.value = null;
+        catatanPengiriman.value = '';
+        kirimSuccess.value = false;
+        kirimResult.value = null;
+      }, 300);
+    };
+
+    const kirimKePasien = async () => {
+      if (!selectedRiwayatForKirim.value) {
+        alert('Data penanganan tidak ditemukan');
+        return;
+      }
+
+      try {
+        kirimLoading.value = true;
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+        
+        // Use the PUT endpoint for kirim ke pasien
+        const endpoint = api.getEndpoint(`penanganan/${selectedRiwayatForKirim.value.id}/kirim`);
+        console.log('Kirim endpoint:', endpoint);
+
+        const requestData = {
+          catatan_pengiriman: catatanPengiriman.value || null
+        };
+
+        const response = await axios.put(
+          endpoint,
+          requestData,
+          {
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        console.log('Kirim response:', response);
+
+        if (response.status === 200) {
+          // Show success message
+          kirimSuccess.value = true;
+          kirimResult.value = response.data.data;
+          
+          // Refresh data to get latest state
+          await fetchRiwayatPemeriksaan();
+
+          // Close modal automatically after 3 seconds
+          setTimeout(() => {
+            if (showKirimModalFlag.value) {
+              closeKirimModal();
+            }
+          }, 3000);
+        }
+      } catch (error) {
+        console.error('Error sending to patient:', error);
+        
+        // Show more detailed error message
+        let errorMessage = 'Gagal mengirim hasil penanganan ke pasien.';
+        
+        if (error.response) {
+          if (error.response.status === 404) {
+            errorMessage = 'Penanganan tidak ditemukan.';
+          } else if (error.response.status === 403) {
+            errorMessage = 'Anda tidak memiliki izin untuk melakukan tindakan ini.';
+          } else if (error.response.status === 422) {
+            errorMessage = 'Data tidak valid. Silakan periksa kembali.';
+          } else if (error.response.data && error.response.data.message) {
+            errorMessage = error.response.data.message;
+          }
+        }
+        
+        alert(errorMessage + ' Silakan coba lagi.');
+      } finally {
+        kirimLoading.value = false;
+      }
+    };
+
     const navigateToCreate = () => {
       router.push({ name: 'create-penanganan' });
     };
@@ -856,6 +1068,14 @@ export default {
       assignLoading,
       assignSuccess,
       
+      // Kirim ke Pasien Modal states
+      showKirimModalFlag,
+      selectedRiwayatForKirim,
+      catatanPengiriman,
+      kirimLoading,
+      kirimSuccess,
+      kirimResult,
+      
       // Computed
       filteredRiwayat,
       totalPages,
@@ -876,6 +1096,12 @@ export default {
       closeAssignModal,
       assignToPatient,
       unassignFromPatient,
+      
+      // New methods for Kirim ke Pasien
+      showKirimModal,
+      closeKirimModal,
+      kirimKePasien,
+      
       navigateToCreate,
       
       // Utility functions
@@ -895,70 +1121,126 @@ export default {
   }
 };
 </script>
-
-<style scoped>
+<style>
+/* Main Container */
 .riwayat-container {
-  min-height: 100vh;
+  padding: 20px 15px;
   background-color: #f8f9fa;
-  padding: 20px;
+  min-height: 100vh;
 }
 
-.header-section .bg-gradient {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.header-section .text-black {
-  color: white !important;
-}
-
-.header-actions .btn-light {
-  background-color: rgba(255, 255, 255, 0.9);
+/* Header Section */
+.header-section .card {
   border: none;
-  color: #333;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
-.header-actions .btn-light:hover {
-  background-color: white;
+.header-section .card-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px 12px 0 0 !important;
+  border: none;
+  padding: 20px 25px;
+}
+
+.header-section .card-header h4 {
+  color: white;
+  font-weight: 600;
+  margin: 0;
+}
+
+.header-actions .btn {
+  border-radius: 8px;
+  font-weight: 500;
+  padding: 8px 16px;
+  transition: all 0.3s ease;
+}
+
+.header-actions .btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+/* Filter Section */
 .filter-section .card {
   border: none;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
+.filter-section .form-label {
+  color: #495057;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.filter-section .form-select {
+  border-radius: 8px;
+  border: 1px solid #e0e6ed;
+  padding: 12px 16px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.filter-section .form-select:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Statistics Cards */
 .stats-section .card {
-  border: none;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  overflow: hidden;
 }
 
 .stats-section .card:hover {
   transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
+.stats-section .card-body {
+  padding: 25px 20px;
+}
+
+.stats-section .card-title {
+  font-weight: 500;
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #6c757d;
+}
+
+.stats-section h3 {
+  font-weight: 700;
+  font-size: 2.5rem;
+  margin: 0;
+}
+
+/* Riwayat Cards */
 .riwayat-card {
   border: none;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
   overflow: hidden;
 }
 
 .riwayat-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
 }
 
 .riwayat-card .card-header {
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border-bottom: 2px solid #dee2e6;
+  border-bottom: 1px solid #e0e6ed;
+  padding: 20px;
 }
 
 .patient-info h6 {
   color: #2c3e50;
-  font-size: 1.1rem;
+  font-weight: 600;
+  font-size: 18px;
+  margin-bottom: 8px;
 }
 
 .patient-details {
@@ -966,65 +1248,124 @@ export default {
 }
 
 .patient-details small {
-  font-size: 0.85rem;
-  margin-bottom: 2px;
+  font-size: 13px;
+  color: #6c757d;
+  line-height: 1.6;
 }
 
+.patient-details i {
+  width: 16px;
+  text-align: center;
+  color: #95a5a6;
+}
+
+/* Status Badges */
 .status-badges {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.badge {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
 }
 
 .badge-telinga {
-  font-size: 0.8rem;
-  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 8px 16px;
   border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Card Body */
+.riwayat-card .card-body {
+  padding: 20px;
 }
 
 .info-item {
-  padding: 8px 0;
-  border-bottom: 1px solid #f1f3f4;
-}
-
-.info-item:last-child {
-  border-bottom: none;
+  margin-bottom: 16px;
 }
 
 .info-item strong {
   color: #2c3e50;
-  font-size: 0.9rem;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.info-item i {
+  width: 18px;
+  text-align: center;
 }
 
 .info-text {
-  margin: 0;
-  color: #6c757d;
-  font-size: 0.9rem;
-  line-height: 1.4;
+  color: #495057;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 8px 0 0 0;
+  word-wrap: break-word;
+}
+
+/* Card Footer */
+.riwayat-card .card-footer {
+  background-color: #f8f9fa;
+  border-top: 1px solid #e0e6ed;
+  padding: 15px 20px;
 }
 
 .action-buttons .btn {
-  transition: all 0.2s;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.3s ease;
 }
 
 .action-buttons .btn:hover {
   transform: scale(1.05);
 }
 
+.action-buttons .btn i {
+  font-size: 11px;
+}
+
+/* Pagination */
+.pagination {
+  margin: 0;
+}
+
 .pagination .page-link {
+  border: none;
   color: #667eea;
-  border: 1px solid #dee2e6;
-  padding: 8px 12px;
+  font-weight: 500;
+  padding: 12px 16px;
+  margin: 0 4px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.pagination .page-link:hover {
+  background-color: #667eea;
+  color: white;
+  transform: translateY(-1px);
 }
 
 .pagination .page-item.active .page-link {
   background-color: #667eea;
   border-color: #667eea;
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
-.pagination .page-link:hover {
-  color: #5a6fd8;
-  background-color: #f8f9fa;
+.pagination .page-item.disabled .page-link {
+  color: #adb5bd;
+  background-color: transparent;
 }
 
 /* Modal Styles */
@@ -1032,125 +1373,415 @@ export default {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  right: 0;
+  bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
-  justify-content: center;
   align-items: center;
-  z-index: 1000;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
 }
 
 .modal-dialog {
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  width: 90%;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   max-width: 500px;
+  width: 100%;
   max-height: 90vh;
   overflow-y: auto;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-content {
+  border: none;
+  border-radius: 12px;
 }
 
 .modal-header {
-  padding: 1.5rem;
-  border-bottom: 1px solid #dee2e6;
-  display: flex;
-  justify-content: between;
-  align-items: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+  padding: 20px 25px;
+  border-bottom: none;
 }
 
 .modal-title {
+  font-weight: 600;
+  font-size: 18px;
   margin: 0;
-  color: #2c3e50;
 }
 
 .btn-close {
   background: none;
   border: none;
-  font-size: 1.5rem;
+  color: white;
+  font-size: 24px;
+  opacity: 0.8;
   cursor: pointer;
-  color: #6c757d;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
 }
 
 .btn-close:hover {
-  color: #000;
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.btn-close::before {
+  content: "×";
+  font-size: 24px;
+  line-height: 1;
 }
 
 .modal-body {
-  padding: 1.5rem;
+  padding: 25px;
 }
 
 .modal-footer {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #dee2e6;
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
+  padding: 20px 25px;
+  border-top: 1px solid #e0e6ed;
+  background-color: #f8f9fa;
+  border-radius: 0 0 12px 12px;
 }
 
-/* Loading Overlay */
+/* Form Styles in Modal */
+.modal-body .form-label {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 8px;
+}
+
+.modal-body .form-select,
+.modal-body .form-control {
+  border-radius: 8px;
+  border: 1px solid #e0e6ed;
+  padding: 12px 16px;
+  transition: all 0.3s ease;
+}
+
+.modal-body .form-select:focus,
+.modal-body .form-control:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Alert Styles */
+.alert {
+  border-radius: 8px;
+  border: none;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+.alert-info {
+  background-color: #e7f3ff;
+  color: #0c5460;
+}
+
+.alert-warning {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+/* Loading States */
 .loading-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(255, 255, 255, 0.8);
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.9);
   display: flex;
-  justify-content: center;
   align-items: center;
-  z-index: 1001;
+  justify-content: center;
+  z-index: 9998;
 }
 
 .loading-content {
   text-align: center;
-  padding: 20px;
+  padding: 30px;
   background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.loading-content .spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+.loading-content p {
+  margin-top: 15px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+/* Spinner Styles */
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+}
+
+.fa-spin {
+  animation: fa-spin 2s infinite linear;
+}
+
+@keyframes fa-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Button Styles */
+.btn {
   border-radius: 8px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  font-weight: 500;
+  padding: 10px 20px;
+  transition: all 0.3s ease;
+  border: none;
 }
 
-/* Transitions */
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s;
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+  color: white;
+}
+
+.btn-warning {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.btn-outline-primary {
+  border: 2px solid #667eea;
+  color: #667eea;
+  background: transparent;
+}
+
+.btn-outline-primary:hover {
+  background: #667eea;
+  color: white;
+}
+
+.btn-outline-success {
+  border: 2px solid #28a745;
+  color: #28a745;
+  background: transparent;
+}
+
+.btn-outline-success:hover {
+  background: #28a745;
+  color: white;
+}
+
+.btn-outline-warning {
+  border: 2px solid #ffc107;
+  color: #ffc107;
+  background: transparent;
+}
+
+.btn-outline-warning:hover {
+  background: #ffc107;
+  color: #212529;
+}
+
+.btn-outline-secondary {
+  border: 2px solid #6c757d;
+  color: #6c757d;
+  background: transparent;
+}
+
+.btn-outline-secondary:hover {
+  background: #6c757d;
+  color: white;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Empty State */
+.text-center i[style*="font-size: 4rem"] {
+  color: #dee2e6;
+  margin-bottom: 20px;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
   .riwayat-container {
-    padding: 10px;
+    padding: 15px 10px;
+  }
+  
+  .header-section .card-header {
+    padding: 15px 20px;
+  }
+  
+  .header-section h4 {
+    font-size: 18px;
   }
   
   .header-actions {
     flex-direction: column;
-    gap: 5px;
+    gap: 8px;
+    align-items: stretch;
   }
   
-  .header-actions .btn {
-    width: 100%;
+  .stats-section .card-body {
+    padding: 20px 15px;
   }
   
-  .patient-details {
-    font-size: 0.8rem;
+  .stats-section h3 {
+    font-size: 2rem;
   }
   
-  .info-item {
-    padding: 6px 0;
+  .riwayat-card .card-header,
+  .riwayat-card .card-body,
+  .riwayat-card .card-footer {
+    padding: 15px;
+  }
+  
+  .patient-info h6 {
+    font-size: 16px;
   }
   
   .modal-dialog {
-    width: 95%;
     margin: 10px;
+    max-width: calc(100% - 20px);
   }
   
   .modal-header,
   .modal-body,
   .modal-footer {
-    padding: 1rem;
+    padding: 20px;
   }
+  
+  .action-buttons .btn-group {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .action-buttons .btn {
+    margin-bottom: 5px;
+  }
+}
+
+@media (max-width: 576px) {
+  .filter-section .col-md-6,
+  .filter-section .col-md-2 {
+    margin-bottom: 15px;
+  }
+  
+  .stats-section .col-md-4 {
+    margin-bottom: 15px;
+  }
+  
+  .pagination .page-link {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+  
+  .patient-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .status-badges {
+    justify-content: flex-start;
+  }
+  
+  .badge {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+}
+
+/* Transition Animations */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Focus States for Accessibility */
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+  outline: none;
+  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Custom Scrollbar */
+.modal-dialog::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-dialog::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.modal-dialog::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.modal-dialog::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Success Animation */
+@keyframes successPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.text-success i[style*="font-size: 48px"] {
+  animation: successPulse 0.6s ease-in-out;
 }
 </style>

@@ -45,7 +45,7 @@ Route::middleware('jwt.auth')->group(function () {
 
     // Route khusus Dokter
     Route::middleware('role:dokter')->group(function () {
-        Route::get('videos/pasien', [UserController::class, 'showVideosByPasienId']);
+        Route::get('videos/pasien', [VideoController::class, 'showVideosByPasienId']);
         Route::post('videos/{videoId}/assign/{userId}', [VideoController::class, 'assignToUser']);
         Route::patch('videos/{videoId}', [VideoController::class, 'updateStatusVideo']); 
         Route::put('videos/{videoId}/keterangan', [VideoController::class, 'updateKeterangan']);
@@ -57,6 +57,7 @@ Route::middleware('jwt.auth')->group(function () {
         Route::put('penanganan/{id}', [PenangananController::class, 'update']); 
         Route::delete('penanganan/{id}', [PenangananController::class, 'delete']);
         Route::delete('penanganan/{id}/force-delete', [PenangananController::class, 'forceDelete']); 
+        Route::put('/penanganan/{id}/kirim', [PenangananController::class, 'kirimKePasien']);
         Route::post('penanganan/{id}/assign/{userId}', [PenangananController::class, 'assignToUser']); 
         Route::patch('penanganan/{id}', [PenangananController::class, 'updateStatusPenanganan']);
     });

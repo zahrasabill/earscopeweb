@@ -1752,12 +1752,12 @@
             }
         },
         "/v1/videos/{videoId}/keterangan": {
-            "patch": {
+            "put": {
                 "tags": [
                     "Videos"
                 ],
                 "summary": "Update keterangan video",
-                "operationId": "381172ed86eaad4862f0055f2032382b",
+                "operationId": "d5a93c81210739644183b4a54c245f48",
                 "parameters": [
                     {
                         "name": "videoId",
