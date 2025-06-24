@@ -38,13 +38,13 @@ Route::middleware('jwt.auth')->group(function () {
     // Route yang dapat diakses oleh Dokter dan Pasien
     Route::middleware('role:dokter|pasien')->group(function () {
         Route::get('penanganan', [PenangananController::class, 'index']);
+        Route::get('videos', [VideoController::class, 'showAllVideos']);
         Route::get('penanganan/{id}', [PenangananController::class, 'show']);
         Route::get('penanganan/pasien', [PenangananController::class, 'getPenangananByPasien']);
     });
 
     // Route khusus Dokter
     Route::middleware('role:dokter')->group(function () {
-        Route::get('videos', [VideoController::class, 'showAllVideos']);
         Route::get('videos/pasien', [UserController::class, 'showVideosByPasienId']);
         Route::post('videos/{videoId}/assign/{userId}', [VideoController::class, 'assignToUser']);
         Route::patch('videos/{videoId}', [VideoController::class, 'updateStatusVideo']);
