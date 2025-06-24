@@ -30,10 +30,15 @@ import RiwayatPemeriksaan from "@/views/RiwayatResource/Pages/RiwayatPemeriksaan
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    {
+    // {
+    //   path: '/',
+    //   name: 'home',
+    //   component: HomeView,
+    // },
+        {
       path: '/',
       name: 'home',
-      component: HomeView,
+      component: LoginView,
     },
     {
       path: '/login',
