@@ -489,41 +489,52 @@ export default {
     const penangananData = response.data.data || response.data;
     console.log("Raw penanganan data:", penangananData);
 
-    // Enrich data dengan informasi user untuk SEMUA role (dokter dan pasien)
-    enrichedData = await Promise.all(
-      penangananData.map(async (item) => {
-        try {
-          // Fetch data user berdasarkan user_id dari penanganan
-          const userResponse = await axios.get(api.getEndpoint(`users/${item.user_id}`), {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+    if (userRole.value === "dokter") {
+      // Dokter: enrich data pasien via API
+      enrichedData = await Promise.all(
+        penangananData.map(async (item) => {
+          try {
+            const userResponse = await axios.get(api.getEndpoint(`users/${item.user_id}`), {
+              headers: { Authorization: `Bearer ${token}` },
+            });
 
-          const user = userResponse.data.data || userResponse.data;
-          console.log(`User data for ID ${item.user_id}:`, user);
+            const user = userResponse.data.data || userResponse.data;
+            console.log(`User data for ID ${item.user_id}:`, user);
 
-          return {
-            ...item,
-            patient_name: user.name || "Nama tidak tersedia",
-            patient_tanggal_lahir: user.tanggal_lahir || null,
-            patient_no_telp: user.no_telp || null,
-            patient_gender: user.gender || null,
-            kode_akses: user.kode_akses || null,
-          };
-        } catch (error) {
-          console.error(`Failed to fetch user details for user ${item.user_id}:`, error);
-          
-          // Jika gagal fetch user, kembalikan dengan data default
-          return {
-            ...item,
-            patient_name: "Nama tidak tersedia",
-            patient_tanggal_lahir: null,
-            patient_no_telp: null,
-            patient_gender: null,
-            kode_akses: null,
-          };
-        }
-      })
-    );
+            return {
+              ...item,
+              patient_name: user.name || "Nama tidak tersedia",
+              patient_tanggal_lahir: user.tanggal_lahir || null,
+              patient_no_telp: user.no_telp || null,
+              patient_gender: user.gender || null,
+              kode_akses: user.kode_akses || null,
+            };
+          } catch (error) {
+            console.error(`Failed to fetch user details for user ${item.user_id}:`, error);
+            return {
+              ...item,
+              patient_name: "Nama tidak tersedia",
+              patient_tanggal_lahir: null,
+              patient_no_telp: null,
+              patient_gender: null,
+              kode_akses: null,
+            };
+          }
+        })
+      );
+    } else {
+      // Pasien: langsung pakai data dirinya dari localStorage/session
+      const currentUser = JSON.parse(localStorage.getItem("currentUser")) || {};
+
+      enrichedData = penangananData.map((item) => ({
+        ...item,
+        patient_name: currentUser.name || "Nama tidak tersedia",
+        patient_tanggal_lahir: currentUser.tanggal_lahir || null,
+        patient_no_telp: currentUser.no_telp || null,
+        patient_gender: currentUser.gender || null,
+        kode_akses: currentUser.kode_akses || null,
+      }));
+    }
 
     riwayatList.value = enrichedData;
     console.log("Final riwayat data:", enrichedData);
