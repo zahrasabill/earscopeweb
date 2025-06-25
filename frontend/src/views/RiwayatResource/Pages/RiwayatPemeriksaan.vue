@@ -225,6 +225,17 @@
                 </div>
                 <p class="info-text">{{ truncateText(riwayat.riwayat_penyakit, 80) }}</p>
               </div>
+
+              <!-- Assigned Info for Patient -->
+              <div v-if="userRole === 'pasien' && riwayat.assigned_at" class="info-item mb-3">
+                <div class="d-flex align-items-center mb-2">
+                  <i class="fas fa-clock text-info me-2"></i>
+                  <strong>Diterima:</strong>
+                </div>
+                <small class="text-info">
+                  {{ formatDateTime(riwayat.assigned_at) }}
+                </small>
+              </div>
             </div>
 
             <!-- Card Footer -->
@@ -254,7 +265,6 @@
                     >
                       <i class="fas fa-user-minus"></i>
                     </button>
-                    <!-- Button Kirim ke Pasien dihapus -->
                   </div>
                 </div>
               </div>
@@ -351,78 +361,6 @@
       </div>
     </transition>
 
-    <!-- Kirim ke Pasien Modal -->
-    <transition name="fade">
-      <div v-if="showKirimModalFlag" class="modal-overlay" @click.self="closeKirimModal">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">
-                <i class="fas fa-share me-2"></i>Kirim Hasil Penanganan ke Pasien
-              </h5>
-              <button type="button" class="btn-close" @click="closeKirimModal"></button>
-            </div>
-            <div class="modal-body">
-              <div v-if="kirimSuccess" class="text-center py-3">
-                <i class="fas fa-check-circle text-success" style="font-size: 48px;"></i>
-                <h5 class="mt-3 text-success">Berhasil Terkirim!</h5>
-                <p>Hasil penanganan telah berhasil dikirim ke pasien</p>
-                <div v-if="kirimResult && kirimResult.pdf_url" class="mt-3">
-                  <a :href="kirimResult.pdf_url" target="_blank" class="btn btn-outline-primary">
-                    <i class="fas fa-file-pdf me-1"></i>Lihat PDF yang Dikirim
-                  </a>
-                </div>
-              </div>
-              <div v-else-if="selectedRiwayatForKirim">
-                <div class="alert alert-info">
-                  <strong>Penanganan untuk:</strong> {{ selectedRiwayatForKirim.patient_name }}
-                  <br>
-                  <strong>Tanggal:</strong> {{ formatDate(selectedRiwayatForKirim.tanggal_penanganan) }}
-                  <br>
-                  <strong>Diagnosis:</strong> {{ truncateText(selectedRiwayatForKirim.diagnosis_manual, 50) }}
-                </div>
-                
-                <div class="mb-3">
-                  <label class="form-label fw-bold">Catatan Pengiriman (Opsional):</label>
-                  <textarea 
-                    v-model="catatanPengiriman" 
-                    class="form-control" 
-                    rows="3"
-                    placeholder="Tambahkan catatan khusus untuk pasien..."
-                  ></textarea>
-                  <small class="form-text text-muted">
-                    Catatan ini akan disertakan dalam hasil yang dikirim ke pasien
-                  </small>
-                </div>
-
-                <div class="alert alert-warning">
-                  <i class="fas fa-info-circle me-2"></i>
-                  <strong>Informasi:</strong> Sistem akan membuat PDF otomatis dan mengirimkannya ke pasien.
-                </div>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button v-if="kirimSuccess" class="btn btn-primary w-100" @click="closeKirimModal">
-                Selesai
-              </button>
-              <template v-else>
-                <button class="btn btn-secondary" @click="closeKirimModal">Batal</button>
-                <button 
-                  class="btn btn-primary"
-                  :disabled="kirimLoading"
-                  @click="kirimKePasien"
-                >
-                  <span v-if="kirimLoading" class="spinner-border spinner-border-sm me-2"></span>
-                  <i v-else class="fas fa-share me-1"></i>
-                  {{ kirimLoading ? 'Mengirim...' : 'Kirim ke Pasien' }}
-                </button>
-              </template>
-            </div>
-          </div>
-        </div>
-      </div>
-    </transition>
-
     <!-- Loading Overlay -->
     <div v-if="isUpdating" class="loading-overlay">
       <div class="loading-content">
@@ -473,14 +411,6 @@ export default {
     const assignLoading = ref(false);
     const assignSuccess = ref(false);
 
-    // Kirim ke Pasien Modal states
-    const showKirimModalFlag = ref(false);
-    const selectedRiwayatForKirim = ref(null);
-    const catatanPengiriman = ref('');
-    const kirimLoading = ref(false);
-    const kirimSuccess = ref(false);
-    const kirimResult = ref(null);
-
     // Get user role and ID from JWT
     const getUserInfoFromToken = () => {
       try {
@@ -497,6 +427,14 @@ export default {
         console.error('Error decoding token:', error);
         return { role: 'pasien', userId: null };
       }
+    };
+
+    // Initialize user info
+    const initializeUserInfo = () => {
+      const userInfo = getUserInfoFromToken();
+      userRole.value = userInfo.role;
+      currentUserId.value = userInfo.userId;
+      console.log('User info initialized:', { role: userRole.value, userId: currentUserId.value });
     };
 
     // Computed properties
@@ -561,64 +499,72 @@ export default {
 
     // Methods
     const fetchRiwayatPemeriksaan = async () => {
-      try {
-        isLoading.value = true;
-        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-        
-        let endpoint = 'penanganan';
-        
-        // Use the correct route based on user role
-        if (userRole.value === 'pasien') {
-          endpoint = 'penanganan/pasien'; // Updated route for patient-specific data
-        }
+  try {
+    isLoading.value = true;
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
 
-        const response = await axios.get(api.getEndpoint(endpoint), {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+    if (!token) {
+      console.error("No token found");
+      return;
+    }
 
-        const data = response.data.data || response.data;
-        
-        // Fetch detailed patient information for each penanganan
-        const enrichedData = await Promise.all(data.map(async (item) => {
+    let enrichedData = [];
+
+    // Ambil semua penanganan
+    const response = await axios.get(api.getEndpoint("penanganan"), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const penangananData = response.data.data || response.data;
+    console.log("Raw penanganan data:", penangananData);
+
+    // Kalau pasien, backend sudah filter by user_id → langsung pakai datanya
+    // Kalau dokter, enrich dengan data pasien
+    if (userRole.value === "dokter") {
+      enrichedData = await Promise.all(
+        penangananData.map(async (item) => {
           try {
-            // Fetch patient details
             const patientResponse = await axios.get(api.getEndpoint(`users/${item.user_id}`), {
               headers: { Authorization: `Bearer ${token}` },
             });
-            
-            const patientData = patientResponse.data.data || patientResponse.data;
-            
+
+            const patient = patientResponse.data.data || patientResponse.data;
+
             return {
               ...item,
-              patient_name: patientData.name || 'Nama tidak tersedia',
-              patient_tanggal_lahir: patientData.tanggal_lahir || null,
-              patient_no_telp: patientData.no_telp || null,
-              patient_gender: patientData.gender || null,
-              kode_akses: patientData.kode_akses || null
+              patient_name: patient.name || "Nama tidak tersedia",
+              patient_tanggal_lahir: patient.tanggal_lahir || null,
+              patient_no_telp: patient.no_telp || null,
+              patient_gender: patient.gender || null,
+              kode_akses: patient.kode_akses || null,
             };
           } catch (error) {
             console.error(`Failed to fetch patient details for user ${item.user_id}:`, error);
-            // Return original data if patient fetch fails
             return {
               ...item,
-              patient_name: 'Nama tidak tersedia',
+              patient_name: "Nama tidak tersedia",
               patient_tanggal_lahir: null,
               patient_no_telp: null,
               patient_gender: null,
-              kode_akses: null
+              kode_akses: null,
             };
           }
-        }));
+        })
+      );
+    } else {
+      // Pasien → langsung pakai datanya karena sudah difilter backend
+      enrichedData = penangananData;
+    }
 
-        riwayatList.value = enrichedData;
-      } catch (error) {
-        console.error('Error fetching riwayat pemeriksaan:', error);
-        // Show error message to user
-        alert('Gagal memuat riwayat pemeriksaan. Silakan coba lagi.');
-      } finally {
-        isLoading.value = false;
-      }
-    };
+    riwayatList.value = enrichedData;
+    console.log("Final riwayat data:", enrichedData);
+  } catch (error) {
+    console.error("Error fetching riwayat pemeriksaan:", error);
+    alert("Gagal memuat riwayat pemeriksaan. Silakan coba lagi.");
+  } finally {
+    isLoading.value = false;
+  }
+};
 
     const fetchAvailablePatients = async () => {
       if (userRole.value === 'dokter') {
@@ -695,345 +641,216 @@ export default {
 
     const assignToPatient = async () => {
       if (!selectedAssignUserId.value || !selectedRiwayatForAssign.value) {
-        alert('Silakan pilih pasien terlebih dahulu');
+        alert('Pilih pasien terlebih dahulu');
         return;
       }
 
       try {
         assignLoading.value = true;
         const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-        
-        // Use the correct assign endpoint: POST penanganan/{id}/assign/{userId}
-        const endpoint = api.getEndpoint(`penanganan/${selectedRiwayatForAssign.value.id}/assign/${selectedAssignUserId.value}`);
-        console.log('Assign endpoint:', endpoint);
-
         const response = await axios.post(
-          endpoint,
-          {}, // Empty body as specified in the route
+          api.getEndpoint(`penanganan/${selectedRiwayatForAssign.value.id}/assign/${selectedAssignUserId.value}`),
+          {}, // Empty body karena userId sudah di URL
           {
-            headers: { 
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
+            headers: { Authorization: `Bearer ${token}` }
           }
         );
 
-        console.log('Assign response:', response);
-
-        if (response.status === 200 || response.status === 201) {
-          // Show success message
+        if (response.data.success || response.status === 200) {
           assignSuccess.value = true;
           
-          // Refresh data to get latest state
-          await fetchRiwayatPemeriksaan();
+          // Update the local data
+          const index = riwayatList.value.findIndex(item => item.id === selectedRiwayatForAssign.value.id);
+          if (index !== -1) {
+            riwayatList.value[index] = {
+              ...riwayatList.value[index],
+              status: 'assigned',
+              assigned_to: selectedAssignUserId.value,
+              assigned_at: new Date().toISOString()
+            };
+          }
 
-          // Close modal automatically after 2 seconds
+          // Auto close after 2 seconds
           setTimeout(() => {
-            if (showAssignModalFlag.value) {
-              closeAssignModal();
-            }
+            closeAssignModal();
           }, 2000);
+        } else {
+          throw new Error('Failed to assign penanganan');
         }
       } catch (error) {
-        console.error('Error assigning to patient:', error);
-        
-        // Show more detailed error message
-        let errorMessage = 'Gagal assign penanganan ke pasien.';
-        
-        if (error.response) {
-          if (error.response.status === 404) {
-            errorMessage = 'Penanganan atau pasien tidak ditemukan.';
-          } else if (error.response.status === 403) {
-            errorMessage = 'Anda tidak memiliki izin untuk melakukan tindakan ini.';
-          } else if (error.response.data && error.response.data.message) {
-            errorMessage = error.response.data.message;
-          }
-        }
-        
-        alert(errorMessage + ' Silakan coba lagi.');
+        console.error('Error assigning penanganan:', error);
+        alert('Gagal assign penanganan. Silakan coba lagi.');
       } finally {
         assignLoading.value = false;
       }
     };
 
     const unassignFromPatient = async (riwayat) => {
-      if (!confirm('Apakah Anda yakin ingin unassign penanganan ini dari pasien?')) {
-        return;
-      }
+  if (!confirm('Yakin ingin unassign penanganan ini dari pasien?')) {
+    return;
+  }
 
-      try {
-        isUpdating.value = true;
-        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-        
-        // Use the correct update status endpoint: PATCH penanganan/{id}
-        const response = await axios.patch(
-          api.getEndpoint(`penanganan/${riwayat.id}`),
-          {
-            assigned_to: null,
-            status: 'completed'
-          },
-          {
-            headers: { 
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-
-        if (response.status === 200) {
-          // Refresh data to get latest state
-          await fetchRiwayatPemeriksaan();
-          alert('Penanganan berhasil di-unassign dari pasien');
+  try {
+    isUpdating.value = true;
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    const response = await axios.patch(
+      api.getEndpoint(`penanganan/${riwayat.id}`),
+      {
+        // Data yang dikirim untuk unassign
+        assigned_to: null,
+        status: 'created', // Kembalikan status ke created
+        assigned_at: null
+      },
+      {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-      } catch (error) {
-        console.error('Error unassigning from patient:', error);
-        
-        let errorMessage = 'Gagal unassign penanganan dari pasien.';
-        if (error.response && error.response.data && error.response.data.message) {
-          errorMessage = error.response.data.message;
-        }
-        
-        alert(errorMessage + ' Silakan coba lagi.');
-      } finally {
-        isUpdating.value = false;
       }
-    };
+    );
 
-    // New methods for "Kirim ke Pasien" functionality
-    const showKirimModal = (riwayat) => {
-      selectedRiwayatForKirim.value = riwayat;
-      catatanPengiriman.value = '';
-      kirimSuccess.value = false;
-      kirimResult.value = null;
-      showKirimModalFlag.value = true;
-    };
-
-    const closeKirimModal = () => {
-      showKirimModalFlag.value = false;
-      setTimeout(() => {
-        selectedRiwayatForKirim.value = null;
-        catatanPengiriman.value = '';
-        kirimSuccess.value = false;
-        kirimResult.value = null;
-      }, 300);
-    };
-
-    const kirimKePasien = async () => {
-      if (!selectedRiwayatForKirim.value) {
-        alert('Data penanganan tidak ditemukan');
-        return;
-      }
-
-      try {
-        kirimLoading.value = true;
-        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-        
-        // Use the PUT endpoint for kirim ke pasien
-        const endpoint = api.getEndpoint(`penanganan/${selectedRiwayatForKirim.value.id}/kirim`);
-        console.log('Kirim endpoint:', endpoint);
-
-        const requestData = {
-          catatan_pengiriman: catatanPengiriman.value || null
+    if (response.data.success || response.status === 200) {
+      // Update the local data
+      const index = riwayatList.value.findIndex(item => item.id === riwayat.id);
+      if (index !== -1) {
+        riwayatList.value[index] = {
+          ...riwayatList.value[index],
+          status: 'created',
+          assigned_to: null,
+          assigned_at: null
         };
-
-        const response = await axios.put(
-          endpoint,
-          requestData,
-          {
-            headers: { 
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-
-        console.log('Kirim response:', response);
-
-        if (response.status === 200) {
-          // Show success message
-          kirimSuccess.value = true;
-          kirimResult.value = response.data.data;
-          
-          // Refresh data to get latest state
-          await fetchRiwayatPemeriksaan();
-
-          // Close modal automatically after 3 seconds
-          setTimeout(() => {
-            if (showKirimModalFlag.value) {
-              closeKirimModal();
-            }
-          }, 3000);
-        }
-      } catch (error) {
-        console.error('Error sending to patient:', error);
-        
-        // Show more detailed error message
-        let errorMessage = 'Gagal mengirim hasil penanganan ke pasien.';
-        
-        if (error.response) {
-          if (error.response.status === 404) {
-            errorMessage = 'Penanganan tidak ditemukan.';
-          } else if (error.response.status === 403) {
-            errorMessage = 'Anda tidak memiliki izin untuk melakukan tindakan ini.';
-          } else if (error.response.status === 422) {
-            errorMessage = 'Data tidak valid. Silakan periksa kembali.';
-          } else if (error.response.data && error.response.data.message) {
-            errorMessage = error.response.data.message;
-          }
-        }
-        
-        alert(errorMessage + ' Silakan coba lagi.');
-      } finally {
-        kirimLoading.value = false;
       }
-    };
+
+      alert('Penanganan berhasil di-unassign dari pasien');
+    } else {
+      throw new Error('Failed to unassign penanganan');
+    }
+  } catch (error) {
+    console.error('Error unassigning penanganan:', error);
+    
+    // Tampilkan pesan error yang lebih spesifik jika ada
+    const errorMessage = error.response?.data?.message || 'Gagal unassign penanganan. Silakan coba lagi.';
+    alert(errorMessage);
+  } finally {
+    isUpdating.value = false;
+  }
+};
 
     const navigateToCreate = () => {
-      router.push({ name: 'create-penanganan' });
+      router.push('/create-penanganan');
     };
 
     // Utility functions
     const formatDate = (dateString) => {
-      if (!dateString) return '-';
-      const date = new Date(dateString);
-      return date.toLocaleDateString('id-ID', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
+      if (!dateString) return 'Tanggal tidak tersedia';
+      try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('id-ID', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+      } catch (error) {
+        return 'Tanggal tidak valid';
+      }
     };
 
     const formatDateTime = (dateString) => {
-      if (!dateString) return '-';
-      const date = new Date(dateString);
-      return date.toLocaleString('id-ID', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    };
-
-    const formatPatientAge = (dateString) => {
-      if (!dateString) return 'Usia tidak tersedia';
-      const age = calculateAge(dateString);
-      return `${age} tahun`;
-    };
-
-    const calculateAge = (dateString) => {
-      if (!dateString) return 0;
-      const today = new Date();
-      const birthDate = new Date(dateString);
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-      
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
+      if (!dateString) return 'Tanggal tidak tersedia';
+      try {
+        const date = new Date(dateString);
+        return date.toLocaleString('id-ID', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch (error) {
+        return 'Tanggal tidak valid';
       }
-      
-      return age;
+    };
+
+    const formatPatientAge = (birthDate) => {
+      if (!birthDate) return 'Umur tidak tersedia';
+      try {
+        const today = new Date();
+        const birth = new Date(birthDate);
+        let age = today.getFullYear() - birth.getFullYear();
+        const monthDiff = today.getMonth() - birth.getMonth();
+        
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+          age--;
+        }
+        
+        return `${age} tahun`;
+      } catch (error) {
+        return 'Umur tidak valid';
+      }
     };
 
     const formatGender = (gender) => {
-      if (!gender) return '-';
-
-      const normalized = gender.toString().toLowerCase();
-
-      if (['perempuan', 'p', 'female', 'f'].includes(normalized)) {
-        return 'Perempuan';
-      }
-
-      if (['laki-laki', 'l', 'male', 'm'].includes(normalized)) {
-        return 'Laki-laki';
-      }
-
-      return gender; // Return original if no match
+      if (!gender) return 'Tidak diketahui';
+      return gender === 'L' ? 'Laki-laki' : gender === 'P' ? 'Perempuan' : gender;
     };
 
     const formatTelinga = (telinga) => {
-      if (!telinga) return '-';
-      
-      const normalized = telinga.toString().toLowerCase();
-      
-      if (normalized === 'kiri') return 'Kiri';
-      if (normalized === 'kanan') return 'Kanan';
-      if (normalized === 'keduanya' || normalized === 'both') return 'Keduanya';
-      
-      return telinga; // Return original if no match
+      const telingaMap = {
+        'kiri': 'Telinga Kiri',
+        'kanan': 'Telinga Kanan',
+        'kedua': 'Kedua Telinga'
+      };
+      return telingaMap[telinga] || telinga || 'Tidak diketahui';
     };
 
     const getTelingaClass = (telinga) => {
-      if (!telinga) return 'bg-secondary';
-      
-      const normalized = telinga.toString().toLowerCase();
-      
-      if (normalized === 'kiri') return 'bg-info';
-      if (normalized === 'kanan') return 'bg-warning';
-      if (normalized === 'keduanya' || normalized === 'both') return 'bg-danger';
-      
-      return 'bg-secondary';
+      const classMap = {
+        'kiri': 'bg-primary',
+        'kanan': 'bg-success',
+        'kedua': 'bg-warning'
+      };
+      return classMap[telinga] || 'bg-secondary';
     };
 
     const getStatusClass = (status) => {
-      if (!status) return 'bg-secondary';
-      
-      const normalized = status.toString().toLowerCase();
-      
-      switch (normalized) {
-        case 'completed':
-          return 'bg-success';
-        case 'assigned':
-          return 'bg-warning';
-        case 'pending':
-          return 'bg-info';
-        case 'cancelled':
-          return 'bg-danger';
-        default:
-          return 'bg-secondary';
-      }
+      const statusMap = {
+        'created': 'bg-info',
+        'assigned': 'bg-warning',
+        'completed': 'bg-success',
+        'cancelled': 'bg-danger'
+      };
+      return statusMap[status] || 'bg-secondary';
     };
 
     const getStatusText = (status) => {
-      if (!status) return 'Tidak diketahui';
+      const statusMap = {
+        'created': 'Dibuat',
+        'assigned': 'Assigned',
+        'completed': 'Selesai',
+        'cancelled': 'Dibatalkan'
+      };
+      return statusMap[status] || status || 'Unknown';
+    };
+
+    const truncateText = (text, length = 100) => {
+      if (!text) return 'Tidak ada data';
+      return text.length > length ? text.substring(0, length) + '...' : text;
+    };
+
+    const getAssignedPatientName = (assignedUserId) => {
+      if (!assignedUserId) return 'Tidak di-assign';
       
-      const normalized = status.toString().toLowerCase();
-      
-      switch (normalized) {
-        case 'completed':
-          return 'Selesai';
-        case 'assigned':
-          return 'Ditugaskan';
-        case 'pending':
-          return 'Menunggu';
-        case 'cancelled':
-          return 'Dibatalkan';
-        default:
-          return status;
+      const patient = availablePatients.value.find(p => p.id.toString() === assignedUserId.toString());
+      if (patient) {
+        return `${patient.name}${patient.kode_akses ? ` (${patient.kode_akses})` : ''}`;
       }
-    };
-
-    const getAssignedPatientName = (userId) => {
-      if (!userId) return '-';
       
-      const patient = availablePatients.value.find(p => p.id.toString() === userId.toString());
-      return patient ? patient.name : 'Pasien tidak ditemukan';
+      return 'Pasien tidak ditemukan';
     };
 
-    const truncateText = (text, maxLength) => {
-      if (!text) return '-';
-      if (text.length <= maxLength) return text;
-      return text.substring(0, maxLength) + '...';
-    };
-
-    // Initialize component
+    // Lifecycle hooks
     onMounted(async () => {
-      // Get user info from token
-      const userInfo = getUserInfoFromToken();
-      userRole.value = userInfo.role;
-      currentUserId.value = userInfo.userId;
-
-      // Load initial data
+      initializeUserInfo();
       await refreshData();
     });
 
@@ -1052,34 +869,24 @@ export default {
       // Pagination
       currentPage,
       itemsPerPage,
+      totalPages,
+      paginatedRiwayat,
+      visiblePages,
       
-      // Modal states
+      // Computed
+      filteredRiwayat,
+      totalPemeriksaan,
+      pemeriksaanAssigned,
+      pemeriksaanTerkirim,
+      
+      // Modal
       showAssignModalFlag,
       selectedRiwayatForAssign,
       selectedAssignUserId,
       assignLoading,
       assignSuccess,
       
-      // Kirim ke Pasien Modal states
-      showKirimModalFlag,
-      selectedRiwayatForKirim,
-      catatanPengiriman,
-      kirimLoading,
-      kirimSuccess,
-      kirimResult,
-      
-      // Computed
-      filteredRiwayat,
-      totalPages,
-      paginatedRiwayat,
-      visiblePages,
-      totalPemeriksaan,
-      pemeriksaanAssigned,
-      
       // Methods
-      fetchRiwayatPemeriksaan,
-      fetchAvailablePatients,
-      fetchUsers,
       refreshData,
       applyFilters,
       clearFilters,
@@ -1088,710 +895,261 @@ export default {
       closeAssignModal,
       assignToPatient,
       unassignFromPatient,
-      
-      // New methods for Kirim ke Pasien
-      showKirimModal,
-      closeKirimModal,
-      kirimKePasien,
-      
       navigateToCreate,
       
-      // Utility functions
+      // Utility methods
       formatDate,
       formatDateTime,
       formatPatientAge,
-      calculateAge,
       formatGender,
       formatTelinga,
       getTelingaClass,
       getStatusClass,
       getStatusText,
-      getAssignedPatientName,
       truncateText,
-      getUserInfoFromToken
+      getAssignedPatientName
     };
   }
 };
 </script>
-<style>
-/* Main Container */
-.riwayat-container {
-  padding: 20px 15px;
-  background-color: #f8f9fa;
-  min-height: 100vh;
-}
 
-/* Header Section */
-.header-section .card {
-  border: none;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+<style scoped>
+.riwayat-container {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+  padding: 20px 0;
 }
 
 .header-section .card-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12px 12px 0 0 !important;
+  color: white;
   border: none;
-  padding: 20px 25px;
 }
 
-.header-section .card-header h4 {
-  color: #222 !important;
-  font-weight: 600;
-  margin: 0;
-}
-
-.header-actions .btn {
-  border-radius: 8px;
-  font-weight: 500;
-  padding: 8px 16px;
+.header-section .btn-light {
+  background-color: rgba(255, 255, 255, 0.9);
+  border: none;
+  color: #495057;
   transition: all 0.3s ease;
 }
 
-.header-actions .btn:hover {
+.header-section .btn-light:hover {
+  background-color: white;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Filter Section */
 .filter-section .card {
   border: none;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 
-.filter-section .form-label {
-  color: #495057;
-  font-size: 14px;
-  margin-bottom: 8px;
-}
-
-.filter-section .form-select {
-  border-radius: 8px;
-  border: 1px solid #e0e6ed;
-  padding: 12px 16px;
-  font-size: 14px;
-  transition: all 0.3s ease;
-}
-
-.filter-section .form-select:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-}
-
-/* Statistics Cards */
 .stats-section .card {
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  overflow: hidden;
+  border: none;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  transition: transform 0.3s ease;
 }
 
 .stats-section .card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
-.stats-section .card-body {
-  padding: 25px 20px;
-}
-
-.stats-section .card-title {
-  font-weight: 500;
-  font-size: 16px;
-  margin-bottom: 10px;
-  color: #6c757d;
-}
-
-.stats-section h3 {
-  font-weight: 700;
-  font-size: 2.5rem;
-  margin: 0;
-}
-
-/* Riwayat Cards */
 .riwayat-card {
   border: none;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
   transition: all 0.3s ease;
+  border-radius: 12px;
   overflow: hidden;
 }
 
 .riwayat-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
 }
 
 .riwayat-card .card-header {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border-bottom: 1px solid #e0e6ed;
-  padding: 20px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  padding: 1rem;
 }
 
 .patient-info h6 {
   color: #2c3e50;
-  font-weight: 600;
-  font-size: 18px;
-  margin-bottom: 8px;
+  font-size: 1.1rem;
 }
 
 .patient-details {
-  margin-top: 8px;
+  margin-top: 0.5rem;
 }
 
 .patient-details small {
-  font-size: 13px;
-  color: #6c757d;
-  line-height: 1.6;
+  margin: 2px 0;
 }
 
-.patient-details i {
-  width: 16px;
-  text-align: center;
-  color: #95a5a6;
-}
-
-/* Status Badges */
 .status-badges {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 12px;
-}
-
-.badge {
-  font-size: 11px;
-  font-weight: 500;
-  padding: 6px 12px;
-  border-radius: 20px;
-  letter-spacing: 0.5px;
+  gap: 0.25rem;
 }
 
 .badge-telinga {
-  font-size: 12px;
-  font-weight: 500;
-  padding: 8px 16px;
-  border-radius: 20px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-/* Card Body */
-.riwayat-card .card-body {
-  padding: 20px;
+  font-size: 0.75rem;
+  padding: 0.35rem 0.65rem;
 }
 
 .info-item {
-  margin-bottom: 16px;
+  border-left: 3px solid #e9ecef;
+  padding-left: 1rem;
+  margin-bottom: 1rem;
+}
+
+.info-item:last-child {
+  margin-bottom: 0;
 }
 
 .info-item strong {
-  color: #2c3e50;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.info-item i {
-  width: 18px;
-  text-align: center;
+  color: #495057;
+  font-size: 0.9rem;
 }
 
 .info-text {
-  color: #495057;
-  font-size: 14px;
-  line-height: 1.6;
-  margin: 8px 0 0 0;
-  word-wrap: break-word;
-}
-
-/* Card Footer */
-.riwayat-card .card-footer {
-  background-color: #f8f9fa;
-  border-top: 1px solid #e0e6ed;
-  padding: 15px 20px;
+  color: #6c757d;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
 }
 
 .action-buttons .btn {
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.3s ease;
+  margin: 0 2px;
 }
 
-.action-buttons .btn:hover {
-  transform: scale(1.05);
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1050;
 }
 
-.action-buttons .btn i {
-  font-size: 11px;
+.modal-assign {
+  max-width: 500px;
+  width: 90%;
 }
 
-/* Pagination */
-.pagination {
-  margin: 0;
+.modal-assign .modal-content {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.modal-assign .modal-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+}
+
+.modal-assign .btn-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  opacity: 0.8;
+}
+
+.modal-assign .btn-close:hover {
+  opacity: 1;
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1060;
+}
+
+.loading-content {
+  text-align: center;
+  color: #495057;
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
 }
 
 .pagination .page-link {
   border: none;
   color: #667eea;
-  font-weight: 500;
-  padding: 12px 16px;
-  margin: 0 4px;
+  margin: 0 2px;
   border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-.pagination .page-link:hover {
-  background-color: #667eea;
-  color: white;
-  transform: translateY(-1px);
 }
 
 .pagination .page-item.active .page-link {
   background-color: #667eea;
   border-color: #667eea;
-  color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
-.pagination .page-item.disabled .page-link {
-  color: #adb5bd;
-  background-color: transparent;
-}
-
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  padding: 20px;
-}
-
-.modal-dialog {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-  max-width: 500px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  animation: modalSlideIn 0.3s ease-out;
-}
-
-/* Tambahkan style untuk modal-assign agar lebih besar dan nyata */
-.modal-dialog.modal-assign {
-  max-width: 600px;
-  min-width: 350px;
-  width: 100%;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.18);
-  border-radius: 16px;
-  padding: 0 10px;
-}
-
-@media (max-width: 768px) {
-  .modal-dialog.modal-assign {
-    max-width: 98vw;
-    min-width: unset;
-    padding: 0;
-  }
-}
-
-@keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.modal-content {
-  border: none;
-  border-radius: 12px;
-}
-
-.modal-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-radius: 12px 12px 0 0;
-  padding: 20px 25px;
-  border-bottom: none;
-}
-
-.modal-title {
-  font-weight: 600;
-  font-size: 18px;
-  margin: 0;
-}
-
-.btn-close {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 24px;
-  opacity: 0.8;
-  cursor: pointer;
-  padding: 0;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: all 0.3s ease;
-}
-
-.btn-close:hover {
-  opacity: 1;
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.btn-close::before {
-  content: "×";
-  font-size: 24px;
-  line-height: 1;
-}
-
-.modal-body {
-  padding: 25px;
-}
-
-.modal-footer {
-  padding: 20px 25px;
-  border-top: 1px solid #e0e6ed;
+.pagination .page-link:hover {
   background-color: #f8f9fa;
-  border-radius: 0 0 12px 12px;
+  color: #495057;
 }
 
-/* Form Styles in Modal */
-.modal-body .form-label {
-  font-weight: 600;
-  color: #2c3e50;
-  margin-bottom: 8px;
-}
-
-.modal-body .form-select,
-.modal-body .form-control {
-  border-radius: 8px;
-  border: 1px solid #e0e6ed;
-  padding: 12px 16px;
-  transition: all 0.3s ease;
-}
-
-.modal-body .form-select:focus,
-.modal-body .form-control:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-}
-
-/* Alert Styles */
-.alert {
-  border-radius: 8px;
-  border: none;
-  padding: 16px 20px;
-  margin-bottom: 20px;
-}
-
-.alert-info {
-  background-color: #e7f3ff;
-  color: #0c5460;
-}
-
-.alert-warning {
-  background-color: #fff3cd;
-  color: #856404;
-}
-
-/* Loading States */
-.loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9998;
-}
-
-.loading-content {
-  text-align: center;
-  padding: 30px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-}
-
-.loading-content .spinner-border {
-  width: 3rem;
-  height: 3rem;
-}
-
-.loading-content p {
-  margin-top: 15px;
-  color: #6c757d;
-  font-weight: 500;
-}
-
-/* Spinner Styles */
-.spinner-border-sm {
-  width: 1rem;
-  height: 1rem;
-}
-
-.fa-spin {
-  animation: fa-spin 2s infinite linear;
-}
-
-@keyframes fa-spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-/* Button Styles */
-.btn {
-  border-radius: 8px;
-  font-weight: 500;
-  padding: 10px 20px;
-  transition: all 0.3s ease;
-  border: none;
-}
-
-.btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.btn-success {
-  background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
-  color: white;
-}
-
-.btn-warning {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
-}
-
-.btn-outline-primary {
-  border: 2px solid #667eea;
-  color: #667eea;
-  background: transparent;
-}
-
-.btn-outline-primary:hover {
-  background: #667eea;
-  color: white;
-}
-
-.btn-outline-success {
-  border: 2px solid #28a745;
-  color: #28a745;
-  background: transparent;
-}
-
-.btn-outline-success:hover {
-  background: #28a745;
-  color: white;
-}
-
-.btn-outline-warning {
-  border: 2px solid #ffc107;
-  color: #ffc107;
-  background: transparent;
-}
-
-.btn-outline-warning:hover {
-  background: #ffc107;
-  color: #212529;
-}
-
-.btn-outline-secondary {
-  border: 2px solid #6c757d;
-  color: #6c757d;
-  background: transparent;
-}
-
-.btn-outline-secondary:hover {
-  background: #6c757d;
-  color: white;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-/* Empty State */
-.text-center i[style*="font-size: 4rem"] {
-  color: #dee2e6;
-  margin-bottom: 20px;
-}
-
-/* Responsive Design */
 @media (max-width: 768px) {
   .riwayat-container {
-    padding: 15px 10px;
+    padding: 10px 0;
   }
   
-  .header-section .card-header {
-    padding: 15px 20px;
-  }
-  
-  .header-section h4 {
-    font-size: 18px;
+  .stats-section .col-md-4 {
+    margin-bottom: 1rem;
   }
   
   .header-actions {
     flex-direction: column;
-    gap: 8px;
-    align-items: stretch;
+    gap: 0.5rem;
   }
   
-  .stats-section .card-body {
-    padding: 20px 15px;
-  }
-  
-  .stats-section h3 {
-    font-size: 2rem;
-  }
-  
-  .riwayat-card .card-header,
-  .riwayat-card .card-body,
-  .riwayat-card .card-footer {
-    padding: 15px;
-  }
-  
-  .patient-info h6 {
-    font-size: 16px;
-  }
-  
-  .modal-dialog {
-    margin: 10px;
-    max-width: calc(100% - 20px);
-  }
-  
-  .modal-header,
-  .modal-body,
-  .modal-footer {
-    padding: 20px;
-  }
-  
-  .action-buttons .btn-group {
-    flex-direction: column;
+  .header-actions .btn {
     width: 100%;
   }
   
-  .action-buttons .btn {
-    margin-bottom: 5px;
+  .modal-assign {
+    width: 95%;
+    margin: 20px;
   }
 }
 
 @media (max-width: 576px) {
-  .filter-section .col-md-6,
-  .filter-section .col-md-2 {
-    margin-bottom: 15px;
+  .riwayat-card .card-body {
+    padding: 0.75rem;
   }
   
-  .stats-section .col-md-4 {
-    margin-bottom: 15px;
+  .patient-info h6 {
+    font-size: 1rem;
   }
   
-  .pagination .page-link {
-    padding: 8px 12px;
-    font-size: 14px;
+  .info-item {
+    padding-left: 0.75rem;
+    margin-bottom: 0.75rem;
   }
   
-  .patient-details {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+  .action-buttons .btn {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
   }
-  
-  .status-badges {
-    justify-content: flex-start;
-  }
-  
-  .badge {
-    font-size: 10px;
-    padding: 4px 8px;
-  }
-}
-
-/* Transition Animations */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-/* Focus States for Accessibility */
-.btn:focus,
-.form-control:focus,
-.form-select:focus {
-  outline: none;
-  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-}
-
-/* Custom Scrollbar */
-.modal-dialog::-webkit-scrollbar {
-  width: 8px;
-}
-
-.modal-dialog::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-.modal-dialog::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
-
-.modal-dialog::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-/* Success Animation */
-@keyframes successPulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.text-success i[style*="font-size: 48px"] {
-  animation: successPulse 0.6s ease-in-out;
 }
 </style>

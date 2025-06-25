@@ -62,10 +62,9 @@ class PenangananController extends Controller
 
             // Jika dokter, bisa lihat semua penanganan
             // Jika pasien, hanya bisa lihat penanganan yang di-assign ke dia
-            if ($user->hasRole(('pasien'))) {
+            if ($user->hasRole('pasien')) {
                 $query = Penanganan::with(['user', 'createdByUser'])
-                    ->where('assigned_to', $user->id)
-                    ->where('status', 'assigned');
+                    ->where('user_id', $user->id);
             } else {
                 $query = Penanganan::with(['user', 'createdByUser']);
             }
@@ -111,6 +110,8 @@ class PenangananController extends Controller
             ], 200);
 
         } catch (\Exception $e) {
+            Log::error('Error di PenangananController@index: ' . $e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mengambil data penanganan',
