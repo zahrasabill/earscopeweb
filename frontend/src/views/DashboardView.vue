@@ -166,10 +166,11 @@ export default {
         try {
           // Decode JWT tanpa verifikasi
           const payload = jwtDecode(token);
-          console.log('JWT Payload:', payload); // Debug log
+          // console.log('JWT Payload:', payload); // Debug log
 
           // Ambil `kode_akses` dan `role` dari payload
           this.currentUser.kode_akses = payload.kode_akses || "Tidak Ada Akses";
+          this.currentUser.name = payload.name
           this.currentUser.role = payload.role || "Tidak Ada Role";
 
           console.log('Current User:', this.currentUser); // Debug log
