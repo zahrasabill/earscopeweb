@@ -1,28 +1,17 @@
 <template>
   <div class="d-flex">
     <!-- Mobile Hamburger Button -->
-    <button 
-      class="hamburger-btn d-md-none" 
-      @click="toggleSidebar"
-      :class="{ active: sidebarOpen }"
-    >
+    <button class="hamburger-btn d-md-none" @click="toggleSidebar" :class="{ active: sidebarOpen }">
       <span></span>
       <span></span>
       <span></span>
     </button>
 
     <!-- Sidebar Overlay (Mobile Only) -->
-    <div 
-      v-if="sidebarOpen" 
-      class="sidebar-overlay d-md-none" 
-      @click="closeSidebar"
-    ></div>
+    <div v-if="sidebarOpen" class="sidebar-overlay d-md-none" @click="closeSidebar"></div>
 
     <!-- Sidebar -->
-    <div 
-      class="sidebar bg-primary p-3 text-white"
-      :class="{ 'sidebar-open': sidebarOpen }"
-    >
+    <div class="sidebar bg-primary p-3 text-white" :class="{ 'sidebar-open': sidebarOpen }">
       <div class="sidebar-header mb-4">
         <div class="text-center">
           <img src="@/assets/earscope.png" alt="Hospital Logo" class="sidebar-logo" />
@@ -32,12 +21,8 @@
       <ul class="nav flex-column">
         <!-- Dashboard (Semua Role Bisa Akses) -->
         <li class="nav-item mb-2">
-          <router-link 
-            to="/dashboard" 
-            class="nav-link text-white d-flex align-items-center"
-            :class="{ 'active-menu': activePage === 'dashboard' }"
-            @click="closeSidebar"
-          >
+          <router-link to="/dashboard" class="nav-link text-white d-flex align-items-center"
+            :class="{ 'active-menu': activePage === 'dashboard' }" @click="closeSidebar">
             <i class="bi bi-house me-3"></i>
             <span>Dashboard</span>
           </router-link>
@@ -45,12 +30,9 @@
 
         <!-- Admin hanya melihat menu Dokter -->
         <li v-if="currentUser.role === 'admin'" class="nav-item mb-2">
-          <router-link 
-            to="/dokter" 
-            class="nav-link text-white d-flex align-items-center"
+          <router-link to="/dokter" class="nav-link text-white d-flex align-items-center"
             :class="{ 'active-menu': activePage === 'dokterresource' || activePage === 'dokter' }"
-            @click="closeSidebar"
-          >
+            @click="closeSidebar">
             <i class="bi bi-person-badge me-3"></i>
             <span>Dokter</span>
           </router-link>
@@ -58,49 +40,37 @@
 
         <!-- Dokter hanya melihat menu Pasien -->
         <li v-if="currentUser.role === 'dokter'" class="nav-item mb-2">
-          <router-link 
-            to="/pasien" 
-            class="nav-link text-white d-flex align-items-center"
+          <router-link to="/pasien" class="nav-link text-white d-flex align-items-center"
             :class="{ 'active-menu': activePage === 'pasienresource' || activePage === 'pasien' }"
-            @click="closeSidebar"
-          >
+            @click="closeSidebar">
             <i class="bi bi-people me-3"></i>
             <span>Pasien</span>
           </router-link>
         </li>
-        
+
         <!-- Dokter & Pasien bisa melihat menu Hasil Pemeriksaan -->
         <li v-if="currentUser.role === 'dokter' || currentUser.role === 'pasien'" class="nav-item mb-2">
-          <router-link 
-            to="/pemeriksaan" 
-            class="nav-link text-white d-flex align-items-center"
+          <router-link to="/pemeriksaan" class="nav-link text-white d-flex align-items-center"
             :class="{ 'active-menu': activePage === 'pemeriksaanresource' || activePage === 'pemeriksaan' }"
-            @click="closeSidebar"
-          >
+            @click="closeSidebar">
             <i class="bi bi-clipboard2-pulse me-3"></i>
             <span>Hasil Pemeriksaan</span>
           </router-link>
         </li>
 
         <li v-if="currentUser.role === 'dokter'" class="nav-item mb-2">
-          <router-link 
-            to="/penanganan" 
-            class="nav-link text-white d-flex align-items-center"
-           :class="{ 'active-menu': activePage === 'penangananresource' || activePage === 'penanganan' }"
-            @click="closeSidebar"
-          >
+          <router-link to="/penanganan" class="nav-link text-white d-flex align-items-center"
+            :class="{ 'active-menu': activePage === 'penangananresource' || activePage === 'penanganan' }"
+            @click="closeSidebar">
             <i class="bi bi-book-fill me-3"></i>
             <span>Penanganan</span>
           </router-link>
         </li>
 
         <li v-if="currentUser.role === 'dokter' || currentUser.role === 'pasien'" class="nav-item mb-2">
-          <router-link 
-            to="/riwayat" 
-            class="nav-link text-white d-flex align-items-center"
+          <router-link to="/riwayat" class="nav-link text-white d-flex align-items-center"
             :class="{ 'active-menu': activePage === 'riwayatresource' || activePage === 'riwayat' }"
-            @click="closeSidebar"
-          >
+            @click="closeSidebar">
             <i class="bi bi-clock-history me-3"></i>
             <span>Riwayat Pemeriksaan</span>
           </router-link>
@@ -128,8 +98,8 @@
           <h2>{{ pageTitle }}</h2>
           <div>
             <div class="dropdown">
-              <button class="btn btn-light dropdown-toggle d-flex align-items-center" type="button" id="dropdownMenuButton"
-                data-bs-toggle="dropdown" aria-expanded="false">
+              <button class="btn btn-light dropdown-toggle d-flex align-items-center" type="button"
+                id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
                 <div class="user-info text-start">
                   <span class="kode-akses">{{ currentUser.kode_akses }}</span>
                   <span class="role">{{ currentUser.role }}</span>
@@ -166,6 +136,7 @@ export default {
   data() {
     return {
       currentUser: {
+        name: "",
         kode_akses: "",
         role: "",
       },
@@ -195,6 +166,7 @@ export default {
 
           // Ambil `kode_akses` dari payload
           this.currentUser.kode_akses = payload.kode_akses || "Tidak Ada Akses";
+          this.currentUser.name = payload.name
           this.currentUser.role = payload.role || "Tidak Ada Role";
         } catch (error) {
           console.error("Gagal decode JWT:", error);
@@ -266,7 +238,7 @@ export default {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
 }
 
@@ -369,7 +341,7 @@ export default {
 
 /* Glow effect untuk menu aktif */
 .nav-link.active-menu {
-  box-shadow: 
+  box-shadow:
     0 4px 15px rgba(37, 99, 235, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
@@ -379,9 +351,11 @@ export default {
   0% {
     box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
   }
+
   50% {
     box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6);
   }
+
   100% {
     box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
   }
@@ -430,7 +404,8 @@ export default {
   }
 
   .page-header {
-    padding-left: 80px; /* Space for hamburger button */
+    padding-left: 80px;
+    /* Space for hamburger button */
   }
 
   .page-header h2 {
@@ -448,7 +423,7 @@ export default {
   .hamburger-btn {
     display: none !important;
   }
-  
+
   .sidebar-overlay {
     display: none !important;
   }
