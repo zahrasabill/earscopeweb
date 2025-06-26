@@ -7,7 +7,7 @@
           <div class="card-body py-4">
             <div class="text-center">
               <h3 class="mb-3">Selamat Datang!</h3>
-              <h4 class="mb-1 text-white-50">{{ currentUser.kode_akses }}</h4>
+              <h4 class="mb-1 text-white-50">{{ currentUser.name }}</h4>
               <p class="mb-0 text-white-75">{{ getUserRoleDisplay(currentUser.role) }}</p>
             </div>
           </div>
@@ -44,55 +44,61 @@
     </div>
 
     <!-- Quick Action Buttons -->
-<div class="row mt-4">
-  <div class="col-12">
-    <div class="row">
-      <!-- Quick Actions untuk Admin -->
-      <div v-if="currentUser.role === 'admin'" class="col-md-6 mb-3">
-        <router-link to="/dokter" class="btn btn-outline-success btn-lg w-100 d-flex align-items-center justify-content-center">
-          <i class="bi bi-person-plus me-2"></i>
-          Kelola Dokter
-        </router-link>
-      </div>
+    <div class="row mt-4">
+      <div class="col-12">
+        <div class="row">
+          <!-- Quick Actions untuk Admin -->
+          <div v-if="currentUser.role === 'admin'" class="col-md-6 mb-3">
+            <router-link to="/dokter"
+              class="btn btn-outline-success btn-lg w-100 d-flex align-items-center justify-content-center">
+              <i class="bi bi-person-plus me-2"></i>
+              Kelola Dokter
+            </router-link>
+          </div>
 
-      <!-- Quick Actions untuk Dokter -->
-      <div v-if="currentUser.role === 'dokter'" class="col-md-6 mb-3">
-        <router-link to="/pasien" class="btn btn-outline-primary btn-lg w-100 d-flex align-items-center justify-content-center">
-          <i class="bi bi-people me-2"></i>
-          Kelola Pasien
-        </router-link>
-      </div>
-      <div v-if="currentUser.role === 'dokter'" class="col-md-6 mb-3">
-        <router-link to="/penanganan" class="btn btn-outline-success btn-lg w-100 d-flex align-items-center justify-content-center">
-          <i class="bi bi-book-fill me-2"></i>
-          Penanganan
-        </router-link>
-      </div>
-      <div v-if="currentUser.role === 'dokter'" class="col-md-6 mb-3">
-        <router-link to="/riwayat" class="btn btn-outline-info btn-lg w-100 d-flex align-items-center justify-content-center">
-          <i class="bi bi-clock-history me-2"></i>
-          Riwayat Pemeriksaan
-        </router-link>
-      </div>
+          <!-- Quick Actions untuk Dokter -->
+          <div v-if="currentUser.role === 'dokter'" class="col-md-6 mb-3">
+            <router-link to="/pasien"
+              class="btn btn-outline-primary btn-lg w-100 d-flex align-items-center justify-content-center">
+              <i class="bi bi-people me-2"></i>
+              Kelola Pasien
+            </router-link>
+          </div>
+          <div v-if="currentUser.role === 'dokter'" class="col-md-6 mb-3">
+            <router-link to="/penanganan"
+              class="btn btn-outline-success btn-lg w-100 d-flex align-items-center justify-content-center">
+              <i class="bi bi-book-fill me-2"></i>
+              Penanganan
+            </router-link>
+          </div>
+          <div v-if="currentUser.role === 'dokter'" class="col-md-6 mb-3">
+            <router-link to="/riwayat"
+              class="btn btn-outline-info btn-lg w-100 d-flex align-items-center justify-content-center">
+              <i class="bi bi-clock-history me-2"></i>
+              Riwayat Pemeriksaan
+            </router-link>
+          </div>
 
-      <!-- Quick Actions untuk Dokter dan Pasien -->
-      <div v-if="currentUser.role === 'dokter' || currentUser.role === 'pasien'" class="col-md-6 mb-3">
-        <router-link to="/pemeriksaan" class="btn btn-outline-warning btn-lg w-100 d-flex align-items-center justify-content-center">
-          <i class="bi bi-clipboard2-pulse me-2"></i>
-          {{ currentUser.role === 'pasien' ? 'Lihat Hasil' : 'Hasil Pemeriksaan' }}
-        </router-link>
-      </div>
+          <!-- Quick Actions untuk Dokter dan Pasien -->
+          <div v-if="currentUser.role === 'dokter' || currentUser.role === 'pasien'" class="col-md-6 mb-3">
+            <router-link to="/pemeriksaan"
+              class="btn btn-outline-warning btn-lg w-100 d-flex align-items-center justify-content-center">
+              <i class="bi bi-clipboard2-pulse me-2"></i>
+              {{ currentUser.role === 'pasien' ? 'Lihat Hasil' : 'Hasil Pemeriksaan' }}
+            </router-link>
+          </div>
 
-      <!-- Quick Actions untuk Pasien -->
-      <div v-if="currentUser.role === 'pasien'" class="col-md-6 mb-3">
-        <router-link to="/riwayat" class="btn btn-outline-info btn-lg w-100 d-flex align-items-center justify-content-center">
-          <i class="bi bi-clock-history me-2"></i>
-          Riwayat Pemeriksaan
-        </router-link>
+          <!-- Quick Actions untuk Pasien -->
+          <div v-if="currentUser.role === 'pasien'" class="col-md-6 mb-3">
+            <router-link to="/riwayat"
+              class="btn btn-outline-info btn-lg w-100 d-flex align-items-center justify-content-center">
+              <i class="bi bi-clock-history me-2"></i>
+              Riwayat Pemeriksaan
+            </router-link>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
   </app-layout>
 </template>
 
@@ -119,7 +125,7 @@ export default {
   },
   created() {
     this.getCurrentUser();
-    
+
     // Listen for storage events from other components (like ListPasien.vue)
     window.addEventListener('storage', (event) => {
       if (event.key === 'pasienDataUpdated') {
@@ -133,7 +139,7 @@ export default {
     if (updated) {
       localStorage.removeItem('pasienDataUpdated');
     }
-    
+
     // Fetch pasien count after component is mounted and user data is available
     this.$nextTick(() => {
       if (this.currentUser.role === 'dokter') {
@@ -165,9 +171,9 @@ export default {
           // Ambil `kode_akses` dan `role` dari payload
           this.currentUser.kode_akses = payload.kode_akses || "Tidak Ada Akses";
           this.currentUser.role = payload.role || "Tidak Ada Role";
-          
+
           console.log('Current User:', this.currentUser); // Debug log
-          
+
           // Fetch pasien count immediately if user is dokter
           if (this.currentUser.role === 'dokter') {
             console.log('User is dokter, fetching pasien count...');
@@ -189,7 +195,7 @@ export default {
 
     async fetchPasienCount() {
       console.log('fetchPasienCount called, current role:', this.currentUser.role);
-      
+
       if (this.currentUser.role !== 'dokter') {
         console.log('User is not dokter, skipping fetch');
         return;
@@ -197,14 +203,14 @@ export default {
 
       this.loadingPasienCount = true;
       console.log('Starting to fetch pasien count...');
-      
+
       try {
         const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-        
+
         if (!token) {
           throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
         }
-        
+
         console.log('Making API call to fetch pasien...');
         const response = await api.get('pasien', {
           headers: {
@@ -216,13 +222,13 @@ export default {
 
         // Handle different response formats (same logic as ListPasien.vue)
         let pasienData = [];
-        
+
         if (response.data) {
           if (Array.isArray(response.data)) {
             // Direct array format
             console.log('Using direct array format');
             pasienData = response.data;
-          } 
+          }
           else if (response.data.data && Array.isArray(response.data.data)) {
             // Nested data array format
             console.log('Using nested data array format');
@@ -232,15 +238,15 @@ export default {
             // Pagination format
             console.log('Using pagination format');
             pasienData = response.data.data.items || [];
-          } 
+          }
           else {
             console.error('Unrecognized response format:', response.data);
             throw new Error('Format response tidak dikenali');
           }
-          
+
           this.totalPasien = pasienData.length;
           console.log('Total pasien set to:', this.totalPasien);
-          
+
           this.lastUpdated = new Date().toLocaleString('id-ID', {
             day: '2-digit',
             month: '2-digit',
@@ -248,7 +254,7 @@ export default {
             hour: '2-digit',
             minute: '2-digit'
           });
-          
+
           console.log('Total pasien berhasil dimuat:', this.totalPasien);
         } else {
           throw new Error('Tidak ada data dari server');
@@ -258,7 +264,7 @@ export default {
         console.error("Error fetching patient count:", error);
         console.error("Error details:", error.response?.data);
         this.totalPasien = 0;
-        
+
         // Handle different error scenarios (same as ListPasien.vue)
         if (error.response) {
           if (error.response.status === 401) {
@@ -315,7 +321,7 @@ export default {
 .btn-outline-primary:hover,
 .btn-outline-warning:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease-in-out;
 }
 
@@ -328,7 +334,7 @@ export default {
   .card-body h3 {
     font-size: 1.5rem;
   }
-  
+
   .card-body h4 {
     font-size: 1.2rem;
   }
