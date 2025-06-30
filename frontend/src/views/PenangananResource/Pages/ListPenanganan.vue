@@ -16,9 +16,6 @@
               >
                 <i class="fas fa-plus me-1"></i>Tambah Penanganan
               </button>
-              <button @click="refreshData" class="btn btn-light btn-sm" :disabled="isLoading">
-                <i class="fas fa-sync-alt me-1" :class="{ 'fa-spin': isLoading }"></i>Refresh
-              </button>
             </div>
           </div>
         </div>

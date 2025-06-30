@@ -13,11 +13,15 @@
               <button 
                 v-if="userRole === 'dokter'" 
                 @click="navigateToCreate" 
-                class="btn btn-light btn-sm me-2"
+                class="btn btn-light btn-sm me-2 custom-header-btn"
               >
                 <i class="fas fa-plus me-1"></i>Tambah Penanganan
               </button>
-              <button @click="refreshData" class="btn btn-light btn-sm" :disabled="isLoading">
+              <button 
+                @click="refreshData" 
+                class="btn btn-light btn-sm custom-header-btn" 
+                :disabled="isLoading"
+              >
                 <i class="fas fa-sync-alt me-1" :class="{ 'fa-spin': isLoading }"></i>Refresh
               </button>
             </div>
@@ -28,27 +32,20 @@
 
     <!-- Filter Section for Doctor -->
     <div v-if="userRole === 'dokter'" class="filter-section mb-4">
-      <div class="card">
-        <div class="card-body">
-          <div class="row align-items-end">
-            <div class="col-md-6">
-              <label class="form-label fw-bold">Filter Pasien</label>
-              <select v-model="selectedPatientFilter" class="form-select" @change="applyFilters">
-                <option value="">Semua Pasien</option>
-                <option v-for="user in availablePatients" :key="user.id" :value="user.id">
-                  {{ user.name }} {{ user.kode_akses ? `(${user.kode_akses})` : '' }}
-                </option>
-              </select>
-            </div>
-            <div class="col-md-2">
-              <button @click="clearFilters" class="btn btn-outline-secondary w-100">
-                <i class="fas fa-times me-1"></i>Clear
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+  <div class="card">
+    <div class="card-body">
+      <label class="form-label fw-bold mb-2">Cari Pasien</label>
+      <input
+        type="text"
+        v-model="patientSearchQuery"
+        class="form-control"
+        placeholder="Masukkan nama pasien..."
+        @input="applyFilters"
+        @keyup.enter="applyFilters"
+      />
     </div>
+  </div>
+</div>
 
     <!-- Statistics Cards for Doctor -->
     <div v-if="userRole === 'dokter'" class="stats-section mb-4">
@@ -85,20 +82,33 @@
       <!-- Empty State -->
       <div v-else-if="filteredRiwayat.length === 0" class="text-center py-5">
         <i class="fas fa-file-medical text-muted mb-3" style="font-size: 4rem;"></i>
-        <h5 class="text-muted">Belum ada riwayat pemeriksaan</h5>
+        <h5 class="text-muted">
+          {{ patientSearchQuery ? 'Tidak ada hasil pencarian' : 'Belum ada riwayat pemeriksaan' }}
+        </h5>
         <p class="text-muted">
-          {{ userRole === 'dokter' 
-            ? 'Mulai dengan menambahkan penanganan baru untuk pasien'
-            : 'Belum ada pemeriksaan yang diterima dari dokter'
+          {{ patientSearchQuery 
+            ? `Tidak ditemukan pemeriksaan untuk "${patientSearchQuery}"`
+            : userRole === 'dokter' 
+              ? 'Mulai dengan menambahkan penanganan baru untuk pasien'
+              : 'Belum ada pemeriksaan yang diterima dari dokter'
           }}
         </p>
-        <button 
-          v-if="userRole === 'dokter'" 
-          @click="navigateToCreate" 
-          class="btn btn-primary"
-        >
-          <i class="fas fa-plus me-1"></i>Tambah Penanganan Baru
-        </button>
+        <div class="empty-state-actions">
+          <button 
+            v-if="patientSearchQuery" 
+            @click="clearPatientSearch" 
+            class="btn btn-outline-primary me-2"
+          >
+            <i class="fas fa-times me-1"></i>Hapus Pencarian
+          </button>
+          <button 
+            v-if="userRole === 'dokter'" 
+            @click="navigateToCreate" 
+            class="btn btn-primary"
+          >
+            <i class="fas fa-plus me-1"></i>Tambah Penanganan Baru
+          </button>
+        </div>
       </div>
 
       <!-- Riwayat Cards -->
@@ -108,10 +118,13 @@
             <!-- Card Header -->
             <div class="card-header">
               <div class="patient-info">
-                <h6 class="mb-1 fw-bold">{{ riwayat.patient_name }}</h6>
+                <h6 class="mb-1 fw-bold">
+                  <span v-html="highlightSearchTerm(riwayat.patient_name, patientSearchQuery)"></span>
+                </h6>
                 <div class="patient-details">
                   <small class="text-muted d-block">
-                    <i class="fas fa-id-card me-1"></i>{{ riwayat.kode_akses || 'No. RM tidak tersedia' }}
+                    <i class="fas fa-id-card me-1"></i>
+                    <span v-html="highlightSearchTerm(riwayat.kode_akses || 'No. RM tidak tersedia', patientSearchQuery)"></span>
                   </small>
                   <small class="text-muted d-block">
                     <i class="fas fa-birthday-cake me-1"></i>{{ formatPatientAge(riwayat.patient_tanggal_lahir) }}
@@ -371,8 +384,8 @@ export default {
     const currentUserId = ref(null);
     const availablePatients = ref([]);
 
-    // Filters
-    const selectedPatientFilter = ref('');
+    // Filters - Changed from dropdown to search
+    const patientSearchQuery = ref('');
 
     // Pagination
     const currentPage = ref(1);
@@ -415,9 +428,15 @@ export default {
     const filteredRiwayat = computed(() => {
       let filtered = [...riwayatList.value];
 
-      // Filter by patient (for doctors)
-      if (userRole.value === 'dokter' && selectedPatientFilter.value) {
-        filtered = filtered.filter(item => item.user_id.toString() === selectedPatientFilter.value.toString());
+      // Filter by patient search query (for doctors)
+      if (userRole.value === 'dokter' && patientSearchQuery.value.trim()) {
+        const searchTerm = patientSearchQuery.value.toLowerCase().trim();
+        filtered = filtered.filter(item => {
+          const patientName = (item.patient_name || '').toLowerCase();
+          const kodeAkses = (item.kode_akses || '').toLowerCase();
+          
+          return patientName.includes(searchTerm) || kodeAkses.includes(searchTerm);
+        });
       }
 
       // Sort by date (newest first)
@@ -470,81 +489,81 @@ export default {
 
     // Methods
     const fetchRiwayatPemeriksaan = async () => {
-  try {
-    isLoading.value = true;
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+      try {
+        isLoading.value = true;
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
 
-    if (!token) {
-      console.error("No token found");
-      return;
-    }
+        if (!token) {
+          console.error("No token found");
+          return;
+        }
 
-    let enrichedData = [];
+        let enrichedData = [];
 
-    // Ambil semua penanganan
-    const response = await axios.get(api.getEndpoint("penanganan"), {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+        // Ambil semua penanganan
+        const response = await axios.get(api.getEndpoint("penanganan"), {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-    const penangananData = response.data.data || response.data;
-    console.log("Raw penanganan data:", penangananData);
+        const penangananData = response.data.data || response.data;
+        console.log("Raw penanganan data:", penangananData);
 
-    if (userRole.value === "dokter") {
-      // Dokter: enrich data pasien via API
-      enrichedData = await Promise.all(
-        penangananData.map(async (item) => {
-          try {
-            const userResponse = await axios.get(api.getEndpoint(`users/${item.user_id}`), {
-              headers: { Authorization: `Bearer ${token}` },
-            });
+        if (userRole.value === "dokter") {
+          // Dokter: enrich data pasien via API
+          enrichedData = await Promise.all(
+            penangananData.map(async (item) => {
+              try {
+                const userResponse = await axios.get(api.getEndpoint(`users/${item.user_id}`), {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
 
-            const user = userResponse.data.data || userResponse.data;
-            console.log(`User data for ID ${item.user_id}:`, user);
+                const user = userResponse.data.data || userResponse.data;
+                console.log(`User data for ID ${item.user_id}:`, user);
 
-            return {
-              ...item,
-              patient_name: user.name || "Nama tidak tersedia",
-              patient_tanggal_lahir: user.tanggal_lahir || null,
-              patient_no_telp: user.no_telp || null,
-              patient_gender: user.gender || null,
-              kode_akses: user.kode_akses || null,
-            };
-          } catch (error) {
-            console.error(`Failed to fetch user details for user ${item.user_id}:`, error);
-            return {
-              ...item,
-              patient_name: "Nama tidak tersedia",
-              patient_tanggal_lahir: null,
-              patient_no_telp: null,
-              patient_gender: null,
-              kode_akses: null,
-            };
-          }
-        })
-      );
-    } else {
-      // Pasien: langsung pakai data dirinya dari localStorage/session
-      const currentUser = JSON.parse(localStorage.getItem("currentUser")) || {};
+                return {
+                  ...item,
+                  patient_name: user.name || "Nama tidak tersedia",
+                  patient_tanggal_lahir: user.tanggal_lahir || null,
+                  patient_no_telp: user.no_telp || null,
+                  patient_gender: user.gender || null,
+                  kode_akses: user.kode_akses || null,
+                };
+              } catch (error) {
+                console.error(`Failed to fetch user details for user ${item.user_id}:`, error);
+                return {
+                  ...item,
+                  patient_name: "Nama tidak tersedia",
+                  patient_tanggal_lahir: null,
+                  patient_no_telp: null,
+                  patient_gender: null,
+                  kode_akses: null,
+                };
+              }
+            })
+          );
+        } else {
+          // Pasien: langsung pakai data dirinya dari localStorage/session
+          const currentUser = JSON.parse(localStorage.getItem("currentUser")) || {};
 
-      enrichedData = penangananData.map((item) => ({
-        ...item,
-        patient_name: currentUser.name || "Nama tidak tersedia",
-        patient_tanggal_lahir: currentUser.tanggal_lahir || null,
-        patient_no_telp: currentUser.no_telp || null,
-        patient_gender: currentUser.gender || null,
-        kode_akses: currentUser.kode_akses || null,
-      }));
-    }
+          enrichedData = penangananData.map((item) => ({
+            ...item,
+            patient_name: currentUser.name || "Nama tidak tersedia",
+            patient_tanggal_lahir: currentUser.tanggal_lahir || null,
+            patient_no_telp: currentUser.no_telp || null,
+            patient_gender: currentUser.gender || null,
+            kode_akses: currentUser.kode_akses || null,
+          }));
+        }
 
-    riwayatList.value = enrichedData;
-    console.log("Final riwayat data:", enrichedData);
-  } catch (error) {
-    console.error("Error fetching riwayat pemeriksaan:", error);
-    alert("Gagal memuat riwayat pemeriksaan. Silakan coba lagi.");
-  } finally {
-    isLoading.value = false;
-  }
-};
+        riwayatList.value = enrichedData;
+        console.log("Final riwayat data:", enrichedData);
+      } catch (error) {
+        console.error("Error fetching riwayat pemeriksaan:", error);
+        alert("Gagal memuat riwayat pemeriksaan. Silakan coba lagi.");
+      } finally {
+        isLoading.value = false;
+      }
+    };
 
     const fetchAvailablePatients = async () => {
       if (userRole.value === 'dokter') {
@@ -593,7 +612,12 @@ export default {
     };
 
     const clearFilters = () => {
-      selectedPatientFilter.value = '';
+      patientSearchQuery.value = '';
+      currentPage.value = 1;
+    };
+
+    const clearPatientSearch = () => {
+      patientSearchQuery.value = '';
       currentPage.value = 1;
     };
 
@@ -666,26 +690,19 @@ export default {
     };
 
     const unassignFromPatient = async (riwayat) => {
-      if (!confirm('Yakin ingin unassign penanganan ini dari pasien?')) {
+      if (!confirm('Apakah Anda yakin ingin unassign penanganan ini dari pasien?')) {
         return;
       }
 
       try {
         isUpdating.value = true;
         const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-        const response = await axios.patch(
-          api.getEndpoint(`penanganan/${riwayat.id}`),
+        
+        const response = await axios.post(
+          api.getEndpoint(`penanganan/${riwayat.id}/unassign`),
+          {},
           {
-            // Data yang dikirim untuk unassign
-            assigned_to: null,
-            status: 'created', // Kembalikan status ke created
-            assigned_at: null
-          },
-          {
-            headers: { 
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
+            headers: { Authorization: `Bearer ${token}` }
           }
         );
 
@@ -695,67 +712,64 @@ export default {
           if (index !== -1) {
             riwayatList.value[index] = {
               ...riwayatList.value[index],
-              status: 'created',
+              status: 'active',
               assigned_to: null,
               assigned_at: null
             };
           }
-
+          
           alert('Penanganan berhasil di-unassign dari pasien');
         } else {
           throw new Error('Failed to unassign penanganan');
         }
       } catch (error) {
         console.error('Error unassigning penanganan:', error);
-        
-        // Tampilkan pesan error yang lebih spesifik jika ada
-        const errorMessage = error.response?.data?.message || 'Gagal unassign penanganan. Silakan coba lagi.';
-        alert(errorMessage);
+        alert('Gagal unassign penanganan. Silakan coba lagi.');
       } finally {
         isUpdating.value = false;
       }
     };
 
     const navigateToCreate = () => {
-      router.push('/create-penanganan');
+      router.push('/penanganan/create');
     };
 
-    // Utility functions
+    // Utility methods
     const formatDate = (dateString) => {
       if (!dateString) return 'Tanggal tidak tersedia';
       try {
         const date = new Date(dateString);
         return date.toLocaleDateString('id-ID', {
-          year: 'numeric',
+          day: '2-digit',
           month: 'long',
-          day: 'numeric'
+          year: 'numeric'
         });
       } catch (error) {
-        return 'Tanggal tidak valid';
+        return 'Format tanggal salah';
       }
     };
 
     const formatDateTime = (dateString) => {
-      if (!dateString) return 'Tanggal tidak tersedia';
+      if (!dateString) return 'Waktu tidak tersedia';
       try {
         const date = new Date(dateString);
         return date.toLocaleString('id-ID', {
+          day: '2-digit',
+          month: 'long',
           year: 'numeric',
-          month: 'short',
-          day: 'numeric',
           hour: '2-digit',
           minute: '2-digit'
         });
       } catch (error) {
-        return 'Tanggal tidak valid';
+        return 'Format waktu salah';
       }
     };
 
     const formatPatientAge = (birthDate) => {
       if (!birthDate) return 'Umur tidak tersedia';
       try {
-        const today = new Date();
         const birth = new Date(birthDate);
+        const today = new Date();
         let age = today.getFullYear() - birth.getFullYear();
         const monthDiff = today.getMonth() - birth.getMonth();
         
@@ -765,60 +779,69 @@ export default {
         
         return `${age} tahun`;
       } catch (error) {
-        return 'Umur tidak valid';
+        return 'Format tanggal lahir salah';
       }
     };
 
     const formatGender = (gender) => {
-      if (!gender) return 'Tidak diketahui';
-      return gender.toLowerCase() === 'laki-laki' || gender.toLowerCase() === 'l' ? 'Laki-laki' : 
-             gender.toLowerCase() === 'perempuan' || gender.toLowerCase() === 'p' ? 'Perempuan' : 
-             gender;
+      const genderMap = {
+        'L': 'Laki-laki',
+        'P': 'Perempuan',
+        'laki-laki': 'Laki-laki',
+        'perempuan': 'Perempuan',
+        'male': 'Laki-laki',
+        'female': 'Perempuan'
+      };
+      return genderMap[gender] || gender || 'Tidak diketahui';
     };
 
     const formatTelinga = (telinga) => {
-      if (!telinga) return 'Tidak diketahui';
-      switch (telinga.toLowerCase()) {
-        case 'kiri': return 'Telinga Kiri';
-        case 'kanan': return 'Telinga Kanan';
-        case 'keduanya': return 'Kedua Telinga';
-        default: return telinga;
-      }
+      const telingaMap = {
+        'kiri': 'Telinga Kiri',
+        'kanan': 'Telinga Kanan',
+        'keduanya': 'Kedua Telinga',
+        'left': 'Telinga Kiri',
+        'right': 'Telinga Kanan',
+        'both': 'Kedua Telinga'
+      };
+      return telingaMap[telinga] || telinga || 'Tidak diketahui';
     };
 
     const getTelingaClass = (telinga) => {
-      if (!telinga) return 'bg-secondary';
-      switch (telinga.toLowerCase()) {
-        case 'kiri': return 'bg-info';
-        case 'kanan': return 'bg-warning';
-        case 'keduanya': return 'bg-danger';
-        default: return 'bg-secondary';
-      }
+      const classMap = {
+        'kiri': 'bg-info',
+        'kanan': 'bg-warning',
+        'keduanya': 'bg-danger',
+        'left': 'bg-info',
+        'right': 'bg-warning',
+        'both': 'bg-danger'
+      };
+      return classMap[telinga] || 'bg-secondary';
     };
 
     const getStatusClass = (status) => {
-      switch (status) {
-        case 'assigned': return 'bg-success';
-        case 'completed': return 'bg-primary';
-        case 'cancelled': return 'bg-danger';
-        case 'created': return 'bg-warning';
-        default: return 'bg-secondary';
-      }
+      const statusMap = {
+        'active': 'bg-primary',
+        'assigned': 'bg-success',
+        'completed': 'bg-secondary',
+        'cancelled': 'bg-danger'
+      };
+      return statusMap[status] || 'bg-secondary';
     };
 
     const getStatusText = (status) => {
-      switch (status) {
-        case 'assigned': return 'Assigned';
-        case 'completed': return 'Selesai';
-        case 'cancelled': return 'Dibatalkan';
-        case 'created': return 'Dibuat';
-        default: return status || 'Unknown';
-      }
+      const statusMap = {
+        'active': 'Aktif',
+        'assigned': 'Assigned',
+        'completed': 'Selesai',
+        'cancelled': 'Dibatalkan'
+      };
+      return statusMap[status] || status || 'Tidak diketahui';
     };
 
-    const getAssignedPatientName = (userId) => {
-      const patient = availablePatients.value.find(p => p.id.toString() === userId.toString());
-      return patient ? patient.name : 'Patient tidak ditemukan';
+    const getAssignedPatientName = (assignedToId) => {
+      const patient = availablePatients.value.find(p => p.id === assignedToId);
+      return patient ? patient.name : 'Pasien tidak ditemukan';
     };
 
     const truncateText = (text, maxLength = 100) => {
@@ -827,59 +850,56 @@ export default {
       return text.substring(0, maxLength) + '...';
     };
 
+    const highlightSearchTerm = (text, searchTerm) => {
+      if (!searchTerm || !text) return text;
+      
+      const regex = new RegExp(`(${searchTerm})`, 'gi');
+      return text.replace(regex, '<mark>$1</mark>');
+    };
+
     // Lifecycle hooks
     onMounted(async () => {
       initializeUserInfo();
       await refreshData();
     });
 
-    // Return all reactive data and methods for template
     return {
-      // Reactive data
+      // Data
       riwayatList,
       isLoading,
       isUpdating,
       userRole,
       currentUserId,
       availablePatients,
-      
-      // Filters
-      selectedPatientFilter,
-      
-      // Pagination
+      patientSearchQuery,
       currentPage,
       itemsPerPage,
-      
-      // Modal states
       showAssignModalFlag,
       selectedRiwayatForAssign,
       selectedAssignUserId,
       assignLoading,
       assignSuccess,
-      
-      // Computed properties
+
+      // Computed
       filteredRiwayat,
       totalPages,
       paginatedRiwayat,
       visiblePages,
       totalPemeriksaan,
       pemeriksaanAssigned,
-      
+
       // Methods
       fetchRiwayatPemeriksaan,
-      fetchAvailablePatients,
-      fetchUsers,
       refreshData,
       applyFilters,
       clearFilters,
+      clearPatientSearch,
       changePage,
       showAssignModal,
       closeAssignModal,
       assignToPatient,
       unassignFromPatient,
       navigateToCreate,
-      
-      // Utility functions
       formatDate,
       formatDateTime,
       formatPatientAge,
@@ -889,7 +909,8 @@ export default {
       getStatusClass,
       getStatusText,
       getAssignedPatientName,
-      truncateText
+      truncateText,
+      highlightSearchTerm
     };
   }
 };
@@ -897,85 +918,112 @@ export default {
 
 <style scoped>
 .riwayat-container {
-  padding: 20px;
-  background-color: #f8f9fa;
   min-height: 100vh;
+  background-color: #f8f9fa;
+  padding: 20px;
 }
 
 .header-section .card-header {
-  background: linear-gradient(135deg, #b0b5cc 0%, #bbb4c2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
   color: white;
-  border-radius: 10px 10px 0 0;
+}
+
+.custom-header-btn {
+  background: #fff !important;
+  color: #222 !important;
+  border: 1px solid #e0e0e0 !important;
+  font-weight: 500;
+  box-shadow: none;
+  transition: background 0.2s, color 0.2s;
+}
+.custom-header-btn:hover, .custom-header-btn:focus {
+  background: #f5f5f5 !important;
+  color: #111 !important;
+  border-color: #bbb !important;
+}
+
+.header-section h4 {
+  font-weight: 600;
+  margin: 0;
 }
 
 .header-actions .btn {
-  border-radius: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
   font-weight: 500;
+  transition: all 0.3s ease;
 }
 
-.filter-section .card,
+.header-actions .btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.filter-section .card {
+  border: 1px solid #e0e6ed;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.form-label {
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+.input-group-text {
+  background-color: #f8f9fa;
+  border-color: #ced4da;
+  color: #6c757d;
+}
+
+.search-results-info {
+  background-color: #e7f3ff;
+  padding: 10px;
+  border-radius: 6px;
+  border-left: 4px solid #007bff;
+}
+
 .stats-section .card {
-  border-radius: 15px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stats-section .card:hover {
+  transform: translateY(-2px);
 }
 
 .riwayat-card {
-  border-radius: 15px;
-  border: none;
-  transition: all 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid #e0e6ed;
+  border-radius: 12px;
   overflow: hidden;
 }
 
 .riwayat-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .riwayat-card .card-header {
-  background: white;
-  color: #495057;
-  border-bottom: 1px solid #e9ecef;
-  border-radius: 15px 15px 0 0;
-}
-
-.riwayat-card .card-header.patient-header {
-  background: #d3d4d5;
-  color: #495057;
-  border-bottom: 1px solid #e9ecef;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid #dee2e6;
+  padding: 15px;
 }
 
 .patient-info h6 {
-  margin-bottom: 8px;
-  font-size: 1.1rem;
   color: #495057;
-  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.patient-details {
+  margin-top: 8px;
 }
 
 .patient-details small {
-  font-size: 0.85rem;
   margin-bottom: 2px;
   color: #6c757d;
-}
-
-/* Patient card header styling */
-.patient-card-header {
-  background: #f8f9fa !important;
-  color: #495057 !important;
-  border-bottom: 1px solid #e9ecef !important;
-}
-
-.patient-card-header h6 {
-  color: #495057 !important;
-  margin-bottom: 5px;
-}
-
-.patient-card-header small {
-  color: #6c757d !important;
-}
-
-.patient-card-header .badge {
-  background-color: #28a745 !important;
-  color: white !important;
 }
 
 .status-badges {
@@ -984,51 +1032,65 @@ export default {
   gap: 5px;
 }
 
-.status-badges .badge {
+.badge {
   font-size: 0.75rem;
   padding: 4px 8px;
-  border-radius: 12px;
-}
-
-.info-item {
-  border-left: 3px solid #e9ecef;
-  padding-left: 12px;
-  margin-bottom: 15px;
-}
-
-.info-text {
-  margin: 0;
-  color: #6c757d;
-  font-size: 0.9rem;
-  line-height: 1.4;
+  border-radius: 6px;
 }
 
 .badge-telinga {
   font-size: 0.8rem;
   padding: 6px 12px;
-  border-radius: 15px;
+  font-weight: 500;
 }
 
-.action-buttons .btn {
-  border-radius: 20px;
+.info-item {
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 12px;
+}
+
+.info-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.info-text {
+  margin: 0;
+  color: #495057;
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+
+.card-footer {
+  border-top: 1px solid #e9ecef;
+  background-color: #f8f9fa;
+}
+
+.action-buttons .btn-group .btn {
+  border-radius: 4px;
   font-size: 0.8rem;
-  padding: 5px 10px;
-}
-
-.pagination .page-link {
-  border-radius: 50%;
+  padding: 4px 8px;
   margin: 0 2px;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #dee2e6;
-  color: #6c757d;
 }
 
-.pagination .page-item.active .page-link {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.pagination {
+  margin: 0;
+}
+
+.page-link {
+  color: #667eea;
+  border-color: #dee2e6;
+  transition: all 0.2s ease;
+}
+
+.page-link:hover {
+  color: #495057;
+  background-color: #e9ecef;
+  border-color: #dee2e6;
+}
+
+.page-item.active .page-link {
+  background-color: #667eea;
   border-color: #667eea;
 }
 
@@ -1038,36 +1100,36 @@ export default {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1050;
 }
 
-.modal-assign {
+.modal-dialog {
   max-width: 500px;
   width: 90%;
+  margin: 20px;
 }
 
 .modal-content {
-  border-radius: 15px;
+  border-radius: 12px;
   border: none;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-  background: white;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 }
 
 .modal-header {
-  background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%);
-  color: black;
-  border-radius: 15px 15px 0 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
   border-bottom: none;
+  border-radius: 12px 12px 0 0;
   padding: 20px;
 }
 
-.modal-body {
-  padding: 25px;
-  background: white;
+.modal-title {
+  font-weight: 600;
+  margin: 0;
 }
 
 .btn-close {
@@ -1075,149 +1137,57 @@ export default {
   border: none;
   color: white;
   font-size: 1.2rem;
-  opacity: 0.8;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
 }
 
 .btn-close:hover {
-  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Patient info section - White background */
+.modal-body {
+  padding: 25px;
+}
+
 .assign-info {
-  background-color: white;
-  padding: 20px;
-  border-radius: 12px;
-  border: 2px solid #e9ecef;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-.assign-info h6 {
-  color: #495057;
-  margin-bottom: 12px;
-  font-weight: 600;
-  font-size: 1.1rem;
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 4px solid #007bff;
 }
 
 .info-row {
-  margin-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  margin-bottom: 8px;
+  color: #495057;
 }
 
 .info-row:last-child {
   margin-bottom: 0;
 }
 
-.info-row strong {
-  color: #343a40;
-  font-weight: 600;
-}
-
-.info-row span {
-  color: #6c757d;
-}
-
-/* Patient selection section - Clear visibility */
-.patient-selection {
-  margin-top: 20px;
-}
-
-.patient-selection label {
-  font-weight: 600;
-  color: #495057;
-  margin-bottom: 12px;
-  display: block;
-  font-size: 1rem;
-}
-
-.patient-selection select {
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #dee2e6;
-  border-radius: 10px;
-  font-size: 1rem;
-  background-color: #fff;
-  color: #495057;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-  background-position: right 12px center;
-  background-repeat: no-repeat;
-  background-size: 16px;
-  transition: all 0.2s ease;
-}
-
-.patient-selection select:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.patient-selection select:hover {
-  border-color: #adb5bd;
-}
-
-/* Diagnosis section */
-.diagnosis-section {
-  margin-top: 20px;
-  padding: 15px;
-  background-color: #f8f9fa;
-  border-radius: 10px;
-  border-left: 4px solid #667eea;
-}
-
-.diagnosis-section h6 {
-  color: #495057;
-  margin-bottom: 8px;
-  font-weight: 600;
-}
-
-.diagnosis-text {
-  color: #6c757d;
-  font-size: 0.95rem;
-  margin: 0;
-}
-
-/* Modal footer */
-.modal-footer {
-  padding: 20px 25px;
-  border-top: 1px solid #e9ecef;
-  background: white;
-  border-radius: 0 0 15px 15px;
-}
-
 .btn-assign {
   background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
   border: none;
-  border-radius: 25px;
-  font-weight: 600;
-  padding: 10px 25px;
-  font-size: 1rem;
+  color: white;
+  font-weight: 500;
   transition: all 0.3s ease;
 }
 
-.btn-assign:hover {
-  background: linear-gradient(135deg, #218838 0%, #1ca085 100%);
+.btn-assign:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
 }
 
-.btn-secondary {
-  border-radius: 25px;
-  font-weight: 600;
-  padding: 10px 25px;
-  font-size: 1rem;
-  border: 2px solid #6c757d;
-  background: white;
-  color: #6c757d;
-  transition: all 0.3s ease;
-}
-
-.btn-secondary:hover {
-  background: #6c757d;
-  color: white;
-  transform: translateY(-1px);
+.btn-assign:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .loading-overlay {
@@ -1230,86 +1200,80 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1060;
+  z-index: 2000;
 }
 
 .loading-content {
   text-align: center;
-  background: white;
-  padding: 30px;
-  border-radius: 15px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  color: #495057;
 }
 
-/* Transitions */
-.fade-enter-active, .fade-leave-active {
+.empty-state-actions {
+  margin-top: 20px;
+}
+
+.fade-enter-active,
+.fade-leave-active {
   transition: opacity 0.3s ease;
 }
 
-.fade-enter-from, .fade-leave-to {
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .riwayat-container {
-    padding: 15px;
-  }
-  
-  .header-actions {
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .patient-info h6 {
-    font-size: 1rem;
-  }
-  
-  .pagination .page-link {
-    width: 35px;
-    height: 35px;
-  }
-  
-  .modal-assign {
-    width: 95%;
-    margin: 10px;
-  }
-  
-  .modal-body {
-    padding: 20px;
-  }
-  
-  .modal-footer {
-    padding: 15px 20px;
-  }
-  
-  .info-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
+mark {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 1px 3px;
+  border-radius: 3px;
 }
 
-@media (max-width: 576px) {
-  .stats-section .row > .col-md-6 {
-    margin-bottom: 15px;
+/* Responsive Design */
+@media (max-width: 768px) {
+  .riwayat-container {
+    padding: 10px;
   }
   
   .filter-section .row {
     flex-direction: column;
   }
   
-  .filter-section .col-md-2 {
-    margin-top: 10px;
+  .filter-section .col-md-6,
+  .filter-section .col-md-2,
+  .filter-section .col-md-4 {
+    margin-bottom: 15px;
   }
   
-  .modal-footer .btn {
-    width: 100%;
+  .stats-section .row {
+    margin: 0 -5px;
+  }
+  
+  .stats-section .col-md-6 {
+    padding: 0 5px;
     margin-bottom: 10px;
   }
   
-  .modal-footer .btn:last-child {
-    margin-bottom: 0;
+  .header-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .header-actions .btn {
+    width: 100%;
+  }
+  
+  .modal-dialog {
+    margin: 10px;
+    width: calc(100% - 20px);
+  }
+  
+  .action-buttons .btn-group {
+    flex-direction: column;
+  }
+  
+  .action-buttons .btn-group .btn {
+    margin: 2px 0;
   }
 }
 </style>
