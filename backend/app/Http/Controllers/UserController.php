@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Crypt;
 
 /**
  * @OA\Tag(
@@ -123,6 +124,7 @@ class UserController extends Controller
                 'created_by' => $created_by, // Simpan ID pengguna yang membuat
                 'email' => null, // Email tidak wajib jika tidak digunakan
                 'password' => Hash::make($password), // Hash password sebelum disimpan
+                'plain_password' => Crypt::encryptString($password),
             ]);
 
             // Auto assign role 'user'
@@ -250,6 +252,7 @@ class UserController extends Controller
                 'gender' => $request->gender,
                 'email' => null, // Email tidak wajib jika tidak digunakan
                 'password' => Hash::make($password), // Hash password sebelum disimpan
+                'plain_password' => Crypt::encryptString($password),
             ]);
 
             // Auto assign role 'user'
@@ -557,6 +560,7 @@ class UserController extends Controller
             'gender' => $user->gender,
             'roles' => $user->roles->pluck('name'), // Ambil nama role
             'deleted_at' => $user->deleted_at,
+            'plain_password' => Crypt::decryptString($user->plain_password),
         ];
 
         return response()->json($response);

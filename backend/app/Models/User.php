@@ -50,6 +50,7 @@ class User extends Authenticatable implements JWTSubject
         'tanggal_lahir',
         'kode_akses',
         'no_str',
+        'plain_password',
         'name',
         'email',
         'password',
