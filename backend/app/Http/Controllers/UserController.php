@@ -107,6 +107,11 @@ class UserController extends Controller
             // Generate kode_akses unik (contoh: ERS-X7Y9Z)
             $kode_akses = 'PRS-' . Str::upper(Str::random(5));
 
+            $user = Auth::guard('api')->user();
+            $created_by = $user->id;
+
+            \Log::info('Current User:', [$user]);
+
             // Simpan data pengguna ke database
             $user = User::create([
                 'kode_akses' => $kode_akses,
@@ -115,6 +120,7 @@ class UserController extends Controller
                 'usia' => $usia,
                 'no_telp' => $request->no_telp,
                 'gender' => $request->gender,
+                'created_by' => $created_by, // Simpan ID pengguna yang membuat
                 'email' => null, // Email tidak wajib jika tidak digunakan
                 'password' => Hash::make($password), // Hash password sebelum disimpan
             ]);
@@ -432,8 +438,11 @@ class UserController extends Controller
      */
     public function getAllPasien()
     {
+        $dokter = Auth::guard('api')->user()->id;
+
         // Ambil semua pengguna beserta role mereka
         $users = User::withTrashed()
+            ->where('created_by', $dokter)
             ->role('pasien')
             ->with('roles') // Muat relasi roles
             ->get()
