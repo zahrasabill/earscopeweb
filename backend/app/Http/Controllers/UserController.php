@@ -449,6 +449,7 @@ class UserController extends Controller
             ->map(function ($user) {
                 return [
                     'id' => $user->id,
+                    'created_by' => $user->created_by,
                     'kode_akses' => $user->kode_akses,
                     'name' => $user->name,
                     'email' => $user->email,
