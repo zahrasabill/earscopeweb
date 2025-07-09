@@ -20,7 +20,7 @@ Route::middleware('jwt.auth')->group(function () {
     Route::get('videos/stream/{filename}', [VideoController::class, 'streamVideo']);
 
     // Route Admin dan Dokter
-    Route::middleware('role:admin|dokter')->group(function () {
+    Route::middleware('role:admin|dokter|pasien')->group(function () {
         Route::get('users/{id}', [UserController::class, 'show']);
         Route::put('users/{id}', [UserController::class, 'update']);
         Route::delete('users/{id}', [UserController::class, 'delete']);

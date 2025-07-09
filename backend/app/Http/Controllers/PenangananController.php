@@ -60,14 +60,22 @@ class PenangananController extends Controller
             $user = Auth::user();
             $dateFilter = $request->query('date');
 
-            // Jika dokter, bisa lihat semua penanganan
-            // Jika pasien, hanya bisa lihat penanganan yang di-assign ke dia
+            $query = Penanganan::with(['user', 'createdByUser']);
+
             if ($user->hasRole('pasien')) {
-                $query = Penanganan::with(['user', 'createdByUser'])
-                    ->where('user_id', $user->id);
+                $query->where('user_id', $user->id);
+            } elseif ($user->hasRole('dokter')) {
+                $query->where('created_by', $user->id);
             } else {
-                $query = Penanganan::with(['user', 'createdByUser']);
+                // Optional: untuk admin bisa akses semua
             }
+            
+            // if ($user->hasRole('pasien')) {
+            //     $query = Penanganan::with(['user', 'createdByUser'])
+            //         ->where('user_id', $user->id);
+            // } else {
+            //     $query = Penanganan::with(['user', 'createdByUser']);
+            // }
 
             // Apply date filter if provided
             if ($dateFilter) {
