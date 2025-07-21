@@ -54,7 +54,7 @@
             :class="{ 'active-menu': activePage === 'pemeriksaanresource' || activePage === 'pemeriksaan' }"
             @click="closeSidebar">
             <i class="bi bi-clipboard2-pulse me-3"></i>
-            <span>Hasil Pemeriksaan</span>
+            <span>Hasil Diagnosis Pemeriksaan</span>
           </router-link>
         </li>
 
@@ -63,7 +63,7 @@
             :class="{ 'active-menu': activePage === 'penangananresource' || activePage === 'penanganan' }"
             @click="closeSidebar">
             <i class="bi bi-book-fill me-3"></i>
-            <span>Penanganan</span>
+            <span>Pemeriksaan oleh Dokter</span>
           </router-link>
         </li>
 
@@ -106,6 +106,11 @@
                 </div>
               </button>
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
+                <li>
+                  <a class="dropdown-item" href="#" @click.prevent="$router.push('/profile')">
+                    <i class="bi bi-person-circle me-2"></i>Profile
+                  </a>
+                </li>
                 <li>
                   <a class="dropdown-item" href="#" @click.prevent="logout"><i
                       class="bi bi-box-arrow-right me-2"></i>Logout</a>
@@ -182,8 +187,8 @@ export default {
         dashboard: "Dashboard",
         dokterresource: "Kelola Dokter",
         pasienresource: "Kelola Pasien",
-        pemeriksaanresource: "Hasil Pemeriksaan",
-        penangananresource: "Penanganan",
+        penangananresource: "Pemeriksaan oleh Dokter",
+        pemeriksaanresource: "Hasil Diagnosis Pemeriksaan",
         riwayatresource: "Riwayat Pemeriksaan"
       };
       this.pageTitle = titles[page] || "Dashboard";

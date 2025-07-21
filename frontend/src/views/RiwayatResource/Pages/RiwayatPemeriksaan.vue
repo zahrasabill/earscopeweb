@@ -117,7 +117,7 @@
           <div class="card h-100 shadow-sm riwayat-card">
             <!-- Card Header -->
             <div class="card-header">
-              <div class="patient-info">
+              <div v-if="userRole === 'dokter'" class="patient-info">
                 <h6 class="mb-1 fw-bold">
                   <span v-html="highlightSearchTerm(riwayat.patient_name, patientSearchQuery)"></span>
                 </h6>
@@ -137,26 +137,27 @@
                   </small>
                 </div>
               </div>
-              <div class="status-badges mt-2">
-                <span 
-                  class="badge me-1"
-                  :class="getStatusClass(riwayat.status)"
-                >
-                  {{ getStatusText(riwayat.status) }}
-                </span>
-                <span class="badge bg-secondary">
-                  {{ formatDate(riwayat.tanggal_penanganan) }}
-                </span>
+              <div v-else>
+                <div class="status-badges mt-2">
+                  <span 
+                    class="badge me-1"
+                    :class="getStatusClass(riwayat.status)"
+                  >
+                    {{ getStatusText(riwayat.status) }}
+                  </span>
+                  <span class="badge bg-secondary">
+                    {{ formatDate(riwayat.tanggal_penanganan) }}
+                  </span>
+                </div>
               </div>
             </div>
 
-            <!-- Card Body -->
             <div class="card-body">
               <!-- Telinga Terkena -->
               <div class="info-item mb-3">
                 <div class="d-flex align-items-center mb-2">
                   <i class="fas fa-deaf text-primary me-2"></i>
-                  <strong>Telinga Terkena:</strong>
+                  <strong>Telinga yang Diperiksa:</strong>
                 </div>
                 <span class="badge badge-telinga" :class="getTelingaClass(riwayat.telinga_terkena)">
                   {{ formatTelinga(riwayat.telinga_terkena) }}
@@ -552,6 +553,7 @@ export default {
             patient_no_telp: currentUser.no_telp || null,
             patient_gender: currentUser.gender || null,
             kode_akses: currentUser.kode_akses || null,
+            user: currentUser,
           }));
         }
 

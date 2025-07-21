@@ -15,9 +15,105 @@
       </div>
     </div>
 
-    <!-- Statistics Card for Dokter -->
-    <div v-if="currentUser.role === 'dokter'" class="row mb-4">
-      <div class="col-md-6 col-lg-4">
+    <!-- Time Filter for Statistics -->
+    <div v-if="currentUser.role === 'admin' || currentUser.role === 'dokter'" class="row mb-4">
+      <div class="col-12">
+        <div class="card bg-light shadow-sm">
+          <div class="card-body">
+            <div class="row align-items-center">
+              <div class="col-md-6">
+                <h6 class="mb-0 text-muted">
+                  <i class="bi bi-filter me-2"></i>
+                  Filter Periode Statistik
+                </h6>
+              </div>
+              <div class="col-md-6">
+                <div class="btn-group w-100" role="group">
+                  <button 
+                    type="button" 
+                    class="btn btn-sm"
+                    :class="timeFilter === 'today' ? 'btn-primary' : 'btn-outline-primary'"
+                    @click="setTimeFilter('today')"
+                  >
+                    Hari Ini
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn btn-sm"
+                    :class="timeFilter === 'week' ? 'btn-primary' : 'btn-outline-primary'"
+                    @click="setTimeFilter('week')"
+                  >
+                    Minggu Ini
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn btn-sm"
+                    :class="timeFilter === 'month' ? 'btn-primary' : 'btn-outline-primary'"
+                    @click="setTimeFilter('month')"
+                  >
+                    Bulan Ini
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn btn-sm"
+                    :class="timeFilter === 'all' ? 'btn-primary' : 'btn-outline-primary'"
+                    @click="setTimeFilter('all')"
+                  >
+                    Semua
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Statistics Cards for Admin -->
+    <div v-if="currentUser.role === 'admin'" class="row mb-4 justify-content-center">
+      <!-- Total Dokter -->
+      <div class="col-md-6 col-lg-4 mb-3">
+        <div class="card bg-light shadow-sm">
+          <div class="card-body text-center">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+              <i class="bi bi-person-badge text-success me-2" style="font-size: 2rem;"></i>
+              <div>
+                <h2 class="mb-0 text-success fw-bold">
+                  <span v-if="loadingDokterCount">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                  </span>
+                  <span v-else>{{ totalDokter !== null ? totalDokter : '-' }}</span>
+                </h2>
+                <p class="mb-0 text-muted small">
+                  Total Dokter {{ getFilterLabel() }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Last Update Info for Admin -->
+    <div v-if="currentUser.role === 'admin'" class="row mb-4">
+      <div class="col-12">
+        <div class="card bg-light shadow-sm">
+          <div class="card-body text-center">
+            <small class="text-muted">
+              <i class="bi bi-clock me-1"></i>
+              Terakhir diperbarui: {{ lastUpdated }}
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Statistics Cards for Dokter -->
+    <div v-if="currentUser.role === 'dokter'" class="row mb-4 justify-content-center">
+      <!-- Total Pasien -->
+      <div class="col-md-4 col-lg-3 mb-3">
         <div class="card bg-light shadow-sm">
           <div class="card-body text-center">
             <div class="d-flex align-items-center justify-content-center mb-2">
@@ -31,12 +127,74 @@
                   </span>
                   <span v-else>{{ totalPasien !== null ? totalPasien : '-' }}</span>
                 </h2>
-                <p class="mb-0 text-muted small">Total Pasien Terdaftar</p>
+                <p class="mb-0 text-muted small">
+                  Total Pasien {{ getFilterLabel() }}
+                </p>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Total Penanganan -->
+      <div class="col-md-4 col-lg-3 mb-3">
+        <div class="card bg-light shadow-sm">
+          <div class="card-body text-center">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+              <i class="bi bi-book-fill text-warning me-2" style="font-size: 2rem;"></i>
+              <div>
+                <h2 class="mb-0 text-warning fw-bold">
+                  <span v-if="loadingPenangananCount">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                  </span>
+                  <span v-else>{{ totalPenanganan !== null ? totalPenanganan : '-' }}</span>
+                </h2>
+                <p class="mb-0 text-muted small">
+                  Total Pemeriksaan {{ getFilterLabel() }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Total Video -->
+      <div class="col-md-4 col-lg-3 mb-3">
+        <div class="card bg-light shadow-sm">
+          <div class="card-body text-center">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+              <i class="bi bi-play-circle text-info me-2" style="font-size: 2rem;"></i>
+              <div>
+                <h2 class="mb-0 text-info fw-bold">
+                  <span v-if="loadingVideoCount">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                  </span>
+                  <span v-else>{{ totalVideo !== null ? totalVideo : '-' }}</span>
+                </h2>
+                <p class="mb-0 text-muted small">
+                  Total Video {{ getFilterLabel() }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+
+    <!-- Last Update Info for Dokter -->
+    <div v-if="currentUser.role === 'dokter'" class="row mb-4">
+      <div class="col-12">
+        <div class="card bg-light shadow-sm">
+          <div class="card-body text-center">
             <small class="text-muted">
               <i class="bi bi-clock me-1"></i>
-              Diperbarui: {{ lastUpdated }}
+              Terakhir diperbarui: {{ lastUpdated }}
             </small>
           </div>
         </div>
@@ -117,42 +275,56 @@ export default {
       currentUser: {
         kode_akses: "",
         role: "",
+        name: ""
       },
+      totalDokter: null,
       totalPasien: null,
+      totalPenanganan: null,
+      totalVideo: null,
+
+      loadingDokterCount: false,
       loadingPasienCount: false,
-      lastUpdated: ""
+      loadingPenangananCount: false,
+      loadingVideoCount: false,
+
+      lastUpdated: "",
+      timeFilter: 'all' // Default filter
     };
   },
   created() {
     this.getCurrentUser();
 
-    // Listen for storage events from other components (like ListPasien.vue)
+    // Listen for storage events from other components
     window.addEventListener('storage', (event) => {
-      if (event.key === 'pasienDataUpdated') {
-        this.fetchPasienCount();
+      if (event.key === 'dokterDataUpdated' || event.key === 'pasienDataUpdated' || event.key === 'penangananDataUpdated') {
+        this.fetchAllStatistics();
       }
     });
   },
   mounted() {
     // Check if data was updated from another component
-    const updated = localStorage.getItem('pasienDataUpdated');
+    const updated = localStorage.getItem('dokterDataUpdated') || 
+                   localStorage.getItem('pasienDataUpdated') || 
+                   localStorage.getItem('penangananDataUpdated');
     if (updated) {
+      localStorage.removeItem('dokterDataUpdated');
       localStorage.removeItem('pasienDataUpdated');
+      localStorage.removeItem('penangananDataUpdated');
     }
 
-    // Fetch pasien count after component is mounted and user data is available
+    // Fetch all statistics after component is mounted and user data is available
     this.$nextTick(() => {
-      if (this.currentUser.role === 'dokter') {
-        console.log('Fetching pasien count for dokter...');
-        this.fetchPasienCount();
+      if (this.currentUser.role === 'dokter' || this.currentUser.role === 'admin') {
+        console.log('Fetching all statistics for', this.currentUser.role);
+        this.fetchAllStatistics();
       }
     });
   },
   watch: {
     'currentUser.role': {
       handler(newRole) {
-        if (newRole === 'dokter') {
-          this.fetchPasienCount();
+        if (newRole === 'dokter' || newRole === 'admin') {
+          this.fetchAllStatistics();
         }
       },
       immediate: true
@@ -164,22 +336,17 @@ export default {
 
       if (token) {
         try {
-          // Decode JWT tanpa verifikasi
           const payload = jwtDecode(token);
-          // console.log('JWT Payload:', payload); // Debug log
-
-          // Ambil `kode_akses` dan `role` dari payload
           this.currentUser.kode_akses = payload.kode_akses || "Tidak Ada Akses";
-          this.currentUser.name = payload.name
+          this.currentUser.name = payload.name || "Tidak Ada Nama";
           this.currentUser.role = payload.role || "Tidak Ada Role";
 
-          console.log('Current User:', this.currentUser); // Debug log
+          console.log('Current User:', this.currentUser);
 
-          // Fetch pasien count immediately if user is dokter
-          if (this.currentUser.role === 'dokter') {
-            console.log('User is dokter, fetching pasien count...');
+          if (this.currentUser.role === 'dokter' || this.currentUser.role === 'admin') {
+            console.log('User is', this.currentUser.role, ', fetching all statistics...');
             this.$nextTick(() => {
-              this.fetchPasienCount();
+              this.fetchAllStatistics();
             });
           }
         } catch (error) {
@@ -194,94 +361,231 @@ export default {
       }
     },
 
-    async fetchPasienCount() {
-      console.log('fetchPasienCount called, current role:', this.currentUser.role);
+    setTimeFilter(filter) {
+      this.timeFilter = filter;
+      this.fetchAllStatistics();
+    },
 
-      if (this.currentUser.role !== 'dokter') {
-        console.log('User is not dokter, skipping fetch');
+    getFilterLabel() {
+      const labels = {
+        'today': 'Hari Ini',
+        'week': 'Minggu Ini',
+        'month': 'Bulan Ini',
+        'all': 'Terdaftar'
+      };
+      return labels[this.timeFilter] || 'Terdaftar';
+    },
+
+    getDateRange() {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      switch (this.timeFilter) {
+        case 'today':
+          return {
+            start: today,
+            end: new Date(today.getTime() + 24 * 60 * 60 * 1000)
+          };
+        case 'week':
+          const startOfWeek = new Date(today);
+          startOfWeek.setDate(today.getDate() - today.getDay());
+          return {
+            start: startOfWeek,
+            end: new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000)
+          };
+        case 'month':
+          const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+          const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+          return {
+            start: startOfMonth,
+            end: new Date(endOfMonth.getTime() + 24 * 60 * 60 * 1000)
+          };
+        default:
+          return null;
+      }
+    },
+
+    filterDataByDate(data, dateField = 'created_at') {
+      if (this.timeFilter === 'all') {
+        return data;
+      }
+
+      const dateRange = this.getDateRange();
+      if (!dateRange) {
+        return data;
+      }
+
+      return data.filter(item => {
+        const itemDate = new Date(item[dateField]);
+        return itemDate >= dateRange.start && itemDate < dateRange.end;
+      });
+    },
+
+    async fetchAllStatistics() {
+      if (this.currentUser.role !== 'dokter' && this.currentUser.role !== 'admin') {
+        console.log('User is not dokter or admin, skipping fetch');
         return;
       }
 
-      this.loadingPasienCount = true;
-      console.log('Starting to fetch pasien count...');
+      console.log('Fetching all statistics with filter:', this.timeFilter);
+      
+      const promises = [];
+      
+      // For admin, fetch only dokter statistics
+      if (this.currentUser.role === 'admin') {
+        promises.push(this.fetchDokterCount());
+      }
+      
+      // For dokter, fetch pasien, penanganan, and video statistics
+      if (this.currentUser.role === 'dokter') {
+        promises.push(this.fetchPasienCount());
+        promises.push(this.fetchPenangananCount());
+        promises.push(this.fetchVideoCount());
+      }
+
+      // Fetch all statistics concurrently
+      await Promise.all(promises);
+
+      this.updateLastUpdated();
+    },
+
+    async fetchDokterCount() {
+      console.log('fetchDokterCount called');
+      this.loadingDokterCount = true;
 
       try {
         const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+        if (!token) throw new Error('Token tidak ditemukan');
 
-        if (!token) {
-          throw new Error('Token autentikasi tidak ditemukan. Silakan login terlebih dahulu.');
-        }
-
-        console.log('Making API call to fetch pasien...');
-        const response = await api.get('pasien', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+        const response = await api.get('dokter', {
+          headers: { 'Authorization': `Bearer ${token}` }
         });
 
-        console.log('API Response:', response.data);
+        let dokterData = this.extractDataFromResponse(response.data);
+        
+        // Filter data berdasarkan waktu
+        const filteredData = this.filterDataByDate(dokterData);
+        this.totalDokter = filteredData.length;
+        
+        console.log('Total dokter:', this.totalDokter);
 
-        // Handle different response formats (same logic as ListPasien.vue)
-        let pasienData = [];
+      } catch (error) {
+        console.error("Error fetching dokter count:", error);
+        this.totalDokter = 0;
+      } finally {
+        this.loadingDokterCount = false;
+      }
+    },
 
-        if (response.data) {
-          if (Array.isArray(response.data)) {
-            // Direct array format
-            console.log('Using direct array format');
-            pasienData = response.data;
-          }
-          else if (response.data.data && Array.isArray(response.data.data)) {
-            // Nested data array format
-            console.log('Using nested data array format');
-            pasienData = response.data.data;
-          }
-          else if (response.data.data && response.data.data.items) {
-            // Pagination format
-            console.log('Using pagination format');
-            pasienData = response.data.data.items || [];
-          }
-          else {
-            console.error('Unrecognized response format:', response.data);
-            throw new Error('Format response tidak dikenali');
-          }
+    async fetchPasienCount() {
+      console.log('fetchPasienCount called');
+      this.loadingPasienCount = true;
 
-          this.totalPasien = pasienData.length;
-          console.log('Total pasien set to:', this.totalPasien);
+      try {
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+        if (!token) throw new Error('Token tidak ditemukan');
 
-          this.lastUpdated = new Date().toLocaleString('id-ID', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          });
+        const response = await api.get('pasien', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
 
-          console.log('Total pasien berhasil dimuat:', this.totalPasien);
-        } else {
-          throw new Error('Tidak ada data dari server');
-        }
+        let pasienData = this.extractDataFromResponse(response.data);
+        
+        // Filter data berdasarkan waktu
+        const filteredData = this.filterDataByDate(pasienData);
+        this.totalPasien = filteredData.length;
+        
+        console.log('Total pasien:', this.totalPasien);
 
       } catch (error) {
         console.error("Error fetching patient count:", error);
-        console.error("Error details:", error.response?.data);
         this.totalPasien = 0;
-
-        // Handle different error scenarios (same as ListPasien.vue)
-        if (error.response) {
-          if (error.response.status === 401) {
-            console.warn("Sesi login telah berakhir");
-            // Optionally redirect to login
-            // this.$router.push('/login');
-          } else if (error.response.status === 403) {
-            console.warn("Access denied");
-          } else {
-            console.error("API Error:", error.response.status, error.response.data);
-          }
-        }
       } finally {
         this.loadingPasienCount = false;
-        console.log('fetchPasienCount completed, totalPasien:', this.totalPasien);
       }
+    },
+
+    async fetchPenangananCount() {
+      console.log('fetchPenangananCount called');
+      this.loadingPenangananCount = true;
+
+      try {
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+        if (!token) throw new Error('Token tidak ditemukan');
+
+        const response = await api.get('penanganan', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        let penangananData = this.extractDataFromResponse(response.data);
+        
+        // Filter data berdasarkan waktu
+        const filteredData = this.filterDataByDate(penangananData);
+        this.totalPenanganan = filteredData.length;
+        
+        console.log('Total penanganan:', this.totalPenanganan);
+
+      } catch (error) {
+        console.error("Error fetching penanganan count:", error);
+        this.totalPenanganan = 0;
+      } finally {
+        this.loadingPenangananCount = false;
+      }
+    },
+
+    async fetchVideoCount() {
+      console.log('fetchVideoCount called');
+      this.loadingVideoCount = true;
+
+      try {
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+        if (!token) throw new Error('Token tidak ditemukan');
+
+        const response = await api.get('videos', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        let videoData = this.extractDataFromResponse(response.data);
+        
+        // Filter data berdasarkan waktu
+        const filteredData = this.filterDataByDate(videoData);
+        this.totalVideo = filteredData.length;
+        
+        console.log('Total video:', this.totalVideo);
+
+      } catch (error) {
+        console.error("Error fetching video count:", error);
+        this.totalVideo = 0;
+      } finally {
+        this.loadingVideoCount = false;
+      }
+    },
+
+
+
+    extractDataFromResponse(responseData) {
+      if (!responseData) return [];
+      
+      if (Array.isArray(responseData)) {
+        return responseData;
+      } else if (responseData.data && Array.isArray(responseData.data)) {
+        return responseData.data;
+      } else if (responseData.data && responseData.data.items) {
+        return responseData.data.items || [];
+      }
+      
+      console.error('Unrecognized response format:', responseData);
+      return [];
+    },
+
+    updateLastUpdated() {
+      this.lastUpdated = new Date().toLocaleString('id-ID', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
     },
 
     getUserRoleDisplay(role) {
@@ -299,6 +603,10 @@ export default {
 <style scoped>
 .bg-gradient-primary {
   background: linear-gradient(135deg, #004178 0%, #0056a3 100%);
+}
+
+.bg-gradient-info {
+  background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
 }
 
 .text-white-50 {
@@ -320,7 +628,8 @@ export default {
 
 .btn-outline-success:hover,
 .btn-outline-primary:hover,
-.btn-outline-warning:hover {
+.btn-outline-warning:hover,
+.btn-outline-info:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease-in-out;
@@ -331,6 +640,24 @@ export default {
   height: 1rem;
 }
 
+.card-header {
+  border-bottom: none;
+}
+
+.btn-group .btn {
+  border-radius: 0;
+}
+
+.btn-group .btn:first-child {
+  border-top-left-radius: 0.375rem;
+  border-bottom-left-radius: 0.375rem;
+}
+
+.btn-group .btn:last-child {
+  border-top-right-radius: 0.375rem;
+  border-bottom-right-radius: 0.375rem;
+}
+
 @media (max-width: 768px) {
   .card-body h3 {
     font-size: 1.5rem;
@@ -338,6 +665,23 @@ export default {
 
   .card-body h4 {
     font-size: 1.2rem;
+  }
+  
+  .col-lg-3 {
+    margin-bottom: 1rem;
+  }
+
+  .btn-group {
+    flex-direction: column;
+  }
+
+  .btn-group .btn {
+    border-radius: 0.375rem !important;
+    margin-bottom: 0.25rem;
+  }
+
+  .btn-group .btn:last-child {
+    margin-bottom: 0;
   }
 }
 </style>

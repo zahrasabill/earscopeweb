@@ -43,9 +43,11 @@
                   <input
                     type="date"
                     v-model="formData.tanggal_penanganan"
-                    class="form-control"
+                    class="form-control bg-light"
                     :class="{ 'is-invalid': errors.tanggal_penanganan }"
                     required
+                    readonly
+                    tabindex="-1"
                   />
                   <div v-if="errors.tanggal_penanganan" class="invalid-feedback">
                     {{ errors.tanggal_penanganan }}
@@ -111,7 +113,7 @@
                 <!-- Telinga yang Terkena -->
                 <div class="form-group mb-4">
                   <label class="form-label required">
-                    <i class="fas fa-deaf me-2 text-danger"></i>Telinga yang Terkena
+                    <i class="fas fa-deaf me-2 text-danger"></i>Telinga yang Diperiksa
                   </label>
                   <select
                     v-model="formData.telinga_terkena"

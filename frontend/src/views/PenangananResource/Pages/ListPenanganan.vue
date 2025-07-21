@@ -275,7 +275,7 @@
                     <div class="detail-value">{{ formatDate(selectedDetail.tanggal_penanganan) }}</div>
                   </div>
                   <div class="detail-group mb-3">
-                    <label class="detail-label">Telinga Terkena</label>
+                    <label class="detail-label">Telinga Diperiksa</label>
                     <div class="detail-value">
                       <span class="badge bg-secondary">{{ selectedDetail.telinga_terkena }}</span>
                     </div>

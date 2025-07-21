@@ -9,7 +9,7 @@
                 <label for="dateFilter" class="form-label fw-bold">Filter Tanggal:</label>
                 <input type="date" id="dateFilter" v-model="selectedDate" class="form-control" @change="filterData">
               </div>
-              <div class="col-md-4">
+              <div class="col-md-4" v-if="userRole === 'dokter'">
                 <label for="patientFilter" class="form-label fw-bold">Filter Nama Pasien:</label>
                 <select v-model="selectedPatientId" id="patientFilter" class="form-select" @change="filterData">
                   <option value="">-- Semua Pasien --</option>
@@ -113,60 +113,6 @@
         </div>
       </transition>
 
-      <!-- Modal Diagnosis Manual - Simple Design -->
-      <transition name="fade">
-        <div v-if="showDiagnosisModal" class="modal-overlay" @click.self="closeDiagnosisModal">
-          <div class="modal-dialog">
-            <div class="modal-content simple-modal">
-              <div class="modal-header">
-                <h5 class="modal-title">Input Diagnosis Manual</h5>
-                <button type="button" class="btn-close" @click="closeDiagnosisModal"></button>
-              </div>
-              <div class="modal-body">
-                <div v-if="diagnosisSuccess" class="text-center py-3">
-                  <i class="fas fa-check-circle text-success" style="font-size: 48px;"></i>
-                  <h5 class="mt-3 text-success">Berhasil!</h5>
-                  <p>Diagnosis manual telah berhasil disimpan</p>
-                </div>
-                <div v-else>
-                  <label for="diagnosisText" class="form-label">Diagnosis Manual:</label>
-                  <textarea 
-                    v-model="diagnosisText" 
-                    id="diagnosisText" 
-                    class="form-control" 
-                    rows="4" 
-                    placeholder="Masukkan diagnosis manual (maksimal 100 kata)"
-                    @input="countWords"
-                  ></textarea>
-                  <small class="form-text text-muted">
-                    {{ wordCount }}/100 kata
-                  </small>
-                  <div v-if="wordCount > 100" class="text-danger small mt-1">
-                    Diagnosis melebihi batas maksimal 100 kata
-                  </div>
-                </div>
-              </div>
-              <div class="modal-footer">
-                <button v-if="diagnosisSuccess" class="btn btn-primary" @click="closeDiagnosisModal">
-                  Selesai
-                </button>
-                <template v-else>
-                  <button class="btn btn-secondary" @click="closeDiagnosisModal">Batal</button>
-                  <button 
-                    class="btn btn-primary" 
-                    :disabled="!diagnosisText.trim() || wordCount > 100 || diagnosisLoading" 
-                    @click="saveDiagnosis"
-                  >
-                    <span v-if="diagnosisLoading" class="spinner-border spinner-border-sm me-2"></span>
-                    Simpan
-                  </button>
-                </template>
-              </div>
-            </div>
-          </div>
-        </div>
-      </transition>
-
       <!-- Loading indicator - centered -->
       <div v-if="isLoading" class="loading-container">
         <div class="loading-content">
@@ -224,43 +170,13 @@
                 </div>
               </div>
               
-              <!-- Enhanced Patient Information Section -->
+              <!-- Simplified Patient Information - Only Name -->
               <div class="patient-info-section mb-3" v-if="video.user">
-                <div class="patient-info-card">
-                  <h6 class="patient-info-title">
-                    <i class="fas fa-user-circle me-2"></i>Informasi Pasien
+                <div class="patient-info-simple">
+                  <h6 class="mb-2">
+                    <i class="fas fa-user me-2"></i>
+                    <strong>Pasien:</strong> {{ video.user.name }}
                   </h6>
-                  <div class="patient-details">
-                    <div class="detail-row">
-                      <span class="detail-label">Nama:</span>
-                      <span class="detail-value">{{ video.user.name }}</span>
-                    </div>
-                    <div class="detail-row" v-if="video.user.kode_akses">
-                      <span class="detail-label">No. Rekam Medis:</span>
-                      <span class="detail-value">{{ video.user.kode_akses }}</span>
-                    </div>
-                    <div class="detail-row" v-if="video.user.tanggal_lahir">
-                      <span class="detail-label">Tanggal Lahir:</span>
-                      <span class="detail-value">{{ video.user.tanggal_lahir }}</span>
-                    </div>
-                    <div class="detail-row" v-if="video.user.usia">
-                      <span class="detail-label">Usia:</span>
-                      <span class="detail-value">{{ video.user.usia }} tahun</span>
-                    </div>
-                    <div class="detail-row" v-if="video.user.gender">
-                      <span class="detail-label">Gender:</span>
-                      <span class="detail-value">
-                        <span 
-                          :class="[
-                            'badge', 'badge-sm',
-                            video.user.gender === 'laki-laki' ? 'bg-primary' : 'bg-info'
-                          ]"
-                        >
-                          {{ capitalizeFirst(video.user.gender) }}
-                        </span>
-                      </span>
-                    </div>
-                  </div>
                 </div>
               </div>
               
@@ -269,16 +185,7 @@
                   <strong>Status:</strong> 
                   <span class="text-warning">Belum di-assign ke pasien</span>
                 </p>
-                <p class="mb-2"><strong>Diagnosis Sistem:</strong> {{ video.hasil_diagnosis || 'Belum ada diagnosis' }}</p>
-                <div class="mb-2">
-                  <strong>Diagnosis Manual:</strong>
-                  <div v-if="video.keterangan" class="diagnosis-text">
-                    {{ video.keterangan }}
-                  </div>
-                  <div v-else class="text-muted small">
-                    Belum ada diagnosis manual
-                  </div>
-                </div>
+                <p class="mb-2"><strong>Diagnosis:</strong> {{ video.hasil_diagnosis || 'normal' }}</p>
               </div>
             </div>
             <div class="card-footer bg-light">
@@ -291,9 +198,6 @@
                 <button v-if="video.status === 'assigned'" @click="openUnassignModal(video)"
                   class="btn btn-danger btn-sm">
                   <i class="fas fa-user-minus me-1"></i> Unassign
-                </button>
-                <button @click="openDiagnosisModal(video)" class="btn btn-success btn-sm">
-                  <i class="fas fa-edit me-1"></i> Input Diagnosis Manual
                 </button>
               </div>
             </div>
@@ -350,19 +254,13 @@ export default {
     
     const showAssignModal = ref(false);
     const showUnassignModal = ref(false);
-    const showDiagnosisModal = ref(false);
     const selectedUserId = ref("");
     const videoToAssign = ref(null);
     const videoToUnassign = ref(null);
-    const videoToDiagnose = ref(null);
     const assignLoading = ref(false);
     const unassignLoading = ref(false);
-    const diagnosisLoading = ref(false);
     const assignSuccess = ref(false);
     const unassignSuccess = ref(false);
-    const diagnosisSuccess = ref(false);
-    const diagnosisText = ref("");
-    const wordCount = ref(0);
     const isLoading = computed(() => videoStore.isLoading);
 
     // Function to get the user role from JWT
@@ -456,11 +354,6 @@ export default {
       });
     };
 
-    const capitalizeFirst = (string) => {
-      if (!string) return '';
-      return string.charAt(0).toUpperCase() + string.slice(1);
-    };
-
     const openAssignModal = (video) => {
       videoToAssign.value = video;
       selectedUserId.value = "";
@@ -486,28 +379,6 @@ export default {
       setTimeout(() => {
         unassignSuccess.value = false;
       }, 300);
-    };
-
-    const openDiagnosisModal = (video) => {
-      videoToDiagnose.value = video;
-      diagnosisText.value = video.keterangan || "";
-      countWords();
-      diagnosisSuccess.value = false;
-      showDiagnosisModal.value = true;
-    };
-
-    const closeDiagnosisModal = () => {
-      showDiagnosisModal.value = false;
-      setTimeout(() => {
-        diagnosisSuccess.value = false;
-        diagnosisText.value = "";
-        wordCount.value = 0;
-      }, 300);
-    };
-
-    const countWords = () => {
-      const text = diagnosisText.value.trim();
-      wordCount.value = text ? text.split(/\s+/).length : 0;
     };
 
     const assignToUser = async () => {
@@ -570,38 +441,6 @@ export default {
       }
     };
 
-    const saveDiagnosis = async () => {
-      if (!diagnosisText.value.trim() || wordCount.value > 100) return;
-      
-      try {
-        diagnosisLoading.value = true;
-        const videoId = videoToDiagnose.value.id;
-        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-
-        await axios.put(api.getEndpoint(`videos/${videoId}/keterangan`), {
-          keterangan: diagnosisText.value.trim()
-        }, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        // Refresh videos with current date filter
-        await videoStore.fetchVideos(selectedDate.value, true); // Force refresh
-        diagnosisSuccess.value = true;
-
-        setTimeout(() => {
-          if (showDiagnosisModal.value) {
-            closeDiagnosisModal();
-          }
-        }, 2000);
-
-      } catch (error) {
-        console.error('Gagal menyimpan diagnosis:', error);
-        alert('Gagal menyimpan diagnosis manual. Silakan coba lagi.');
-      } finally {
-        diagnosisLoading.value = false;
-      }
-    };
-
     return {
       videos,
       users,
@@ -609,35 +448,24 @@ export default {
       selectedPatientId,
       showAssignModal,
       showUnassignModal,
-      showDiagnosisModal,
       selectedUserId,
       videoToAssign,
       videoToUnassign,
-      videoToDiagnose,
       isLoading,
       selectedDate,
       assignLoading,
       unassignLoading,
-      diagnosisLoading,
       assignSuccess,
       unassignSuccess,
-      diagnosisSuccess,
-      diagnosisText,
-      wordCount,
       openAssignModal,
       openUnassignModal,
-      openDiagnosisModal,
       closeAssignModal,
       closeUnassignModal,
-      closeDiagnosisModal,
       assignToUser,
       unassignVideo,
-      saveDiagnosis,
-      countWords,
       formatDate,
       filterData,
       resetFilter,
-      capitalizeFirst,
       userRole
     };
   }
@@ -775,7 +603,6 @@ export default {
   padding: 1rem;
 }
 
-/* Card styling */
 /* Card styling */
 .card {
   border-radius: 12px;

@@ -122,7 +122,7 @@
 
                 <!-- Keluhan -->
                 <div class="form-group mb-3">
-                  <label for="keluhan" class="form-label fw-bold required">
+                  <label for="keluhan" class="form-label fw-bold">
                     <i class="fas fa-exclamation-triangle me-1"></i>Keluhan Pasien
                   </label>
                   <textarea 
@@ -130,10 +130,9 @@
                     id="keluhan" 
                     class="form-control" 
                     rows="4" 
-                    placeholder="Masukkan keluhan pasien..."
+                    placeholder="Masukkan keluhan pasien"
                     :class="{ 'is-invalid': errors.keluhan }"
                     @input="countWords('keluhan')"
-                    required
                   ></textarea>
                   <small class="form-text text-muted">
                     {{ wordCounts.keluhan }}/200 kata
@@ -153,7 +152,7 @@
                     id="riwayatPenyakit" 
                     class="form-control" 
                     rows="3" 
-                    placeholder="Masukkan riwayat penyakit sebelumnya (opsional)..."
+                    placeholder="Masukkan riwayat penyakit sebelumnya"
                     :class="{ 'is-invalid': errors.riwayatPenyakit }"
                     @input="countWords('riwayatPenyakit')"
                   ></textarea>
@@ -170,7 +169,7 @@
               <div class="col-lg-6">
                 <!-- Diagnosis Manual -->
                 <div class="form-group mb-3">
-                  <label for="diagnosisManual" class="form-label fw-bold required">
+                  <label for="diagnosisManual" class="form-label fw-bold">
                     <i class="fas fa-diagnoses me-1"></i>Diagnosis Manual
                   </label>
                   <textarea 
@@ -178,10 +177,9 @@
                     id="diagnosisManual" 
                     class="form-control" 
                     rows="4" 
-                    placeholder="Masukkan diagnosis manual..."
+                    placeholder="Masukkan diagnosis manual"
                     :class="{ 'is-invalid': errors.diagnosisManual }"
                     @input="countWords('diagnosisManual')"
-                    required
                   ></textarea>
                   <small class="form-text text-muted">
                     {{ wordCounts.diagnosisManual }}/200 kata
@@ -193,8 +191,8 @@
 
                 <!-- Telinga yang Terkena -->
                 <div class="form-group mb-3">
-                  <label class="form-label fw-bold required">
-                    <i class="fas fa-deaf me-1"></i>Telinga yang Terkena
+                  <label class="form-label fw-bold">
+                    <i class="fas fa-deaf me-1"></i>Telinga yang Diperiksa
                   </label>
                   <div class="telinga-buttons">
                     <div class="row g-2">
@@ -237,7 +235,7 @@
 
                 <!-- Tindakan -->
                 <div class="form-group mb-3">
-                  <label for="tindakan" class="form-label fw-bold required">
+                  <label for="tindakan" class="form-label fw-bold">
                     <i class="fas fa-hand-holding-medical me-1"></i>Tindakan yang Diberikan
                   </label>
                   <textarea 
@@ -245,10 +243,9 @@
                     id="tindakan" 
                     class="form-control" 
                     rows="4" 
-                    placeholder="Masukkan tindakan yang diberikan..."
+                    placeholder="Masukkan tindakan yang diberikan"
                     :class="{ 'is-invalid': errors.tindakan }"
                     @input="countWords('tindakan')"
-                    required
                   ></textarea>
                   <small class="form-text text-muted">
                     {{ wordCounts.tindakan }}/200 kata
@@ -257,8 +254,8 @@
                     {{ errors.tindakan }}
                   </div>
                 </div>
+                </div>
               </div>
-            </div>
 
             <!-- Submit Button -->
             <div class="row mt-4">
@@ -288,6 +285,7 @@
         </div>
       </div>
     </div>
+
 
     <!-- Success Modal -->
     <transition name="fade">
@@ -542,30 +540,20 @@ export default {
         errors.value.tanggal = 'Tanggal penanganan harus diisi';
       }
 
-      if (!formData.value.keluhan.trim()) {
-        errors.value.keluhan = 'Keluhan pasien harus diisi';
-      } else if (wordCounts.value.keluhan > 200) {
+      // Optional fields word count validation only
+      if (formData.value.keluhan.trim() && wordCounts.value.keluhan > 200) {
         errors.value.keluhan = 'Keluhan tidak boleh lebih dari 200 kata';
       }
 
-      if (!formData.value.diagnosisManual.trim()) {
-        errors.value.diagnosisManual = 'Diagnosis manual harus diisi';
-      } else if (wordCounts.value.diagnosisManual > 200) {
+      if (formData.value.diagnosisManual.trim() && wordCounts.value.diagnosisManual > 200) {
         errors.value.diagnosisManual = 'Diagnosis tidak boleh lebih dari 200 kata';
       }
 
-      if (!formData.value.telinga) {
-        errors.value.telinga = 'Pilih telinga yang terkena';
-      }
-
-      if (!formData.value.tindakan.trim()) {
-        errors.value.tindakan = 'Tindakan harus diisi';
-      } else if (wordCounts.value.tindakan > 200) {
+      if (formData.value.tindakan.trim() && wordCounts.value.tindakan > 200) {
         errors.value.tindakan = 'Tindakan tidak boleh lebih dari 200 kata';
       }
 
-      // Optional fields word count validation
-      if (wordCounts.value.riwayatPenyakit > 150) {
+      if (formData.value.riwayatPenyakit.trim() && wordCounts.value.riwayatPenyakit > 150) {
         errors.value.riwayatPenyakit = 'Riwayat penyakit tidak boleh lebih dari 150 kata';
       }
 
@@ -595,11 +583,11 @@ export default {
         const payload = {
           user_id: formData.value.patientId,
           tanggal_penanganan: formData.value.tanggal,
-          keluhan: formData.value.keluhan.trim(),
+          keluhan: formData.value.keluhan.trim() || null,
           riwayat_penyakit: formData.value.riwayatPenyakit.trim() || null,
-          diagnosis_manual: formData.value.diagnosisManual.trim(),
-          telinga_terkena: formData.value.telinga,
-          tindakan: formData.value.tindakan.trim()
+          diagnosis_manual: formData.value.diagnosisManual.trim() || null,
+          telinga_terkena: formData.value.telinga || null,
+          tindakan: formData.value.tindakan.trim() || null
         };
 
         const response = await axios.post(api.getEndpoint('penanganan'), payload, {
@@ -833,12 +821,6 @@ export default {
 
 .telinga-buttons .btn {
   min-height: 45px;
-}
-
-.required::after {
-  content: '*';
-  color: red;
-  margin-left: 4px;
 }
 
 .form-group {

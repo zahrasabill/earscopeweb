@@ -163,6 +163,10 @@
               <td style="padding: 8px 0; font-weight: bold; width: 30%;">Kode Akses</td>
               <td style="padding: 8px 0;">: {{ dokter && dokter.kode_akses ? dokter.kode_akses : '-' }}</td>
             </tr>
+            <tr style="border-bottom: 1px solid #b3d9ff;">
+              <td style="padding: 8px 0; font-weight: bold; width: 30%;">Password</td>
+              <td style="padding: 8px 0;">: {{ dokter && dokter.plain_password ? dokter.plain_password : '-' }}</td>
+            </tr>
             <tr style="border-bottom: 1px solid #b3d9ff;" v-if="dokter.role">
               <td style="padding: 8px 0; font-weight: bold;">Role</td>
               <td style="padding: 8px 0;">: {{ capitalizeFirst(dokter.role) }}</td>

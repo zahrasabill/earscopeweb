@@ -119,7 +119,7 @@
               <!-- Telinga yang Terkena -->
               <div class="form-group mb-4">
                 <label class="form-label">
-                  <i class="fas fa-deaf me-2 text-danger"></i>Telinga yang Terkena
+                  <i class="fas fa-deaf me-2 text-danger"></i>Telinga yang Diperiksa
                 </label>
                 <div class="form-display">
                   {{ getTelingaText(penangananData.telinga_terkena) }}

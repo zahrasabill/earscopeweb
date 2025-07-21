@@ -163,6 +163,10 @@
               <td style="padding: 8px 0; font-weight: bold; width: 30%;">No Rekam Medis</td>
               <td style="padding: 8px 0;">: {{ pasien && pasien.kode_akses ? pasien.kode_akses : '-' }}</td>
             </tr>
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold; width: 30%;">Password</td>
+              <td style="padding: 8px 0;">: {{ pasien && pasien.plain_password ? pasien.plain_password : '-' }}</td>
+            </tr>
           </table>
         </div>
         

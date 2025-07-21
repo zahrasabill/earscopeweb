@@ -3,6 +3,10 @@ import HomeView from "../views/HomeView.vue";
 import LoginView from "../views/LoginView.vue";
 import DashboardView from "@/views/DashboardView.vue";
 
+import ProfileResource from "@/views/ProfileResource.vue";
+import ViewProfile from "@/views/ProfileResource/Pages/ViewProfile.vue";
+import EditProfile from "@/views/ProfileResource/Pages/EditProfile.vue";
+
 import ForbiddenView from "@/views/errors/ForbiddenView.vue";
 import NotFoundView from "@/views/errors/NotFoundView.vue";
 import ServerErrorView from "@/views/errors/ServerErrorView.vue";
@@ -26,6 +30,7 @@ import EditPenanganan from "@/views/PenangananResource/Pages/EditPenanganan.vue"
 import ViewPenanganan from "@/views/PenangananResource/Pages/ViewPenanganan.vue";
 import RiwayatResource from "@/views/RiwayatResource.vue";
 import RiwayatPemeriksaan from "@/views/RiwayatResource/Pages/RiwayatPemeriksaan.vue";
+
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -51,6 +56,25 @@ const router = createRouter({
       component: DashboardView,
       meta: { requiresAuth: true },
     },
+
+{
+  path: '/profile',
+  component: ProfileResource,
+  meta: { requiresAuth: true },
+  children: [
+    {
+      path: '',
+      name: 'profile',
+      component: ViewProfile
+    },
+    {
+      path: 'edit',
+      name: 'edit-profile',
+      component: EditProfile
+    }
+  ]
+},
+
   {
     path: '/dokter',
     component: DokterResource,
