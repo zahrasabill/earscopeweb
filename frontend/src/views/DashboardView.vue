@@ -87,7 +87,7 @@
                   <span v-else>{{ totalDokter !== null ? totalDokter : '-' }}</span>
                 </h2>
                 <p class="mb-0 text-muted small">
-                  Total Dokter {{ getFilterLabel() }}
+                  Total Dokter<span v-if="getFilterLabel()"> {{ getFilterLabel() }}</span>
                 </p>
               </div>
             </div>
@@ -371,9 +371,9 @@ export default {
         'today': 'Hari Ini',
         'week': 'Minggu Ini',
         'month': 'Bulan Ini',
-        'all': 'Terdaftar'
+        'all': ''
       };
-      return labels[this.timeFilter] || 'Terdaftar';
+      return labels[this.timeFilter] || '';
     },
 
     getDateRange() {

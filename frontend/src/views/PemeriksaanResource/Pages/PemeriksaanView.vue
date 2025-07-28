@@ -193,7 +193,7 @@
               <div class="d-grid gap-2" v-if="userRole === 'dokter'">
                 <button v-if="video.status !== 'assigned'" @click="openAssignModal(video)"
                   class="btn btn-primary btn-sm">
-                  <i class="fas fa-user-plus me-1"></i> Assign ke Pasien
+                  <i class="fas fa-user-plus me-1"></i> Kirim ke Pasien
                 </button>
                 <button v-if="video.status === 'assigned'" @click="openUnassignModal(video)"
                   class="btn btn-danger btn-sm">
