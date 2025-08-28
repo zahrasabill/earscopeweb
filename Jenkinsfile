@@ -5,12 +5,6 @@ pipeline {
         GIT_BRANCH = "main"
         DOCKER_IMAGE_NAME_BACKEND = "earscopeweb-backend"
         DOCKER_IMAGE_NAME_FRONTEND = "earscopeweb-frontend"
-        NGINX_CONF_PATH = "/etc/nginx/conf/earscope-web.conf"
-
-        // implement blue green deployment
-        NEW_CONTAINER_SUFFIX = "-new"
-        NEW_COMPOSE_FILE = "docker-compose-new.yml"
-        HEALTH_CHECK_TIMEOUT = 60 // seconds
 
     }
     stages {
